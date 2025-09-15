@@ -1,70 +1,213 @@
-# Getting Started with Create React App
+# Recall AI - RAG-Powered SaaS Frontend
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+A production-ready React frontend for a RAG (Retrieval Augmented Generation) SaaS application. Built with modern React patterns, TailwindCSS, and a scalable feature-based architecture.
 
-## Available Scripts
+## 🚀 Features
 
-In the project directory, you can run:
+- **Modern React Architecture**: Functional components with hooks, Context API for state management
+- **Responsive Design**: Mobile-first design with TailwindCSS
+- **Authentication System**: Complete auth flow with login, signup, and password reset
+- **Bot Management**: Create, manage, and monitor AI-powered conversational agents
+- **File Upload**: Mock file upload interface for document processing
+- **Real-time UI**: Loading states, error handling, and smooth animations
+- **Production Ready**: Clean code, proper error boundaries, and optimized performance
 
-### `npm start`
+## 🏗️ Architecture
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in your browser.
+### Feature-Based Structure
+```
+src/
+├── app/                    # App configuration and routing
+├── core/                   # Shared components and utilities
+│   ├── components/         # Reusable UI components
+│   ├── context/           # React Context providers
+│   ├── hooks/             # Custom hooks
+│   ├── layout/            # Layout components
+│   └── utils/             # Constants and utilities
+├── features/              # Feature-specific modules
+│   ├── auth/              # Authentication
+│   ├── bot/               # Bot management
+│   └── landing/           # Landing page
+└── assets/                # Static assets
+```
 
-The page will reload when you make changes.\
-You may also see any lint errors in the console.
+### Core Components
+- **Button**: Multiple variants (primary, secondary, outline, ghost, danger)
+- **InputField**: Text, password, file upload with validation
+- **Card**: Flexible card component with header, content, footer
+- **Modal**: Accessible modal with backdrop and keyboard navigation
+- **Loader**: Loading states for different contexts
+- **Navbar**: Responsive navigation with mobile menu
+- **Sidebar**: Collapsible dashboard navigation
 
-### `npm test`
+## 🎨 Design System
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+### Color Palette
+- **Primary**: Blue gradient (#3b82f6 to #2563eb)
+- **Secondary**: Purple gradient (#a855f7 to #7c3aed)
+- **Success**: Green (#10b981)
+- **Warning**: Amber (#f59e0b)
+- **Error**: Red (#ef4444)
 
-### `npm run build`
+### Typography
+- **Font**: Inter (Google Fonts)
+- **Weights**: 300, 400, 500, 600, 700
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+## 🔧 Technology Stack
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+- **React 19.1.1** - Latest React with concurrent features
+- **React Router v6** - Client-side routing
+- **TailwindCSS** - Utility-first CSS framework
+- **Context API** - State management
+- **Local Storage** - Data persistence
+- **React Testing Library** - Testing utilities
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+## 🚀 Getting Started
 
-### `npm run eject`
+### Prerequisites
+- Node.js 16+ 
+- npm or yarn
 
-**Note: this is a one-way operation. Once you `eject`, you can't go back!**
+### Installation
 
-If you aren't satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
+1. **Clone the repository**
+   ```bash
+   git clone <repository-url>
+   cd recall_ai
+   ```
 
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you're on your own.
+2. **Install dependencies**
+   ```bash
+   npm install
+   ```
 
-You don't have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn't feel obligated to use this feature. However we understand that this tool wouldn't be useful if you couldn't customize it when you are ready for it.
+3. **Start development server**
+   ```bash
+   npm start
+   ```
 
-## Learn More
+4. **Open your browser**
+   Navigate to [http://localhost:3000](http://localhost:3000)
 
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
+### Available Scripts
 
-To learn React, check out the [React documentation](https://reactjs.org/).
+- `npm start` - Start development server
+- `npm test` - Run test suite
+- `npm run build` - Build for production
+- `npm run eject` - Eject from Create React App
 
-### Code Splitting
+## 🔐 Authentication
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/code-splitting](https://facebook.github.io/create-react-app/docs/code-splitting)
+### Demo Credentials
+- **Email**: `demo@example.com`
+- **Password**: `password`
 
-### Analyzing the Bundle Size
+### Features
+- Login/Signup forms with validation
+- Password reset flow (UI only)
+- Protected routes
+- Persistent authentication state
+- Automatic redirects
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size](https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size)
+## 🤖 Bot Management
 
-### Making a Progressive Web App
+### Features
+- Create new bots with name and description
+- File upload interface (mock)
+- Bot status tracking (active, training, error)
+- Bot analytics (documents, queries)
+- Delete confirmation modals
+- Responsive bot cards
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app](https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app)
+### Mock Data
+The app includes sample bots to demonstrate the interface:
+- Customer Support Bot
+- Product Knowledge Bot
 
-### Advanced Configuration
+## 📱 Responsive Design
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/advanced-configuration](https://facebook.github.io/create-react-app/docs/advanced-configuration)
+- **Mobile**: Optimized for touch interactions
+- **Tablet**: Adaptive layouts for medium screens
+- **Desktop**: Full-featured experience
+- **Breakpoints**: sm (640px), md (768px), lg (1024px), xl (1280px)
 
-### Deployment
+## 🎯 Key Features
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/deployment](https://facebook.github.io/create-react-app/docs/deployment)
+### Landing Page
+- Hero section with animated background
+- Features showcase
+- Call-to-action sections
+- Professional footer
 
-### `npm run build` fails to minify
+### Dashboard
+- Collapsible sidebar navigation
+- Bot creation form
+- Bot management interface
+- Analytics overview
+- User profile dropdown
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
+### State Management
+- **AuthContext**: User authentication state
+- **BotContext**: Bot management state
+- **Local Storage**: Data persistence
+- **Error Handling**: Comprehensive error states
+
+## 🔒 Security Features
+
+- Form validation
+- Protected routes
+- Error boundaries
+- Input sanitization
+- XSS protection
+
+## 🚀 Performance
+
+- Code splitting with React.lazy
+- Optimized bundle size
+- Lazy loading components
+- Efficient re-renders
+- Smooth animations
+
+## 🧪 Testing
+
+The project includes:
+- React Testing Library setup
+- Jest configuration
+- Test utilities
+- Mock data for testing
+
+## 📦 Build & Deployment
+
+### Production Build
+```bash
+npm run build
+```
+
+### Deployment Options
+- **Vercel**: Zero-config deployment
+- **Netlify**: Drag-and-drop deployment
+- **AWS S3**: Static hosting
+- **Docker**: Containerized deployment
+
+## 🤝 Contributing
+
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Add tests if applicable
+5. Submit a pull request
+
+## 📄 License
+
+This project is licensed under the MIT License.
+
+## 🆘 Support
+
+For support and questions:
+- Create an issue in the repository
+- Check the documentation
+- Review the code comments
+
+---
+
+**Built with ❤️ for developers who want to build intelligent AI applications.**

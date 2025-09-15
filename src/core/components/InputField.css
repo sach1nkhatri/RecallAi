@@ -1,0 +1,209 @@
+/* Input Field Component Styles */
+.input-field {
+  margin-bottom: var(--space-4);
+}
+
+.input-field-label {
+  display: block;
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  color: var(--color-gray-700);
+  margin-bottom: var(--space-2);
+}
+
+.input-field-required {
+  color: #ef4444;
+  margin-left: 0.25rem;
+}
+
+.input-field-input {
+  display: block;
+  width: 100%;
+  padding: 0.75rem 1rem;
+  border: 1px solid var(--color-gray-300);
+  border-radius: var(--radius-xl);
+  background: rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(4px);
+  transition: all var(--transition-fast);
+  font-family: inherit;
+  font-size: var(--font-size-base);
+  line-height: 1.5;
+}
+
+.input-field-input:focus {
+  outline: none;
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
+}
+
+.input-field-input::placeholder {
+  color: var(--color-gray-400);
+}
+
+.input-field-input:hover:not(:focus) {
+  border-color: var(--color-gray-400);
+}
+
+/* Input states */
+.input-field-error .input-field-input {
+  border-color: #fca5a5;
+  background: rgba(254, 242, 242, 0.5);
+}
+
+.input-field-error .input-field-input:focus {
+  border-color: #ef4444;
+  box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.2);
+}
+
+.input-field-disabled .input-field-input {
+  background: rgba(249, 250, 251, 0.5);
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.input-field-error-message {
+  margin-top: var(--space-2);
+  font-size: var(--font-size-sm);
+  color: #ef4444;
+}
+
+/* Input with icon */
+.input-field-with-icon {
+  position: relative;
+}
+
+.input-field-icon {
+  position: absolute;
+  left: 1rem;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 1.25rem;
+  height: 1.25rem;
+  color: var(--color-gray-400);
+  pointer-events: none;
+}
+
+.input-field-with-icon .input-field-input {
+  padding-left: 3rem;
+}
+
+/* Input with button */
+.input-field-with-button {
+  display: flex;
+  gap: var(--space-2);
+}
+
+.input-field-with-button .input-field-input {
+  flex: 1;
+}
+
+/* File input specific styles */
+.input-field-file {
+  position: relative;
+  display: inline-block;
+  cursor: pointer;
+  padding: 0.75rem 1rem;
+  border: 2px dashed var(--color-gray-300);
+  border-radius: var(--radius-xl);
+  background: rgba(249, 250, 251, 0.5);
+  transition: all var(--transition-fast);
+  text-align: center;
+  width: 100%;
+}
+
+.input-field-file:hover {
+  border-color: var(--color-primary);
+  background: rgba(59, 130, 246, 0.05);
+}
+
+.input-field-file input[type="file"] {
+  position: absolute;
+  opacity: 0;
+  width: 100%;
+  height: 100%;
+  cursor: pointer;
+}
+
+.input-field-file-text {
+  color: var(--color-gray-600);
+  font-size: var(--font-size-sm);
+}
+
+.input-field-file-icon {
+  width: 2rem;
+  height: 2rem;
+  color: var(--color-gray-400);
+  margin: 0 auto var(--space-2);
+}
+
+/* Textarea specific styles */
+.input-field-textarea {
+  min-height: 6rem;
+  resize: vertical;
+}
+
+/* Select specific styles */
+.input-field-select {
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='m6 8 4 4 4-4'/%3e%3c/svg%3e");
+  background-position: right 0.5rem center;
+  background-repeat: no-repeat;
+  background-size: 1.5em 1.5em;
+  padding-right: 2.5rem;
+  appearance: none;
+}
+
+/* Checkbox and radio styles */
+.input-field-checkbox,
+.input-field-radio {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.input-field-checkbox input,
+.input-field-radio input {
+  width: 1rem;
+  height: 1rem;
+  accent-color: var(--color-primary);
+}
+
+.input-field-checkbox label,
+.input-field-radio label {
+  font-size: var(--font-size-sm);
+  color: var(--color-gray-700);
+  cursor: pointer;
+  margin: 0;
+}
+
+/* Input group styles */
+.input-field-group {
+  display: flex;
+  gap: var(--space-2);
+}
+
+.input-field-group .input-field-input {
+  border-radius: 0;
+}
+
+.input-field-group .input-field-input:first-child {
+  border-top-left-radius: var(--radius-xl);
+  border-bottom-left-radius: var(--radius-xl);
+}
+
+.input-field-group .input-field-input:last-child {
+  border-top-right-radius: var(--radius-xl);
+  border-bottom-right-radius: var(--radius-xl);
+}
+
+.input-field-group .input-field-input:not(:first-child):not(:last-child) {
+  border-left: none;
+  border-right: none;
+}
+
+.input-field-group .input-field-input:not(:first-child) {
+  border-left: none;
+}
+
+.input-field-group .input-field-input:not(:last-child) {
+  border-right: none;
+}

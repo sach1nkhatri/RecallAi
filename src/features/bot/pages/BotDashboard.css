@@ -1,0 +1,230 @@
+/* BotDashboard Component Styles */
+.bot-dashboard {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+  animation: fadeIn 0.6s ease-out;
+}
+
+.bot-dashboard-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.bot-dashboard-header-content {
+  display: flex;
+  flex-direction: column;
+}
+
+.bot-dashboard-title {
+  font-size: 1.875rem;
+  font-weight: 700;
+  color: #111827;
+  margin-bottom: 0.5rem;
+}
+
+.bot-dashboard-subtitle {
+  font-size: 1.125rem;
+  color: #4b5563;
+}
+
+.bot-dashboard-form-container {
+  max-width: 42rem;
+}
+
+.bot-dashboard-empty {
+  text-align: center;
+  padding: 5rem 0;
+}
+
+.bot-dashboard-empty-icon {
+  margin: 0 auto;
+  height: 8rem;
+  width: 8rem;
+  background: linear-gradient(135deg, #dbeafe 0%, #e9d5ff 100%);
+  border-radius: 1.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 2rem;
+  animation: float 3s ease-in-out infinite;
+}
+
+.bot-dashboard-empty-icon svg {
+  height: 4rem;
+  width: 4rem;
+  color: #2563eb;
+}
+
+.bot-dashboard-empty-title {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #111827;
+  margin-bottom: 1rem;
+}
+
+.bot-dashboard-empty-description {
+  font-size: 1.125rem;
+  color: #4b5563;
+  margin-bottom: 2rem;
+  max-width: 28rem;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.bot-dashboard-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1.5rem;
+}
+
+.bot-dashboard-stats {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1.5rem;
+  margin-top: 3rem;
+}
+
+.bot-dashboard-stat {
+  background: linear-gradient(135deg, #dbeafe 0%, #dbeafe 100%);
+  padding: 2rem;
+  border-radius: 1rem;
+  border: 1px solid rgba(59, 130, 246, 0.2);
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+  transition: all 0.3s ease;
+  transform: translateY(0);
+}
+
+.bot-dashboard-stat:hover {
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+  transform: translateY(-0.25rem);
+}
+
+.bot-dashboard-stat-content {
+  display: flex;
+  align-items: center;
+}
+
+.bot-dashboard-stat-icon {
+  padding: 0.75rem;
+  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+  border-radius: 0.75rem;
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+}
+
+.bot-dashboard-stat-icon svg {
+  height: 1.75rem;
+  width: 1.75rem;
+  color: white;
+}
+
+.bot-dashboard-stat-info {
+  margin-left: 1rem;
+}
+
+.bot-dashboard-stat-label {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #2563eb;
+}
+
+.bot-dashboard-stat-number {
+  font-size: 1.875rem;
+  font-weight: 700;
+  color: #1d4ed8;
+}
+
+/* Stat variants */
+.bot-dashboard-stat-green {
+  background: linear-gradient(135deg, #dcfce7 0%, #dcfce7 100%);
+  border-color: rgba(34, 197, 94, 0.2);
+}
+
+.bot-dashboard-stat-green .bot-dashboard-stat-icon {
+  background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
+}
+
+.bot-dashboard-stat-green .bot-dashboard-stat-label {
+  color: #16a34a;
+}
+
+.bot-dashboard-stat-green .bot-dashboard-stat-number {
+  color: #15803d;
+}
+
+.bot-dashboard-stat-purple {
+  background: linear-gradient(135deg, #f3e8ff 0%, #f3e8ff 100%);
+  border-color: rgba(168, 85, 247, 0.2);
+}
+
+.bot-dashboard-stat-purple .bot-dashboard-stat-icon {
+  background: linear-gradient(135deg, #a855f7 0%, #9333ea 100%);
+}
+
+.bot-dashboard-stat-purple .bot-dashboard-stat-label {
+  color: #9333ea;
+}
+
+.bot-dashboard-stat-purple .bot-dashboard-stat-number {
+  color: #7c3aed;
+}
+
+.bot-dashboard-stat-orange {
+  background: linear-gradient(135deg, #fed7aa 0%, #fed7aa 100%);
+  border-color: rgba(249, 115, 22, 0.2);
+}
+
+.bot-dashboard-stat-orange .bot-dashboard-stat-icon {
+  background: linear-gradient(135deg, #f97316 0%, #ea580c 100%);
+}
+
+.bot-dashboard-stat-orange .bot-dashboard-stat-label {
+  color: #ea580c;
+}
+
+.bot-dashboard-stat-orange .bot-dashboard-stat-number {
+  color: #c2410c;
+}
+
+/* Responsive adjustments */
+@media (min-width: 768px) {
+  .bot-dashboard-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  
+  .bot-dashboard-stats {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (min-width: 1024px) {
+  .bot-dashboard-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+  
+  .bot-dashboard-stats {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+/* Animations */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+}
