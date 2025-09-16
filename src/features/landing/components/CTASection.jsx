@@ -13,11 +13,11 @@ const CTASection = () => {
       </div>
       
       <div className="cta-container">
-        {/* Badge */}
+        {/* Badge
         <div className="cta-badge" style={{ animation: 'fadeInUp 0.8s ease-out' }}>
           <div className="cta-badge-dot"></div>
           <span className="cta-badge-text">Join the AI Revolution</span>
-        </div>
+        </div> */}
         
         <h2 className="cta-title" style={{ animation: 'fadeInUp 1s ease-out 0.2s both' }}>
           Ready to build your first

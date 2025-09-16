@@ -81,9 +81,9 @@ const FeaturesSection = () => {
     <section className="features-section">
       <div className="features-container">
         <div className="features-header">
-          <div className="features-badge" style={{ animation: 'fadeInUp 0.8s ease-out' }}>
+          {/* <div className="features-badge" style={{ animation: 'fadeInUp 0.8s ease-out' }}>
             <span className="features-badge-text">Powerful Features</span>
-          </div>
+          </div> */}
           <h2 className="features-title" style={{ animation: 'fadeInUp 1s ease-out 0.2s both' }}>
             Everything you need to
             <span className="features-title-gradient">

@@ -18,11 +18,6 @@ const HeroSection = () => {
       
       <div className="hero-container">
         <div className="hero-content">
-          {/* Apple-style badge */}
-          <div className="hero-badge" style={{ animation: 'slideInFromTop 0.8s ease-out' }}>
-            <div className="hero-badge-dot"></div>
-            <span className="hero-badge-text">Now Available</span>
-          </div>
           
           {/* Main headline */}
           <h1 className="hero-title" style={{ animation: 'fadeInUp 1s ease-out 0.2s both' }}>
