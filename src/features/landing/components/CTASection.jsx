@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import './CTASection.css';
+import '../css/CTASection.css';
 
 const CTASection = () => {
   return (

@@ -1,7 +1,7 @@
 import React from 'react';
 import HeroSection from '../components/HeroSection';
 import FeaturesSection from '../components/FeaturesSection';
-import CTASection from '../components/CTASection';
+import Plansandpricing from '../components/PricingPlans';
 import Footer from '../components/Footer';
 
 const LandingPage = () => {
@@ -9,7 +9,7 @@ const LandingPage = () => {
     <div className="min-h-screen">
       <HeroSection />
       <FeaturesSection />
-      <CTASection />
+      <Plansandpricing />
       <Footer />
     </div>
   );
