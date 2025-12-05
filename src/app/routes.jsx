@@ -14,6 +14,7 @@ import ForgotPasswordPage from '../features/auth/pages/ForgotPasswordPage';
 import BotDashboard from '../features/bot/pages/BotDashboard';
 import BotSetup from '../features/bot/pages/BotSetup';
 import Analytics from '../features/bot/pages/Analytics';
+import Checkout from '../features/payment_gateway/component/CheckoutPage';
 
 // Protected Route Component
 const ProtectedRoute = ({ children }) => {
@@ -25,6 +26,11 @@ const ProtectedRoute = ({ children }) => {
 const PublicRoute = ({ children }) => {
     const { isAuthenticated } = useAuth();
     return !isAuthenticated ? children : <Navigate to="/dashboard" replace />;
+};
+
+// Public Route that doesn't redirect even if authenticated
+const OpenRoute = ({ children }) => {
+    return children;
 };
 
 const AppRoutes = () => {
@@ -68,6 +74,16 @@ const AppRoutes = () => {
                     <PublicRoute>
                         <ForgotPasswordPage />
                     </PublicRoute>
+                }
+            />
+
+            {/* Open Routes - Accessible by anyone */}
+            <Route
+                path="/checkout"
+                element={
+                    <OpenRoute>
+                        <Checkout />
+                    </OpenRoute>
                 }
             />
 

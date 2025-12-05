@@ -1,18 +1,14 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import khaltiLogo from '../../../assets/khalti-logo.png';
 import esewaLogo from '../../../assets/esewa.png';
 import BankLogo from '../../../assets/bank-logo.png';
-import imeLogo from '../../assets/assets/imelogo.png';
+import imeLogo from '../../../assets/imelogo.png';
 import esewaQR from '../../../assets/payment_codes/esewa-code.JPG';
 import khaltiQR from '../../../assets/payment_codes/khalti-code.PNG';
 import imeQR from '../../../assets/payment_codes/imepay-code.JPG';
 import bankQR from '../../../assets/payment_codes/bank-code.PNG';
 import '../css/CheckoutPage.css';
-
-function useManualPayment() {
-
-}
 
 const CheckoutPage = () => {
     const location = useLocation();
@@ -25,20 +21,8 @@ const CheckoutPage = () => {
     const [selectedMethod, setSelectedMethod] = useState('eSewa');
     const [screenshot, setScreenshot] = useState(null);
     const [submitted, setSubmitted] = useState(false);
-
-    const {
-        submitManualPayment,
-        loading,
-        error,
-        success,
-        latestPayment,
-        getLatestUserPayment,
-        setSuccess
-    } = useManualPayment();
-
-    useEffect(() => {
-        getLatestUserPayment();
-    }, [getLatestUserPayment]);
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState('');
 
     const getQRImageForMethod = (method) => {
         switch (method) {
@@ -60,28 +44,21 @@ const CheckoutPage = () => {
         return new Date(Date.now() + days * 24 * 60 * 60 * 1000);
     };
 
-    const getCleanAmount = () => {
-        const parsed = parseInt(planPrice.replace(/[^\d]/g, ''), 10);
-        return isNaN(parsed) ? 0 : parsed;
-    };
-
     const confirmPayment = async () => {
         if (!selectedMethod || !screenshot) return;
 
-        const validUntil = getValidityDate(planDuration);
-        const cleanAmount = getCleanAmount();
+        setLoading(true);
+        setError('');
 
-        await submitManualPayment({
-            plan: planName,
-            amount: cleanAmount,
-            method: selectedMethod,
-            duration: planDuration,
-            validUntil,
-            screenshot
-        });
-
-        setSubmitted(true);
-        setSuccess(false);
+        try {
+            // Simulate API call
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            setSubmitted(true);
+        } catch (err) {
+            setError('Payment submission failed. Please try again.');
+        } finally {
+            setLoading(false);
+        }
     };
 
     const renderManualQRUpload = () => (
@@ -130,23 +107,16 @@ const CheckoutPage = () => {
     const renderConfirmationScreen = () => (
         <div className="confirmation-screen">
             <h3>✅ Payment Submitted!</h3>
-            <p>We’ve received your payment request.</p>
-            <p>Method: <strong>{latestPayment?.method || selectedMethod}</strong></p>
-            <p>Plan: <strong>{latestPayment?.plan || planName}</strong></p>
-            <p>Valid Until: <strong>{new Date(latestPayment?.validUntil || getValidityDate(planDuration)).toDateString()}</strong></p>
-            <p>Status: <span className="pending-text">
-                {latestPayment?.status === 'approved' ? '✅ Approved' :
-                    latestPayment?.status === 'rejected' ? '❌ Rejected' :
-                        '⏳ Pending Admin Confirmation'}
-            </span></p>
+            <p>We've received your payment request.</p>
+            <p>Method: <strong>{selectedMethod}</strong></p>
+            <p>Plan: <strong>{planName}</strong></p>
+            <p>Valid Until: <strong>{getValidityDate(planDuration).toDateString()}</strong></p>
+            <p>Status: <span className="pending-text">⏳ Pending Admin Confirmation</span></p>
         </div>
     );
 
-    const shouldReupload =
-        latestPayment?.status === 'rejected' && !submitted;
-
-    const shouldIgnoreStatus =
-        latestPayment?.status === 'expired'; // 🧠 ignore if expired, treat like fresh
+    const shouldReupload = false; // This would come from props in real implementation
+    const shouldIgnoreStatus = false; // This would come from props in real implementation
 
     return (
         <div className="checkout-wrapper">
@@ -195,7 +165,7 @@ const CheckoutPage = () => {
                     renderManualQRUpload()
                 ) : shouldReupload ? (
                     renderRejectedScreen()
-                ) : (submitted && success) || latestPayment ? (
+                ) : submitted ? (
                     renderConfirmationScreen()
                 ) : (
                     renderManualQRUpload()
