@@ -1,7 +1,7 @@
 /* Features Section Styles */
 .features-section {
   padding: 8rem 0;
-  background: white;
+  background: rgba(173, 232, 232, 0.47);
 }
 
 .features-container {
