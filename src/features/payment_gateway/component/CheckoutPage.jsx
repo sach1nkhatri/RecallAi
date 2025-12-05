@@ -1,13 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
-import khaltiLogo from '../../assets/khalti-logo.png';
-import esewaLogo from '../../assets/esewa.png';
-import BankLogo from '../../assets/bank-logo.png';
+import khaltiLogo from '../../../assets/khalti-logo.png';
+import esewaLogo from '../../../assets/esewa.png';
+import BankLogo from '../../../assets/bank-logo.png';
 import imeLogo from '../../assets/assets/imelogo.png';
-import esewaQR from '../../assets/payment_codes/esewa-code.JPG';
-import khaltiQR from '../../assets/payment_codes/khalti-code.PNG';
-import imeQR from '../../assets/payment_codes/imepay-code.JPG';
-import bankQR from '../../assets/payment_codes/bank-code.PNG';
+import esewaQR from '../../../assets/payment_codes/esewa-code.JPG';
+import khaltiQR from '../../../assets/payment_codes/khalti-code.PNG';
+import imeQR from '../../../assets/payment_codes/imepay-code.JPG';
+import bankQR from '../../../assets/payment_codes/bank-code.PNG';
 import '../css/CheckoutPage.css';
 
 function useManualPayment() {

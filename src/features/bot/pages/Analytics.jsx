@@ -2,7 +2,7 @@ import React, { useState, useCallback, useMemo } from 'react';
 import { useBot } from '../../../core/context/BotContext';
 import Card from '../../../core/components/Card';
 import Button from '../../../core/components/Button';
-import './Analytics.css';
+import '../css/Analytics.css';
 
 const Analytics = () => {
   const { bots, loading } = useBot();

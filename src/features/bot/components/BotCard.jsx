@@ -3,7 +3,7 @@ import { useBot } from '../../../core/context/BotContext';
 import Card from '../../../core/components/Card';
 import Button from '../../../core/components/Button';
 import Modal from '../../../core/components/Modal';
-import './BotCard.css';
+import '../css/BotCard.css';
 
 const BotCard = ({ bot }) => {
   const [showDeleteModal, setShowDeleteModal] = useState(false);

@@ -17,103 +17,103 @@ import Analytics from '../features/bot/pages/Analytics';
 
 // Protected Route Component
 const ProtectedRoute = ({ children }) => {
-  const { isAuthenticated } = useAuth();
-  return isAuthenticated ? children : <Navigate to="/login" replace />;
+    const { isAuthenticated } = useAuth();
+    return isAuthenticated ? children : <Navigate to="/login" replace />;
 };
 
 // Public Route Component (redirect to dashboard if authenticated)
 const PublicRoute = ({ children }) => {
-  const { isAuthenticated } = useAuth();
-  return !isAuthenticated ? children : <Navigate to="/dashboard" replace />;
+    const { isAuthenticated } = useAuth();
+    return !isAuthenticated ? children : <Navigate to="/dashboard" replace />;
 };
 
 const AppRoutes = () => {
-  const { isAuthenticated, user, logout } = useAuth();
+    const { isAuthenticated, user, logout } = useAuth();
 
-  return (
-    <Routes>
-      {/* Public Routes */}
-      <Route
-        path="/"
-        element={
-          <PublicRoute>
-            <MainLayout user={user} onLogout={logout}>
-              <LandingPage />
-            </MainLayout>
-          </PublicRoute>
-        }
-      />
-      
-      <Route
-        path="/login"
-        element={
-          <PublicRoute>
-            <LoginPage />
-          </PublicRoute>
-        }
-      />
-      
-      <Route
-        path="/signup"
-        element={
-          <PublicRoute>
-            <SignupPage />
-          </PublicRoute>
-        }
-      />
-      
-      <Route
-        path="/forgot-password"
-        element={
-          <PublicRoute>
-            <ForgotPasswordPage />
-          </PublicRoute>
-        }
-      />
-      
-      {/* Protected Routes */}
-      <Route
-        path="/dashboard"
-        element={
-          <ProtectedRoute>
-            <DashboardLayout user={user} onLogout={logout}>
-              <BotDashboard />
-            </DashboardLayout>
-          </ProtectedRoute>
-        }
-      />
-      
-      <Route
-        path="/dashboard/bots"
-        element={
-          <ProtectedRoute>
-            <DashboardLayout user={user} onLogout={logout}>
-              <BotSetup />
-            </DashboardLayout>
-          </ProtectedRoute>
-        }
-      />
-      
-      <Route
-        path="/dashboard/analytics"
-        element={
-          <ProtectedRoute>
-            <DashboardLayout user={user} onLogout={logout}>
-              <Analytics />
-            </DashboardLayout>
-          </ProtectedRoute>
-        }
-      />
-      
-      {/* Catch all route */}
-      <Route
-        path="*"
-        element={
-          <Navigate to={isAuthenticated ? "/dashboard" : "/"} replace />
-        }
-      />
-    </Routes>
-  );
+    return (
+        <Routes>
+            {/* Public Routes */}
+            <Route
+                path="/"
+                element={
+                    <PublicRoute>
+                        <MainLayout user={user} onLogout={logout}>
+                            <LandingPage />
+                        </MainLayout>
+                    </PublicRoute>
+                }
+            />
+
+            <Route
+                path="/login"
+                element={
+                    <PublicRoute>
+                        <LoginPage />
+                    </PublicRoute>
+                }
+            />
+
+            <Route
+                path="/signup"
+                element={
+                    <PublicRoute>
+                        <SignupPage />
+                    </PublicRoute>
+                }
+            />
+
+            <Route
+                path="/forgot-password"
+                element={
+                    <PublicRoute>
+                        <ForgotPasswordPage />
+                    </PublicRoute>
+                }
+            />
+
+            {/* Protected Routes */}
+            <Route
+                path="/dashboard"
+                element={
+                    <ProtectedRoute>
+                        <DashboardLayout user={user} onLogout={logout}>
+                            <BotDashboard />
+                        </DashboardLayout>
+                    </ProtectedRoute>
+                }
+            />
+
+            <Route
+                path="/dashboard/bots"
+                element={
+                    <ProtectedRoute>
+                        <DashboardLayout user={user} onLogout={logout}>
+                            <BotSetup />
+                        </DashboardLayout>
+                    </ProtectedRoute>
+                }
+            />
+
+            <Route
+                path="/dashboard/analytics"
+                element={
+                    <ProtectedRoute>
+                        <DashboardLayout user={user} onLogout={logout}>
+                            <Analytics />
+                        </DashboardLayout>
+                    </ProtectedRoute>
+                }
+            />
+
+            {/* Catch all route */}
+            <Route
+                path="*"
+                element={
+                    <Navigate to={isAuthenticated ? "/dashboard" : "/"} replace />
+                }
+            />
+        </Routes>
+    );
 };
 
 export default AppRoutes;

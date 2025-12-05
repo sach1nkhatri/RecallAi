@@ -3,7 +3,7 @@ import { useBot } from '../../../core/context/BotContext';
 import Button from '../../../core/components/Button';
 import InputField from '../../../core/components/InputField';
 import Card from '../../../core/components/Card';
-import './BotForm.css';
+import '../css/BotForm.css';
 
 const BotForm = ({ onSuccess }) => {
   const [formData, setFormData] = useState({

@@ -4,7 +4,7 @@ import { useAuth } from '../../../core/context/AuthContext';
 import Button from '../../../core/components/Button';
 import InputField from '../../../core/components/InputField';
 import Card from '../../../core/components/Card';
-import '../components/AuthForm.css';
+import '../css/AuthForm.css';
 
 const SignupForm = () => {
   const [formData, setFormData] = useState({

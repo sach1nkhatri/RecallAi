@@ -4,7 +4,7 @@ import BotForm from '../components/BotForm';
 import BotCard from '../components/BotCard';
 import Button from '../../../core/components/Button';
 import Loader from '../../../core/components/Loader';
-import './BotDashboard.css';
+import '../css/BotDashboard.css';
 
 const BotDashboard = () => {
   const [showForm, setShowForm] = useState(false);

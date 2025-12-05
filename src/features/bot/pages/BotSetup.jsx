@@ -5,7 +5,7 @@ import InputField from '../../../core/components/InputField';
 import Card from '../../../core/components/Card';
 import Modal from '../../../core/components/Modal';
 import Loader from '../../../core/components/Loader';
-import './BotSetup.css';
+import '../css/BotSetup.css';
 
 const BotSetup = () => {
   const { bots, loading, createBot, creating, error, clearError } = useBot();
