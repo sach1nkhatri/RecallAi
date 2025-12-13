@@ -10,22 +10,22 @@ const PricingPlans = () => {
 
     const pricing = {
         daily: {
-            basic: 'NPR.50/day',
-            premium: 'NPR.100/day',
+            basic: 'NPR.80/day',
+            pro: 'NPR.150/day',
         },
         weekly: {
-            basic: 'NPR.180/week',
-            premium: 'NPR.400/week',
+            basic: 'NPR.280/week',
+            pro: 'NPR.500/week',
         },
         monthly: {
-            basic: 'NPR.300/month',
-            premium: 'NPR.600/month',
+            basic: 'NPR.400/month',
+            pro: 'NPR.700/month',
         }
     };
 
     const getValueMessage = () => {
-        if (activePlan === 'weekly') return 'Save 49% compared to daily!';
-        if (activePlan === 'monthly') return 'Save 65% compared to daily! Best value.';
+        if (activePlan === 'weekly') return 'Save 50% compared to daily!';
+        if (activePlan === 'monthly') return 'Save 66% compared to daily! Best value.';
         return '';
     };
 
@@ -33,7 +33,7 @@ const PricingPlans = () => {
 
     return (
         <section className="pricing-section" id="pricing">
-            <h2 className="pricing-title">Plans & Pricing</h2>
+            <h2 className="pricing-title">Recall Everything. Perfectly Priced.</h2>
 
             <div className="toggle-container">
                 <div className="plan-toggle">
@@ -51,83 +51,90 @@ const PricingPlans = () => {
             <div className="plans-grid">
                 {/* FREE PLAN */}
                 <div className="plan-card">
-                    <h3>Free Trial</h3>
-                    <p className="price-label">No need to pay</p>
+                    <h3>Starter</h3>
+                    <p className="price-label">Free Forever</p>
                     <ul>
-                        <li><img src={tick} alt="✔"/> Access to Constitution, Civil Code, Criminal Code, and more</li>
-                        <li><img src={tick} alt="✔"/> 500 words per day or 10 chatbot interactions</li>
-                        <li><img src={tick} alt="✔"/> Includes legal news and articles</li>
-                        <li><img src={tick} alt="✔"/> Lawyer Search</li>
-                        <li><img src={no} alt="✖"/> No 24/7 tech Support</li>
+                        <li><img src={tick} alt="✔"/> Store up to 100 documents</li>
+                        <li><img src={tick} alt="✔"/> 10 AI queries per day</li>
+                        <li><img src={tick} alt="✔"/> Basic code & file recall</li>
+                        <li><img src={tick} alt="✔"/> 500MB storage</li>
+                        <li><img src={no} alt="✖"/> No sales analytics</li>
+                        <li><img src={no} alt="✖"/> No team collaboration</li>
+                        <li><img src={no} alt="✖"/> No API access</li>
                     </ul>
                     <button
                         className="choose-btn"
                         onClick={() => navigate('/login')}
                     >
-                        Choose Plan
+                        Get Started
                     </button>
                 </div>
 
                 {/* BASIC PLAN */}
                 <div className="plan-card">
-                <h3>Basic Plan</h3>
+                    <h3>Professional</h3>
                     <p className="price-label">{pricing[activePlan].basic}</p>
                     <p className="value-label">{getValueMessage()}</p>
                     <ul>
-                        <li><img src={tick} alt="✔" /> Everything in Free Plan +</li>
-                        <li><img src={tick} alt="✔" /> Unlimited AI chat access with smarter legal responses</li>
-                        <li><img src={tick} alt="✔" /> Includes legal news and articles</li>
-                        <li><img src={tick} alt="✔" /> Lawyer Booking and Appointment</li>
-                        <li><img src={tick} alt="✔" /> Great for students, citizens, and regular users</li>
-                        <li><img src={no} alt="✖" /> No 24/7 tech Support</li>
+                        <li><img src={tick} alt="✔" /> Everything in Starter +</li>
+                        <li><img src={tick} alt="✔" /> Store up to 1,000 documents</li>
+                        <li><img src={tick} alt="✔" /> Unlimited AI queries</li>
+                        <li><img src={tick} alt="✔" /> Advanced code search & recall</li>
+                        <li><img src={tick} alt="✔" /> 5GB storage</li>
+                        <li><img src={tick} alt="✔" /> Basic sales & performance tracking</li>
+                        <li><img src={tick} alt="✔" /> Email support</li>
+                        <li><img src={no} alt="✖" /> Limited API calls (100/day)</li>
                     </ul>
                     {activePlan === 'daily' && (
-                        <span className="hover-tooltip">Use daily often? Save big with a weekly plan.</span>
+                        <span className="hover-tooltip">Using daily? Save 50% with a weekly plan.</span>
                     )}
                     <button
                         className="choose-btn"
                         onClick={() =>
                             navigate('/checkout', {
                                 state: {
-                                    planName: 'Basic Plan',
+                                    planName: 'Professional Plan',
                                     planPrice: pricing[activePlan].basic,
                                     planDuration: getDuration(),
                                 },
                             })
                         }
                     >
-                        Choose Plan
+                        Upgrade Now
                     </button>
                 </div>
 
                 {/* PREMIUM PLAN */}
                 <div className="plan-card">
-                    <h3>Premium Plan</h3>
-                    <p className="price-label">{pricing[activePlan].premium}</p>
+                    <h3>Enterprise</h3>
+                    <p className="price-label">{pricing[activePlan].pro}</p>
                     <p className="value-label">{getValueMessage()}</p>
                     {activePlan === 'monthly' && (
                         <div className="badge-popular">Most Popular</div>
                     )}
                     <ul>
-                        <li><img src={tick} alt="✔" /> Everything in Basic Plan +</li>
-                        <li><img src={tick} alt="✔" /> Advanced legal reasoning and document analysis</li>
-                        <li><img src={tick} alt="✔" /> Tools for lawyers, researchers, and professionals</li>
-                        <li><img src={tick} alt="✔" /> Best For lawyers & LawFirms</li>
-                        <li><img src={tick} alt="✔" /> 24/7 Tech Support</li>
+                        <li><img src={tick} alt="✔" /> Everything in Professional +</li>
+                        <li><img src={tick} alt="✔" /> Unlimited document storage</li>
+                        <li><img src={tick} alt="✔" /> Advanced RAG with multi-source recall</li>
+                        <li><img src={tick} alt="✔" /> 50GB storage with auto-backup</li>
+                        <li><img src={tick} alt="✔" /> Advanced analytics dashboard</li>
+                        <li><img src={tick} alt="✔" /> Team collaboration (up to 10 members)</li>
+                        <li><img src={tick} alt="✔" /> Full API access & webhooks</li>
+                        <li><img src={tick} alt="✔" /> 24/7 priority support</li>
                     </ul>
                     <button
                         className="choose-btn"
                         onClick={() =>
                             navigate('/checkout', {
                                 state: {
-                                    planName: 'Premium Plan',
-                                    planPrice: pricing[activePlan].premium,
+                                    planName: 'Enterprise Plan',
+                                    planPrice: pricing[activePlan].pro,
                                     planDuration: getDuration(),
                                 },
                             })
                         }
                     >
-                        Choose Plan
+                        Go Premium
                     </button>
                 </div>
             </div>

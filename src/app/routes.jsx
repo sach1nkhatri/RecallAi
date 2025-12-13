@@ -11,9 +11,6 @@ import LandingPage from '../features/landing/pages/LandingPage';
 import LoginPage from '../features/auth/pages/LoginPage';
 import SignupPage from '../features/auth/pages/SignupPage';
 import ForgotPasswordPage from '../features/auth/pages/ForgotPasswordPage';
-import BotDashboard from '../features/bot/pages/BotDashboard';
-import BotSetup from '../features/bot/pages/BotSetup';
-import Analytics from '../features/bot/pages/Analytics';
 import Checkout from '../features/payment_gateway/component/CheckoutPage';
 
 // Protected Route Component
@@ -22,10 +19,9 @@ const ProtectedRoute = ({ children }) => {
     return isAuthenticated ? children : <Navigate to="/login" replace />;
 };
 
-// Public Route Component (redirect to dashboard if authenticated)
+// Public Route Component
 const PublicRoute = ({ children }) => {
-    const { isAuthenticated } = useAuth();
-    return !isAuthenticated ? children : <Navigate to="/dashboard" replace />;
+    return children;
 };
 
 // Public Route that doesn't redirect even if authenticated
@@ -33,8 +29,10 @@ const OpenRoute = ({ children }) => {
     return children;
 };
 
+const DashboardHome = () => null;
+
 const AppRoutes = () => {
-    const { isAuthenticated, user, logout } = useAuth();
+    const { user, logout } = useAuth();
 
     return (
         <Routes>
@@ -92,30 +90,8 @@ const AppRoutes = () => {
                 path="/dashboard"
                 element={
                     <ProtectedRoute>
-                        <DashboardLayout user={user} onLogout={logout}>
-                            <BotDashboard />
-                        </DashboardLayout>
-                    </ProtectedRoute>
-                }
-            />
-
-            <Route
-                path="/dashboard/bots"
-                element={
-                    <ProtectedRoute>
-                        <DashboardLayout user={user} onLogout={logout}>
-                            <BotSetup />
-                        </DashboardLayout>
-                    </ProtectedRoute>
-                }
-            />
-
-            <Route
-                path="/dashboard/analytics"
-                element={
-                    <ProtectedRoute>
-                        <DashboardLayout user={user} onLogout={logout}>
-                            <Analytics />
+                        <DashboardLayout>
+                            <DashboardHome />
                         </DashboardLayout>
                     </ProtectedRoute>
                 }
@@ -124,9 +100,7 @@ const AppRoutes = () => {
             {/* Catch all route */}
             <Route
                 path="*"
-                element={
-                    <Navigate to={isAuthenticated ? "/dashboard" : "/"} replace />
-                }
+                element={<Navigate to="/" replace />}
             />
         </Routes>
     );

@@ -28,6 +28,35 @@
   color: #61dafb;
 }
 
+/* Dashboard shell */
+.dashboard-shell {
+  min-height: 100vh;
+  background: #f7f8fb;
+}
+
+.dashboard-shell-content {
+  margin-left: 17rem;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  padding: 1.25rem 1.75rem;
+}
+
+.dashboard-shell-main {
+  flex: 1;
+}
+
+@media (max-width: 1024px) {
+  .dashboard-shell {
+    padding-top: 5rem;
+  }
+
+  .dashboard-shell-content {
+    margin-left: 0;
+    padding: 1rem;
+  }
+}
+
 @keyframes App-logo-spin {
   from {
     transform: rotate(0deg);
