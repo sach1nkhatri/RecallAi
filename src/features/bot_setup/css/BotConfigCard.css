@@ -1,0 +1,315 @@
+.bot-config-card {
+  background: var(--bot-panel);
+  border-radius: 16px;
+  padding: 28px;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  border: 1px solid var(--bot-border);
+}
+
+.bot-config-header {
+  margin-bottom: 24px;
+}
+
+.bot-config-header-main {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+}
+
+.bot-config-header-icon {
+  font-size: 32px;
+  width: 56px;
+  height: 56px;
+  border-radius: 14px;
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.1) 0%, rgba(139, 92, 246, 0.1) 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.bot-config-header h3 {
+  margin: 0 0 4px;
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--bot-text);
+}
+
+.bot-config-header-hint {
+  margin: 0;
+  font-size: 13px;
+  color: var(--bot-text-light);
+  line-height: 1.5;
+}
+
+.bot-config-form {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.bot-config-field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.bot-config-field label {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--bot-text);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.bot-config-required {
+  color: var(--bot-danger);
+  margin-left: 2px;
+}
+
+.bot-config-help {
+  font-weight: 400;
+  font-size: 12px;
+  color: var(--bot-text-light);
+  font-style: italic;
+}
+
+.bot-config-hint {
+  font-weight: 400;
+  color: var(--bot-text-light);
+  font-size: 12px;
+  margin-left: 4px;
+}
+
+.bot-config-field input[type="text"],
+.bot-config-field textarea {
+  padding: 12px 16px;
+  border-radius: 8px;
+  border: 2px solid var(--bot-border);
+  background: var(--bot-panel);
+  font-size: 14px;
+  color: var(--bot-text);
+  transition: all 0.2s;
+  font-family: inherit;
+}
+
+.bot-config-input-large {
+  font-size: 16px;
+  padding: 14px 18px;
+}
+
+.bot-config-field input[type="text"]:focus,
+.bot-config-field textarea:focus {
+  outline: none;
+  border-color: var(--bot-primary);
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+}
+
+.bot-config-prompt {
+  font-family: 'Courier New', monospace;
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.bot-config-templates {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.bot-config-field-advanced {
+  background: rgba(99, 102, 241, 0.02);
+  padding: 20px;
+  border-radius: 12px;
+  border: 1px solid rgba(99, 102, 241, 0.1);
+}
+
+.bot-config-advanced-toggle {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 12px;
+}
+
+.bot-config-advanced-label {
+  font-size: 13px;
+  color: var(--bot-text-light);
+}
+
+.bot-config-simple-btn {
+  padding: 6px 12px;
+  border-radius: 6px;
+  border: 1px solid var(--bot-border);
+  background: white;
+  color: var(--bot-text);
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.bot-config-simple-btn:hover {
+  background: var(--bot-border);
+}
+
+.bot-config-advanced-settings {
+  margin-top: 8px;
+  border: 1px solid var(--bot-border);
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.bot-config-advanced-summary {
+  padding: 16px 20px;
+  background: rgba(99, 102, 241, 0.03);
+  cursor: pointer;
+  list-style: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-weight: 600;
+  font-size: 14px;
+  color: var(--bot-text);
+  transition: all 0.2s;
+}
+
+.bot-config-advanced-summary:hover {
+  background: rgba(99, 102, 241, 0.05);
+}
+
+.bot-config-advanced-summary::-webkit-details-marker {
+  display: none;
+}
+
+.bot-config-advanced-hint {
+  font-weight: 400;
+  font-size: 12px;
+  color: var(--bot-text-light);
+  margin-left: 8px;
+}
+
+.bot-config-advanced-settings[open] .bot-config-advanced-summary {
+  border-bottom: 1px solid var(--bot-border);
+}
+
+.bot-config-params {
+  padding: 24px 20px;
+  background: white;
+}
+
+.bot-config-param label {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.bot-config-param-label-hint {
+  font-weight: 400;
+  font-size: 12px;
+  color: var(--bot-primary);
+  font-style: italic;
+}
+
+.bot-config-templates-label {
+  font-size: 12px;
+  color: var(--bot-text-light);
+  margin-right: 4px;
+  font-weight: 500;
+}
+
+.bot-config-template-btn {
+  padding: 6px 12px;
+  border-radius: 6px;
+  border: 1px solid var(--bot-border);
+  background: var(--bot-panel);
+  color: var(--bot-text);
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.bot-config-template-btn:hover {
+  border-color: var(--bot-primary);
+  background: rgba(99, 102, 241, 0.05);
+}
+
+.bot-config-params {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  padding: 20px;
+  background: rgba(99, 102, 241, 0.03);
+  border-radius: 12px;
+  border: 1px solid rgba(99, 102, 241, 0.1);
+}
+
+.bot-config-param {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.bot-config-param label {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--bot-text);
+}
+
+.bot-config-param input[type="range"] {
+  width: 100%;
+  height: 6px;
+  border-radius: 3px;
+  background: var(--bot-border);
+  outline: none;
+  -webkit-appearance: none;
+}
+
+.bot-config-param input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--bot-primary);
+  cursor: pointer;
+  box-shadow: 0 2px 4px rgba(99, 102, 241, 0.3);
+}
+
+.bot-config-param input[type="range"]::-moz-range-thumb {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--bot-primary);
+  cursor: pointer;
+  border: none;
+  box-shadow: 0 2px 4px rgba(99, 102, 241, 0.3);
+}
+
+.bot-config-param-hint {
+  font-size: 12px;
+  color: var(--bot-text-light);
+}
+
+.bot-config-save-btn {
+  padding: 14px 24px;
+  border-radius: 8px;
+  border: none;
+  background: linear-gradient(135deg, var(--bot-primary) 0%, var(--bot-primary-dark) 100%);
+  color: white;
+  font-weight: 600;
+  font-size: 15px;
+  cursor: pointer;
+  transition: all 0.2s;
+  box-shadow: 0 4px 8px rgba(99, 102, 241, 0.3);
+}
+
+.bot-config-save-btn:hover:not(:disabled) {
+  box-shadow: 0 6px 12px rgba(99, 102, 241, 0.4);
+}
+
+.bot-config-save-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+

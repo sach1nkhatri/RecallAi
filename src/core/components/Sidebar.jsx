@@ -1,35 +1,57 @@
-import React, { useMemo, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useMemo, useState, useCallback } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import dashboardIcon from '../../assets/sidebar_icons/dashboard_icon.png';
-import botIcon from '../../assets/sidebar_icons/bot_logo.png';
-import docIcon from '../../assets/sidebar_icons/doc_analysis_logo.png';
-import reportIcon from '../../assets/sidebar_icons/report_icon.png';
-import faqIcon from '../../assets/sidebar_icons/faq_logo.png';
-import settingsIcon from '../../assets/sidebar_icons/settings_icon.png';
+import { getSidebarMenuItems, isRouteActive } from '../config/dashboardRoutes';
 import '../css/Sidebar.css';
 
-const Sidebar = ({ onSectionChange, onReportClick }) => {
+const Sidebar = ({ onSectionChange, onReportClick, collapsed: collapsedProp, onToggleCollapse }) => {
   const navigate = useNavigate();
+  const location = useLocation();
   const { user, logout } = useAuth();
-  const [collapsed, setCollapsed] = useState(false);
+  const [internalCollapsed, setInternalCollapsed] = useState(false);
   const [showUserInfo, setShowUserInfo] = useState(false);
 
-  const menuItems = useMemo(
-    () => [
-      { label: 'Dashboard', icon: dashboardIcon },
-      { label: 'Bot Setup', icon: botIcon },
-      { label: 'Doc_analysis', icon: docIcon },
-      { divider: true },
-      { label: 'Report', icon: reportIcon, onClick: onReportClick },
-      { label: 'Help and Faq', icon: faqIcon },
-      { label: 'Settings', icon: settingsIcon }
-    ],
-    [onReportClick]
+  const collapsed = collapsedProp ?? internalCollapsed;
+  const toggleCollapse = onToggleCollapse ?? (() => setInternalCollapsed((prev) => !prev));
+
+  // Get menu items from centralized config
+  const menuItems = useMemo(() => {
+    const items = getSidebarMenuItems();
+    // Replace onClick handlers for items that need them
+    return items.map((item) => {
+      if (item.label === 'Report' && onReportClick) {
+        return { ...item, onClick: onReportClick };
+      }
+      return item;
+    });
+  }, [onReportClick]);
+
+  // Optimized active check using centralized function
+  const isActive = useCallback(
+    (item) => {
+      if (!item.to) return false;
+      return isRouteActive(item, location.pathname);
+    },
+    [location.pathname]
   );
 
-  const toggleCollapse = () => setCollapsed(!collapsed);
-  const toggleUserInfo = () => setShowUserInfo(!showUserInfo);
+  // Optimized navigation handler
+  const handleNavigation = useCallback(
+    (item) => {
+      if (item.onClick) {
+        item.onClick();
+        return;
+      }
+      if (item.to) {
+        navigate(item.to);
+        return;
+      }
+      onSectionChange?.(item.label);
+    },
+    [navigate, onSectionChange]
+  );
+
+  const toggleUserInfo = () => setShowUserInfo((prev) => !prev);
 
   return (
     <div className={`sidebar ${collapsed ? 'collapsed' : ''}`}>
@@ -57,20 +79,23 @@ const Sidebar = ({ onSectionChange, onReportClick }) => {
       <div className="sidebar-menu">
         {menuItems.map((item, idx) =>
           item.divider ? (
-            <hr key={idx} className="menu-divider" />
+            <hr key={`divider-${idx}`} className="menu-divider" />
           ) : (
             <div
               key={item.label}
-              className="menu-item"
-              onClick={() => {
-                if (item.onClick) {
-                  item.onClick();
-                  return;
+              className={`menu-item ${isActive(item) ? 'active' : ''}`}
+              onClick={() => handleNavigation(item)}
+              role="button"
+              tabIndex={0}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault();
+                  handleNavigation(item);
                 }
-                onSectionChange?.(item.label);
               }}
+              aria-label={item.label}
             >
-              <img src={item.icon} alt={item.label} className="menu-icon" />
+              <img src={item.icon} alt={item.label} className="menu-icon" loading="lazy" />
               {!collapsed && <span>{item.label}</span>}
             </div>
           )
@@ -83,7 +108,7 @@ const Sidebar = ({ onSectionChange, onReportClick }) => {
           {!collapsed && <span className="username">{user?.name || 'User'}</span>}
           {!collapsed && (
             <span className={`arrow-toggle ${showUserInfo ? 'open' : ''}`} aria-hidden="true">
-              {showUserInfo ? '▲' : '▼'}
+              {showUserInfo ? '^' : 'v'}
             </span>
           )}
         </div>
@@ -98,7 +123,7 @@ const Sidebar = ({ onSectionChange, onReportClick }) => {
         )}
 
         <button className="collapse-btn" onClick={toggleCollapse}>
-          {collapsed ? '→' : '←'}
+          {collapsed ? '>' : '<'}
         </button>
       </div>
     </div>

@@ -1,0 +1,247 @@
+.ctd-output-panel {
+  width: 100%;
+}
+
+.ctd-output-panel h2 {
+  margin: 0 0 20px;
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--ctd-text);
+}
+
+.ctd-doc-wrap {
+  position: relative;
+  width: 100%;
+  margin-bottom: 20px;
+}
+
+.doc-preview {
+  width: 100%;
+  min-height: 400px;
+  max-height: calc(100vh - 300px);
+  overflow-y: auto;
+  background: var(--ctd-panel);
+  color: var(--ctd-text);
+  border-radius: var(--ctd-radius-lg);
+  box-shadow: var(--ctd-shadow-lg);
+  padding: 40px 48px;
+  line-height: 1.8;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Georgia', serif;
+  position: relative;
+}
+
+.doc-preview::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: linear-gradient(90deg, var(--ctd-primary) 0%, var(--ctd-primary-light) 100%);
+  border-radius: var(--ctd-radius-lg) var(--ctd-radius-lg) 0 0;
+}
+
+.doc-preview h1 {
+  font-size: 32px;
+  font-weight: 700;
+  margin: 0 0 24px;
+  line-height: 1.2;
+  color: var(--ctd-text);
+  border-bottom: 3px solid var(--ctd-border);
+  padding-bottom: 16px;
+}
+
+.doc-preview h2 {
+  font-size: 24px;
+  font-weight: 600;
+  margin: 32px 0 16px;
+  line-height: 1.3;
+  color: var(--ctd-text);
+  padding-top: 8px;
+}
+
+.doc-preview h3 {
+  font-size: 20px;
+  font-weight: 600;
+  margin: 24px 0 12px;
+  line-height: 1.4;
+  color: var(--ctd-text);
+}
+
+.doc-preview h4 {
+  font-size: 18px;
+  font-weight: 600;
+  margin: 20px 0 10px;
+  color: var(--ctd-text);
+}
+
+.doc-preview p {
+  margin: 0 0 16px;
+  color: var(--ctd-text);
+  line-height: 1.8;
+}
+
+.doc-preview ul,
+.doc-preview ol {
+  margin: 0 0 20px 24px;
+  padding: 0;
+  color: var(--ctd-text);
+}
+
+.doc-preview ul {
+  list-style-type: disc;
+}
+
+.doc-preview ol {
+  list-style-type: decimal;
+}
+
+.doc-preview li {
+  margin-bottom: 8px;
+  line-height: 1.7;
+}
+
+.doc-preview li::marker {
+  color: var(--ctd-primary);
+}
+
+.doc-preview code {
+  background: var(--ctd-border-light);
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-family: 'JetBrains Mono', 'SF Mono', monospace;
+  font-size: 0.9em;
+  color: var(--ctd-primary-dark);
+}
+
+.doc-preview pre {
+  background: #0f172a;
+  color: #e2e8f0;
+  padding: 16px;
+  border-radius: var(--ctd-radius);
+  overflow-x: auto;
+  margin: 16px 0;
+  border: 1px solid var(--ctd-border);
+}
+
+.doc-preview pre code {
+  background: transparent;
+  padding: 0;
+  color: inherit;
+}
+
+.doc-preview blockquote {
+  border-left: 4px solid var(--ctd-primary);
+  padding-left: 20px;
+  margin: 20px 0;
+  color: var(--ctd-text-light);
+  font-style: italic;
+}
+
+.doc-preview table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 20px 0;
+}
+
+.doc-preview table th,
+.doc-preview table td {
+  padding: 12px;
+  border: 1px solid var(--ctd-border);
+  text-align: left;
+}
+
+.doc-preview table th {
+  background: var(--ctd-border-light);
+  font-weight: 600;
+}
+
+.doc-preview .page-break {
+  border-top: 2px dashed var(--ctd-border);
+  margin: 40px 0;
+}
+
+.ctd-empty-output {
+  text-align: center;
+  color: var(--ctd-text-muted);
+  font-style: italic;
+  padding: 60px 20px;
+  background: var(--ctd-border-light);
+  border-radius: var(--ctd-radius);
+  border: 2px dashed var(--ctd-border);
+}
+
+.ctd-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding-top: 20px;
+  border-top: 1px solid var(--ctd-border);
+}
+
+.ctd-actions .button.link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 12px 24px;
+  border-radius: var(--ctd-radius);
+  border: none;
+  background: linear-gradient(135deg, var(--ctd-primary) 0%, var(--ctd-primary-dark) 100%);
+  color: var(--ctd-text-inverse);
+  font-weight: 600;
+  font-size: 14px;
+  text-decoration: none;
+  cursor: pointer;
+  transition: var(--ctd-transition);
+  box-shadow: var(--ctd-shadow-md);
+}
+
+.ctd-actions .button.link:hover {
+  box-shadow: var(--ctd-shadow-lg);
+  /* Removed transform to prevent scroll interference */
+}
+
+.ctd-actions .button.link::before {
+  content: '📥';
+  font-size: 16px;
+}
+
+.ctd-summary-info {
+  padding: 12px 16px;
+  background: var(--ctd-border-light);
+  border-radius: var(--ctd-radius);
+  font-size: 13px;
+  color: var(--ctd-text-light);
+  border-left: 3px solid var(--ctd-primary);
+  font-weight: 500;
+}
+
+.ctd-pdf-info {
+  padding: 12px 16px;
+  background: rgba(16, 185, 129, 0.1);
+  border-radius: var(--ctd-radius);
+  font-size: 13px;
+  color: var(--ctd-success);
+  border-left: 3px solid var(--ctd-success);
+  font-weight: 500;
+}
+
+/* Scrollbar for doc preview */
+.doc-preview::-webkit-scrollbar {
+  width: 10px;
+}
+
+.doc-preview::-webkit-scrollbar-track {
+  background: var(--ctd-border-light);
+  border-radius: var(--ctd-radius-full);
+}
+
+.doc-preview::-webkit-scrollbar-thumb {
+  background: var(--ctd-border);
+  border-radius: var(--ctd-radius-full);
+}
+
+.doc-preview::-webkit-scrollbar-thumb:hover {
+  background: var(--ctd-text-muted);
+}

@@ -1,0 +1,11 @@
+flask
+flask-cors
+requests
+fpdf2
+python-dotenv
+
+# Optional dependencies for RAG functionality
+# Uncomment if you need RAG features:
+# PyPDF2>=3.0.0
+# faiss-cpu>=1.7.4
+# numpy>=1.24.0

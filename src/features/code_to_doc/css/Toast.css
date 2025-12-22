@@ -1,0 +1,118 @@
+.toast {
+  position: fixed;
+  top: 24px;
+  right: 24px;
+  z-index: 10000;
+  min-width: 320px;
+  max-width: 480px;
+  padding: 16px 20px;
+  border-radius: var(--ctd-radius-lg);
+  box-shadow: var(--ctd-shadow-xl);
+  background: var(--ctd-panel);
+  color: var(--ctd-text);
+  opacity: 0;
+  transform: translateX(400px);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  pointer-events: auto;
+  border: 1px solid var(--ctd-border);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  backdrop-filter: blur(10px);
+}
+
+.toast::before {
+  content: '';
+  width: 4px;
+  height: 100%;
+  position: absolute;
+  left: 0;
+  top: 0;
+  border-radius: var(--ctd-radius-lg) 0 0 var(--ctd-radius-lg);
+  background: var(--ctd-primary);
+}
+
+.toast.show {
+  opacity: 1;
+  transform: translateX(0);
+}
+
+.toast.info {
+  border-left: 4px solid var(--ctd-primary);
+}
+
+.toast.info::before {
+  background: var(--ctd-primary);
+}
+
+.toast.error {
+  border-left: 4px solid var(--ctd-danger);
+}
+
+.toast.error::before {
+  background: var(--ctd-danger);
+}
+
+.toast.success {
+  border-left: 4px solid var(--ctd-success);
+}
+
+.toast.success::before {
+  background: var(--ctd-success);
+}
+
+.toast.warning {
+  border-left: 4px solid var(--ctd-warning);
+}
+
+.toast.warning::before {
+  background: var(--ctd-warning);
+}
+
+.toast-icon {
+  font-size: 20px;
+  flex-shrink: 0;
+}
+
+.toast-message {
+  flex: 1;
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 1.5;
+}
+
+.toast-close {
+  background: none;
+  border: none;
+  color: var(--ctd-text-muted);
+  cursor: pointer;
+  font-size: 18px;
+  padding: 0;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  transition: var(--ctd-transition-fast);
+  flex-shrink: 0;
+}
+
+.toast-close:hover {
+  background: var(--ctd-border-light);
+  color: var(--ctd-text);
+}
+
+@media (max-width: 768px) {
+  .toast {
+    right: 16px;
+    left: 16px;
+    min-width: auto;
+    max-width: none;
+    transform: translateY(-100px);
+  }
+  
+  .toast.show {
+    transform: translateY(0);
+  }
+}
