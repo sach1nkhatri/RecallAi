@@ -67,7 +67,6 @@ backend/
 ## Environment Variables
 
 Create a `.env` file in the `backend/` directory with the following variables:
-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
 ```env
 # LM Studio Configuration
 LM_STUDIO_BASE_URL=http://192.168.1.83:1234/v1
