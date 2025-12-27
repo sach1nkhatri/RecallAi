@@ -2,7 +2,7 @@
 
 import logging
 import time
-from typing import List, Optional
+from typing import List, Optional, Callable
 
 from src.application.interfaces.llm_client import LLMClient
 from src.application.interfaces.pdf_generator import PDFGenerator
@@ -81,12 +81,12 @@ class RepoDocService:
         
         try:
             # Chapter generation can also take time with 14B models
-            # Use extended timeout: 5 minutes (300 seconds) for chapter generation
+            # Use extended timeout: 45 minutes (2700 seconds) to allow for slow 14B model generation
             markdown = self.llm_client.generate_documentation(
                 content=prompt,
                 content_type="code",
                 title=chapter.title,
-                timeout=300  # 5 minutes for chapter generation
+                timeout=2700  # 45 minutes for chapter generation (14B models can be slow)
             )
             
             # Ensure chapter has proper heading
@@ -104,7 +104,8 @@ class RepoDocService:
         chapters: List[Chapter],
         index_path: str,
         repo_name: str,
-        owner: str
+        owner: str,
+        progress_callback: Optional[Callable[[int, int], None]] = None
     ) -> str:
         """
         Generate complete documentation from chapters.
@@ -139,6 +140,10 @@ class RepoDocService:
         # Generate each chapter
         chapter_contents = []
         for idx, chapter in enumerate(chapters, 1):
+            # Report progress if callback provided
+            if progress_callback:
+                progress_callback(idx, len(chapters))
+            
             chapter_md = self.generate_chapter(
                 chapter=chapter,
                 index_path=index_path,

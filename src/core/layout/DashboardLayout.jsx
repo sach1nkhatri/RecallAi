@@ -1,6 +1,8 @@
 import React, { useState, useMemo, useCallback } from 'react';
 import Sidebar from '../components/Sidebar';
 import ReportModal from '../components/ReportModal';
+import useGenerationStatus from '../../features/code_to_doc/hooks/useGenerationStatus';
+import GenerationProgress from '../../features/code_to_doc/components/GenerationProgress';
 import '../css/DashboardLayout.css';
 
 /**
@@ -15,6 +17,9 @@ const DashboardLayout = ({ children }) => {
   });
 
   const [isReportModalOpen, setIsReportModalOpen] = useState(false);
+  
+  // Global generation status tracking - shows progress on all pages
+  const { status: generationStatus, cancelGeneration } = useGenerationStatus();
 
   const handleToggleCollapse = useCallback(() => {
     setCollapsed((prev) => {
@@ -46,6 +51,15 @@ const DashboardLayout = ({ children }) => {
         onReportClick={handleReportClick}
       />
       <div className="dashboard-shell-content">
+        {/* Global Generation Progress - Shows on all pages when generation is active */}
+        {generationStatus && (
+          <div style={{ position: 'sticky', top: 0, zIndex: 1000, marginBottom: '20px' }}>
+            <GenerationProgress
+              status={generationStatus}
+              onCancel={generationStatus.status !== 'completed' && generationStatus.status !== 'failed' ? cancelGeneration : undefined}
+            />
+          </div>
+        )}
         <main className="dashboard-shell-main">
           {children}
         </main>

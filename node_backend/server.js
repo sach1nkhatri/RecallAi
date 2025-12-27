@@ -13,6 +13,9 @@ const connectDB = require('./src/config/database');
 // Import routes
 const authRoutes = require('./src/routes/authRoutes');
 const userRoutes = require('./src/routes/userRoutes');
+const reportRoutes = require('./src/routes/reportRoutes');
+const settingsRoutes = require('./src/routes/settingsRoutes');
+const generationStatusRoutes = require('./src/routes/generationStatusRoutes');
 
 // Initialize Express app
 const app = express();
@@ -56,6 +59,9 @@ app.get('/api/health', (req, res) => {
 // Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
+app.use('/api/reports', reportRoutes);
+app.use('/api/settings', settingsRoutes);
+app.use('/api/generation-status', generationStatusRoutes);
 
 // Error handling middleware
 app.use((err, req, res, next) => {

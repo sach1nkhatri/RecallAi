@@ -15,6 +15,7 @@ from src.application.services.repo_scan_service import RepoScanService
 from src.config.settings import settings
 from src.domain.exceptions import ValidationError
 from src.infrastructure.external import LMStudioClient, FPDFGenerator
+from src.infrastructure.external.status_reporter import StatusReporter
 
 logger = logging.getLogger(__name__)
 
@@ -29,13 +30,51 @@ def register_repo_routes(app: Flask):
     repo_scan_service = RepoScanService(llm_client)
     rag_index_service = RAGIndexService(settings.LM_STUDIO_BASE_URL)
     repo_doc_service = RepoDocService(llm_client, pdf_generator, rag_index_service)
+    status_reporter = StatusReporter(settings.NODE_BACKEND_URL)
+    
+    def status_callback(**kwargs):
+        """Callback to report status updates to Node backend"""
+        # Get auth token from request headers if available
+        token = None
+        try:
+            auth_header = request.headers.get('Authorization', '')
+            if auth_header.startswith('Bearer '):
+                token = auth_header.split(' ', 1)[1]
+        except Exception:
+            pass
+        
+        # Report status update
+        status_reporter.report_progress(
+            status=kwargs.get('status', 'pending'),
+            progress=kwargs.get('progress', 0),
+            current_step=kwargs.get('current_step', ''),
+            token=token,
+            type=kwargs.get('type', 'github_repo'),
+            repo_url=kwargs.get('repo_url'),
+            repo_id=kwargs.get('repo_id'),
+            repo_info=kwargs.get('repo_info'),
+            file_count=kwargs.get('file_count', 0),
+            total_steps=kwargs.get('total_steps', 0),
+            completed_steps=kwargs.get('completed_steps', 0)
+        )
+        
+        # If completed, report completion with markdown
+        if kwargs.get('status') == 'completed':
+            status_reporter.report_completion(
+                markdown=kwargs.get('markdown', ''),
+                pdf_url=kwargs.get('pdf_url'),
+                pdf_info=kwargs.get('pdf_info'),
+                token=token
+            )
+    
     orchestrator = RepoOrchestratorService(
         llm_client=llm_client,
         pdf_generator=pdf_generator,
         github_service=github_service,
         repo_scan_service=repo_scan_service,
         rag_index_service=rag_index_service,
-        repo_doc_service=repo_doc_service
+        repo_doc_service=repo_doc_service,
+        status_callback=status_callback
     )
     
     @app.route("/api/repo/ingest", methods=["POST"])
@@ -108,12 +147,70 @@ def register_repo_routes(app: Flask):
                     logger.warning(f"Invalid repo_id format: {repo_id}")
                     return jsonify({"error": "Invalid repo_id format"}), 400
             
-            # Generate documentation
-            result = orchestrator.generate_documentation(
-                repo_id=repo_id,
-                repo_url=repo_url,
-                title=title
+            # Get auth token from request headers for status reporting
+            token = None
+            try:
+                auth_header = request.headers.get('Authorization', '')
+                if auth_header.startswith('Bearer '):
+                    token = auth_header.split(' ', 1)[1]
+            except Exception:
+                pass
+            
+            # Create a request-specific status callback that captures the token
+            def request_status_callback(**kwargs):
+                """Status callback with captured token from request"""
+                # Report status update
+                status_reporter.report_progress(
+                    status=kwargs.get('status', 'pending'),
+                    progress=kwargs.get('progress', 0),
+                    current_step=kwargs.get('current_step', ''),
+                    token=token,  # Use captured token
+                    type=kwargs.get('type', 'github_repo'),
+                    repo_url=kwargs.get('repo_url'),
+                    repo_id=kwargs.get('repo_id'),
+                    repo_info=kwargs.get('repo_info'),
+                    file_count=kwargs.get('file_count', 0),
+                    total_steps=kwargs.get('total_steps', 0),
+                    completed_steps=kwargs.get('completed_steps', 0)
+                )
+                
+                # If completed, report completion with markdown
+                if kwargs.get('status') == 'completed':
+                    status_reporter.report_completion(
+                        markdown=kwargs.get('markdown', ''),
+                        pdf_url=kwargs.get('pdf_url'),
+                        pdf_info=kwargs.get('pdf_info'),
+                        token=token
+                    )
+            
+            # Create orchestrator with request-specific status callback
+            request_orchestrator = RepoOrchestratorService(
+                llm_client=llm_client,
+                pdf_generator=pdf_generator,
+                github_service=github_service,
+                repo_scan_service=repo_scan_service,
+                rag_index_service=rag_index_service,
+                repo_doc_service=repo_doc_service,
+                status_callback=request_status_callback
             )
+            
+            # Generate documentation (status updates are handled by orchestrator)
+            try:
+                result = request_orchestrator.generate_documentation(
+                    repo_id=repo_id,
+                    repo_url=repo_url,
+                    title=title
+                )
+            except Exception as e:
+                # Report error to Node backend
+                try:
+                    status_reporter.report_error(
+                        error_message=str(e),
+                        token=token
+                    )
+                except Exception:
+                    pass  # Don't fail if status reporting fails
+                raise  # Re-raise the original exception
             
             return jsonify({
                 "success": True,

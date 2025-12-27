@@ -1,12 +1,19 @@
 import React from 'react';
 import useCode2Doc from '../hooks/useCode2Doc';
+import useGenerationStatus from '../hooks/useGenerationStatus';
 import FileUploadCard from '../components/FileUploadCard';
 import GitHubRepoCard from '../components/GitHubRepoCard';
 import OutputPanel from '../components/OutputPanel';
+import GenerationProgress from '../components/GenerationProgress';
 import Toast from '../components/Toast';
 import '../css/CodeToDocPage.css';
 
 const CodeToDocPage = () => {
+  const {
+    status: generationStatus,
+    cancelGeneration,
+  } = useGenerationStatus();
+
   const {
     state: {
       fileInfo,
@@ -82,6 +89,26 @@ const CodeToDocPage = () => {
       </header>
 
       <div className="ctd-container">
+        {/* Generation Progress - Show if there's a generation status */}
+        {generationStatus && (
+          <GenerationProgress
+            status={generationStatus}
+            onCancel={generationStatus.status !== 'completed' && generationStatus.status !== 'failed' ? cancelGeneration : undefined}
+          />
+        )}
+        
+        {/* Show completed generation results if available */}
+        {generationStatus && generationStatus.status === 'completed' && generationStatus.markdown && (
+          <div style={{ marginBottom: '20px' }}>
+            <OutputPanel 
+              output={generationStatus.markdown} 
+              pdfLink={generationStatus.pdfUrl} 
+              pdfInfo={generationStatus.pdfInfo?.filename || ''} 
+              summary={`Completed at ${new Date(generationStatus.completedAt).toLocaleString()}`} 
+            />
+          </div>
+        )}
+
         <div className="ctd-workspace">
           <div className="ctd-left">
             <div className="ctd-mode-selector">

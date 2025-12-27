@@ -1,13 +1,8 @@
 import { useState, useEffect, useCallback } from 'react';
 
-const getApiBase = () => {
-  if (typeof window === 'undefined') return 'http://localhost:5001';
-  const envApi = process.env.REACT_APP_API_BASE_URL;
-  if (envApi) return envApi;
-  return window.location.port === '3000' || !window.location.port
-    ? 'http://localhost:5001'
-    : window.location.origin;
-};
+import { getNodeApiBase, nodeApiRequest } from '../../../core/utils/nodeApi';
+
+const getApiBase = getNodeApiBase;
 
 const useUserSettings = () => {
   const [user, setUser] = useState(null);
@@ -17,6 +12,7 @@ const useUserSettings = () => {
     codeToDoc: { used: 0, limit: 2 },
     tokens: { used: 0, limit: 5000 },
   });
+  const [settings, setSettings] = useState(null);
   const [plan, setPlan] = useState('free');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -32,11 +28,24 @@ const useUserSettings = () => {
         setPlan(userData.plan || 'free');
       }
 
-      // Load usage stats
-      const usageResponse = await fetch(`${getApiBase()}/api/user/usage`);
-      if (usageResponse.ok) {
-        const usageData = await usageResponse.json();
-        setUsage(usageData);
+      // Load usage stats from Node backend
+      try {
+        const usageData = await nodeApiRequest('/api/users/usage');
+        if (usageData.success && usageData.usage) {
+          setUsage(usageData.usage);
+        }
+      } catch (err) {
+        console.error('Failed to load usage:', err);
+      }
+
+      // Load user settings from Node backend
+      try {
+        const settingsData = await nodeApiRequest('/api/settings');
+        if (settingsData.success && settingsData.settings) {
+          setSettings(settingsData.settings);
+        }
+      } catch (err) {
+        console.error('Failed to load settings:', err);
       }
     } catch (err) {
       console.error('Failed to load settings:', err);
@@ -54,24 +63,29 @@ const useUserSettings = () => {
     setIsLoading(true);
     setError(null);
     try {
-      const response = await fetch(`${getApiBase()}/api/user/profile`, {
+      const updated = await nodeApiRequest('/api/auth/profile', {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(userData),
       });
 
-      if (!response.ok) {
-        throw new Error('Failed to update profile');
+      if (updated.success && updated.user) {
+        setUser(updated.user);
+        
+        // Update localStorage
+        const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
+        localStorage.setItem('user', JSON.stringify({ ...currentUser, ...updated.user }));
+        
+        // Update auth context
+        const auth = JSON.parse(localStorage.getItem('auth') || '{}');
+        if (auth.user) {
+          auth.user = { ...auth.user, ...updated.user };
+          localStorage.setItem('auth', JSON.stringify(auth));
+        }
+        
+        return updated.user;
+      } else {
+        throw new Error(updated.error || 'Failed to update profile');
       }
-
-      const updated = await response.json();
-      setUser(updated.user);
-      
-      // Update localStorage
-      const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
-      localStorage.setItem('user', JSON.stringify({ ...currentUser, ...updated.user }));
-      
-      return updated.user;
     } catch (err) {
       setError(err.message);
       throw err;
@@ -126,12 +140,12 @@ const useUserSettings = () => {
     setIsLoading(true);
     setError(null);
     try {
-      const response = await fetch(`${getApiBase()}/api/user/account`, {
+      const result = await nodeApiRequest('/api/users/account', {
         method: 'DELETE',
       });
 
-      if (!response.ok) {
-        throw new Error('Failed to delete account');
+      if (!result.success) {
+        throw new Error(result.error || 'Failed to delete account');
       }
 
       // Clear localStorage
@@ -146,13 +160,38 @@ const useUserSettings = () => {
     }
   }, []);
 
+  const updateSettings = useCallback(async (settingsData) => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      const result = await nodeApiRequest('/api/settings', {
+        method: 'PUT',
+        body: JSON.stringify(settingsData),
+      });
+
+      if (result.success && result.settings) {
+        setSettings(result.settings);
+        return result.settings;
+      } else {
+        throw new Error(result.error || 'Failed to update settings');
+      }
+    } catch (err) {
+      setError(err.message);
+      throw err;
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
   return {
     user,
     usage,
+    settings,
     plan,
     isLoading,
     error,
     updateUser,
+    updateSettings,
     deleteAllBots,
     deleteAllCodeToDocHistory,
     deleteAccount,

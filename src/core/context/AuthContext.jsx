@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useReducer, useEffect } from 'react';
 import useLocalStorage from '../hooks/useLocalStorage';
-import { MOCK_DATA } from '../utils/constants';
+import { getNodeApiBase } from '../utils/nodeApi';
 
 const AuthContext = createContext();
 
@@ -49,6 +49,47 @@ export const AuthProvider = ({ children }) => {
   const [storedAuth, setStoredAuth] = useLocalStorage('auth', initialState);
   const [state, dispatch] = useReducer(authReducer, storedAuth);
 
+  // Check if user is authenticated on mount
+  useEffect(() => {
+    const checkAuth = async () => {
+      const token = localStorage.getItem('token');
+      if (token && storedAuth.isAuthenticated) {
+        try {
+          // Verify token is still valid
+          const response = await fetch(`${getNodeApiBase()}/api/auth/me`, {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          });
+
+          if (response.ok) {
+            const data = await response.json();
+            if (data.success) {
+              dispatch({
+                type: 'LOGIN_SUCCESS',
+                payload: {
+                  id: data.user.id,
+                  name: data.user.name,
+                  email: data.user.email,
+                  plan: data.user.plan,
+                },
+              });
+            }
+          } else {
+            // Token invalid, logout
+            dispatch({ type: 'LOGOUT' });
+            localStorage.removeItem('auth');
+            localStorage.removeItem('token');
+          }
+        } catch (error) {
+          console.error('Auth check failed:', error);
+        }
+      }
+    };
+
+    checkAuth();
+  }, []);
+
   // Update localStorage when state changes
   useEffect(() => {
     setStoredAuth(state);
@@ -58,17 +99,39 @@ export const AuthProvider = ({ children }) => {
     dispatch({ type: 'LOGIN_START' });
     
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      // Mock validation
-      if (email === 'demo@example.com' && password === 'password') {
-        const user = { ...MOCK_DATA.USER, email };
-        dispatch({ type: 'LOGIN_SUCCESS', payload: user });
-        return { success: true };
-      } else {
-        throw new Error('Invalid email or password');
+      const response = await fetch(`${getNodeApiBase()}/api/auth/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok || !data.success) {
+        throw new Error(data.error || 'Login failed');
       }
+
+      // Store token and user
+      const user = {
+        id: data.user.id,
+        name: data.user.name,
+        email: data.user.email,
+        plan: data.user.plan,
+      };
+
+      const authState = {
+        isAuthenticated: true,
+        user,
+        token: data.token,
+        loading: false,
+        error: null,
+      };
+
+      dispatch({ type: 'LOGIN_SUCCESS', payload: user });
+      localStorage.setItem('auth', JSON.stringify(authState));
+      localStorage.setItem('token', data.token);
+      
+      return { success: true, user, token: data.token };
     } catch (error) {
       dispatch({ type: 'LOGIN_FAILURE', payload: error.message });
       return { success: false, error: error.message };
@@ -79,23 +142,39 @@ export const AuthProvider = ({ children }) => {
     dispatch({ type: 'LOGIN_START' });
     
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      // Mock validation
-      if (email && password && name) {
-        const user = { 
-          id: Date.now(),
-          name, 
-          email, 
-          avatar: null,
-          createdAt: new Date().toISOString()
-        };
-        dispatch({ type: 'LOGIN_SUCCESS', payload: user });
-        return { success: true };
-      } else {
-        throw new Error('Please fill in all fields');
+      const response = await fetch(`${getNodeApiBase()}/api/auth/register`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, email, password }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok || !data.success) {
+        throw new Error(data.error || 'Registration failed');
       }
+
+      // Store token and user
+      const user = {
+        id: data.user.id,
+        name: data.user.name,
+        email: data.user.email,
+        plan: data.user.plan,
+      };
+
+      const authState = {
+        isAuthenticated: true,
+        user,
+        token: data.token,
+        loading: false,
+        error: null,
+      };
+
+      dispatch({ type: 'LOGIN_SUCCESS', payload: user });
+      localStorage.setItem('auth', JSON.stringify(authState));
+      localStorage.setItem('token', data.token);
+      
+      return { success: true, user, token: data.token };
     } catch (error) {
       dispatch({ type: 'LOGIN_FAILURE', payload: error.message });
       return { success: false, error: error.message };
@@ -104,6 +183,9 @@ export const AuthProvider = ({ children }) => {
 
   const logout = () => {
     dispatch({ type: 'LOGOUT' });
+    localStorage.removeItem('auth');
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
   };
 
   const clearError = () => {

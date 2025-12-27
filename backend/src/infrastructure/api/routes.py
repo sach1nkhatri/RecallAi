@@ -16,6 +16,7 @@ from src.domain.exceptions import ValidationError, FileProcessingError
 from src.application.services.file_service import FileService
 from src.application.services.document_service import DocumentService
 from src.infrastructure.external import LMStudioClient, FPDFGenerator
+from src.infrastructure.external.status_reporter import StatusReporter
 from src.infrastructure.api.bot_routes import register_bot_routes
 from src.infrastructure.api.user_routes import register_user_routes
 from src.infrastructure.api.repo_routes import register_repo_routes
@@ -45,6 +46,7 @@ def create_app() -> Flask:
     pdf_generator = FPDFGenerator()
     document_service = DocumentService(llm_client, pdf_generator)
     file_service = FileService()
+    status_reporter = StatusReporter(settings.NODE_BACKEND_URL)
     
     # Create Flask app
     app = Flask(__name__, static_folder=str(settings.FRONTEND_DIR), static_url_path="")
@@ -147,6 +149,25 @@ def create_app() -> Flask:
                 logger.info("Auto-detected code content, switching content_type")
                 content_type = "code"
             
+            # Get auth token from request headers
+            token = None
+            try:
+                auth_header = request.headers.get('Authorization', '')
+                if auth_header.startswith('Bearer '):
+                    token = auth_header.split(' ', 1)[1]
+            except Exception:
+                pass
+            
+            # Report initial status
+            status_reporter.report_progress(
+                status="pending",
+                progress=0,
+                current_step="Starting generation...",
+                token=token,
+                type="file_upload",
+                file_count=file_count
+            )
+            
             # Create generation request
             generation = DocumentGeneration(
                 raw_content=raw_content,
@@ -155,8 +176,26 @@ def create_app() -> Flask:
                 file_count=file_count,
             )
             
+            # Report generating status
+            status_reporter.report_progress(
+                status="generating",
+                progress=30,
+                current_step="Generating documentation from files...",
+                token=token,
+                type="file_upload",
+                file_count=file_count
+            )
+            
             # Generate document
             result = document_service.generate_document(generation)
+            
+            # Report completion
+            status_reporter.report_completion(
+                markdown=result.markdown_content,
+                pdf_url=result.pdf_url,
+                pdf_info={"filename": result.pdf_path.name} if result.pdf_path else None,
+                token=token
+            )
             
             return jsonify({
                 "output": result.markdown_content,

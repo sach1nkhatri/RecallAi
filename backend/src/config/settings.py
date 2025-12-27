@@ -44,6 +44,9 @@ class Settings:
     API_HOST: str = os.getenv("HOST", "0.0.0.0")
     DEBUG: bool = os.getenv("DEBUG", "false").lower() in ("true", "1", "yes")
     
+    # Node Backend Configuration (for status reporting)
+    NODE_BACKEND_URL: str = os.getenv("NODE_BACKEND_URL", "http://localhost:5002")
+    
     # Base directories
     BASE_DIR: Path = Path(__file__).resolve().parent.parent.parent
     FRONTEND_DIR: Path = BASE_DIR.parent / "frontend"

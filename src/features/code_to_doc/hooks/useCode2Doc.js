@@ -1,4 +1,6 @@
 import { useCallback, useMemo, useRef, useState, useEffect } from 'react';
+import useGenerationStatus from './useGenerationStatus';
+import { nodeApiRequest } from '../../../core/utils/nodeApi';
 
 const getApiBase = () => {
   if (typeof window === 'undefined') return 'http://localhost:5001';
@@ -19,6 +21,8 @@ const getApiBase = () => {
 
 const useCode2Doc = () => {
   const apiBase = useMemo(getApiBase, []);
+  const { updateStatus, status: generationStatus } = useGenerationStatus();
+  
   const [fileInfo, setFileInfo] = useState('');
   const [output, setOutput] = useState('Generated documentation will appear here.');
   const [pdfLink, setPdfLink] = useState('');
@@ -168,6 +172,23 @@ const useCode2Doc = () => {
     setPdfInfo('');
     setSummary('');
 
+    // Initialize generation status (optional - won't break if auth fails)
+    try {
+      const statusResult = await updateStatus({
+        type: 'file_upload',
+        status: 'pending',
+        progress: 0,
+        currentStep: 'Starting generation...',
+        fileCount: uploads.length,
+      });
+      if (!statusResult) {
+        console.log('Generation status tracking skipped (authentication required)');
+      }
+    } catch (err) {
+      // Don't block generation if status tracking fails
+      console.warn('Generation status tracking unavailable:', err.message);
+    }
+
     let finalOutput = '';
     let finalPdfPath = '';
       let fileSummary = lastUploadMeta.fileCount;
@@ -181,11 +202,30 @@ const useCode2Doc = () => {
         content_type: lastUploadMeta.contentType || 'code',
       };
       
+      // Update status: generating (optional)
+      try {
+        await updateStatus({
+          status: 'generating',
+          progress: 30,
+          currentStep: 'Generating documentation from files...',
+        });
+      } catch (err) {
+        // Don't block generation if status update fails
+        console.warn('Status update skipped:', err.message);
+      }
+
+      // Get auth token for status reporting
+      const token = localStorage.getItem('token');
+      const headers = {
+        'Content-Type': 'application/json',
+      };
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+
       const res = await fetch(`${apiBase}/api/generate`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: headers,
         body: JSON.stringify(payload),
       });
       
@@ -212,6 +252,28 @@ const useCode2Doc = () => {
     } finally {
       clearTimers();
       setIsGenerating(false);
+      
+      // Update final status (optional)
+      try {
+        if (finalOutput && !finalOutput.includes('# Error')) {
+          await updateStatus({
+            status: 'completed',
+            progress: 100,
+            currentStep: 'Completed',
+            markdown: finalOutput,
+            pdfUrl: finalPdfPath,
+            pdfInfo: finalPdfPath ? { filename: finalPdfPath.split('/').pop() } : undefined,
+          });
+        } else {
+          await updateStatus({
+            status: 'failed',
+            error: { message: toastMessage || 'Generation failed' },
+          });
+        }
+      } catch (err) {
+        // Don't block if status update fails
+        console.warn('Final status update skipped:', err.message);
+      }
     }
 
     const summaryText = `Generated from ${fileSummary ? `${fileSummary} file(s)` : 'N/A'}, type: ${
@@ -260,7 +322,7 @@ const useCode2Doc = () => {
     } catch (err) {
       console.error('Failed to update usage:', err);
     }
-  }, [apiBase, clearTimers, lastUploadMeta, showToast]);
+  }, [apiBase, clearTimers, lastUploadMeta, showToast, updateStatus, uploads.length]);
 
   const handleRepoIngest = useCallback(async (repoUrl) => {
     setIsIngesting(true);
@@ -329,10 +391,42 @@ const useCode2Doc = () => {
     setPdfInfo('');
     setSummary('');
 
+    // Initialize generation status
+    try {
+      await updateStatus({
+        type: 'github_repo',
+        status: 'pending',
+        progress: 0,
+        currentStep: 'Starting repository documentation generation...',
+        repoUrl: repoUrl,
+        repoId: repoId,
+        repoInfo: repoInfo ? {
+          totalFiles: repoInfo.total_files,
+          includedFiles: repoInfo.total_files,
+        } : undefined,
+      });
+    } catch (err) {
+      console.error('Failed to initialize status:', err);
+    }
+
+    // Declare variables outside try block so they're accessible in finally
+    let finalOutput = '';
+    let finalPdfPath = '';
+    let generationError = null;
+
+    // Get auth token for status reporting
+    const token = localStorage.getItem('token');
+    const headers = {
+      'Content-Type': 'application/json',
+    };
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+
     try {
       const res = await fetch(`${apiBase}/api/repo/generate`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: headers,
         body: JSON.stringify({
           repo_url: repoUrl,
           repo_id: repoId,
@@ -345,18 +439,18 @@ const useCode2Doc = () => {
       }
 
       const data = await res.json();
-      const finalOutput = data.output || data.docText || '';
+      finalOutput = data.output || data.docText || '';
 
       if (!finalOutput || finalOutput.trim().length < 50) {
         throw new Error('Generated documentation is too short or empty. Please try again.');
       }
 
-      const finalPdfPath = data.pdfPath || data.pdfUrl || '';
-      const repoInfo = data.repo_info || {};
+      finalPdfPath = data.pdfPath || data.pdfUrl || '';
+      const repoInfoData = data.repo_info || {};
 
       setSummary(
-        `Generated from ${repoInfo.repo_name || 'repository'} ` +
-        `(${repoInfo.total_files || 0} files, ${data.duration_seconds || 0}s)`
+        `Generated from ${repoInfoData.repo_name || 'repository'} ` +
+        `(${repoInfoData.total_files || 0} files, ${data.duration_seconds || 0}s)`
       );
       setOutput(finalOutput);
 
@@ -385,6 +479,7 @@ const useCode2Doc = () => {
       }
     } catch (err) {
       console.error('Repository documentation generation error:', err);
+      generationError = err;
       setOutput(
         `# Error Generating Documentation\n\n**Error:** ${err?.message || 'Failed to generate documentation.'}\n\n` +
         `Please ensure:\n- The repository is public\n- The backend server is running\n- LM Studio is connected\n- The repository contains valid code files`
@@ -393,8 +488,30 @@ const useCode2Doc = () => {
     } finally {
       clearTimers();
       setIsGenerating(false);
+      
+      // Update status to completed or failed (optional)
+      try {
+        if (finalOutput && !finalOutput.includes('# Error')) {
+          await updateStatus({
+            status: 'completed',
+            progress: 100,
+            currentStep: 'Completed',
+            markdown: finalOutput,
+            pdfUrl: finalPdfPath,
+            pdfInfo: finalPdfPath ? { filename: finalPdfPath.split('/').pop() } : undefined,
+          });
+        } else {
+          await updateStatus({
+            status: 'failed',
+            error: { message: generationError?.message || 'Generation failed' },
+          });
+        }
+      } catch (statusErr) {
+        // Don't block if status update fails
+        console.warn('Final status update skipped:', statusErr.message);
+      }
     }
-  }, [apiBase, clearTimers, showToast]);
+  }, [apiBase, clearTimers, showToast, updateStatus, repoInfo]);
 
   return {
     state: {

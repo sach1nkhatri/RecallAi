@@ -20,9 +20,33 @@ const ReportModal = ({ isOpen, onClose }) => {
     setIsSubmitting(true);
     setSubmitStatus(null);
 
-    // Simulate API call
-    setTimeout(() => {
-      setIsSubmitting(false);
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        throw new Error('Please login to submit a report');
+      }
+
+      const apiBase = process.env.REACT_APP_NODE_API_BASE_URL || 'http://localhost:5002';
+      const response = await fetch(`${apiBase}/api/reports`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          type: reportType,
+          subject: subject.trim(),
+          description: description.trim(),
+          email: email.trim() || undefined,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok || !data.success) {
+        throw new Error(data.error || 'Failed to submit report');
+      }
+
       setSubmitStatus({ type: 'success', message: 'Report submitted successfully! We\'ll get back to you soon.' });
       
       // Reset form after success
@@ -34,7 +58,11 @@ const ReportModal = ({ isOpen, onClose }) => {
         setSubmitStatus(null);
         onClose();
       }, 2000);
-    }, 1500);
+    } catch (error) {
+      setSubmitStatus({ type: 'error', message: error.message || 'Failed to submit report. Please try again.' });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const handleClose = () => {

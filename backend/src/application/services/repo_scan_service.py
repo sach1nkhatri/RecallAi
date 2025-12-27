@@ -57,12 +57,12 @@ class RepoScanService:
         
         try:
             # Repository scanning can take longer with large repos and 14B models
-            # Use extended timeout: 5 minutes (300 seconds) for scanning operations
+            # Use extended timeout: 45 minutes (2700 seconds) to allow for slow 14B model generation
             outline_text = self.llm_client.generate_documentation(
                 content=outline_prompt,
                 content_type="text",
                 title=f"{repo_name} Documentation Outline",
-                timeout=300  # 5 minutes for repository scanning
+                timeout=2700  # 45 minutes for repository scanning (14B models can be slow)
             )
             
             # Parse outline into chapters
