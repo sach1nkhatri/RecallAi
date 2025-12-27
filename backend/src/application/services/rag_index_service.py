@@ -51,19 +51,22 @@ class RAGIndexService:
         chunk_id = 0
         
         # Process each file
-        for file_info in repo_files:
+        logger.info(f"Processing {len(repo_files)} files for chunking...")
+        for file_idx, file_info in enumerate(repo_files, 1):
             path = file_info.get("path", "")
             content = file_info.get("content", "")
             
             if not content.strip():
                 continue
             
+            logger.debug(f"Chunking file {file_idx}/{len(repo_files)}: {path}")
             # Chunk the file content
             chunks = chunk_text(
                 content,
                 chunk_size=settings.RAG_CHUNK_SIZE,
                 overlap=settings.RAG_CHUNK_OVERLAP
             )
+            logger.debug(f"Created {len(chunks)} chunks from {path}")
             
             # Create metadata for each chunk
             for chunk in chunks:
@@ -85,17 +88,20 @@ class RAGIndexService:
             raise ValueError("No chunks created from repository files")
         
         # Generate embeddings
-        logger.info("Generating embeddings...")
+        logger.info(f"Generating embeddings for {len(all_chunks)} chunks (this may take several minutes)...")
         embeddings = []
         for idx, chunk in enumerate(all_chunks):
             try:
+                logger.debug(f"Embedding chunk {idx + 1}/{len(all_chunks)}")
                 emb = self.embedder.embed_texts([chunk])[0]
                 embeddings.append(emb)
-                if (idx + 1) % 10 == 0:
-                    logger.info(f"Embedded {idx + 1}/{len(all_chunks)} chunks")
+                # Log progress every 5 chunks for better visibility
+                if (idx + 1) % 5 == 0 or (idx + 1) == len(all_chunks):
+                    logger.info(f"Embedded {idx + 1}/{len(all_chunks)} chunks ({((idx + 1) / len(all_chunks) * 100):.1f}%)")
             except Exception as e:
                 logger.error(f"Failed to embed chunk {idx}: {e}")
                 raise RuntimeError(f"Failed to generate embeddings: {str(e)}") from e
+        logger.info(f"Completed embedding all {len(all_chunks)} chunks")
         
         # Build FAISS index
         logger.info("Building FAISS index...")

@@ -294,12 +294,20 @@
 }
 
 .ctd-uploaded-list-title {
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--ctd-text-light);
-  margin-bottom: 12px;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--ctd-text);
+  margin-bottom: 16px;
+  text-transform: none;
+  letter-spacing: -0.2px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.ctd-uploaded-list-title::before {
+  content: '📦';
+  font-size: 16px;
 }
 
 .ctd-uploaded-items {
@@ -315,8 +323,8 @@
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  padding: 10px 14px;
-  background: var(--ctd-panel);
+  padding: 12px 16px;
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.03) 0%, rgba(139, 92, 246, 0.03) 100%);
   border: 1px solid var(--ctd-border);
   border-radius: var(--ctd-radius);
   font-size: 13px;
@@ -324,9 +332,10 @@
 }
 
 .ctd-uploaded-item:hover {
-  border-color: var(--ctd-primary-light);
-  background: var(--ctd-panel-hover);
+  border-color: var(--ctd-primary);
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.08) 0%, rgba(139, 92, 246, 0.08) 100%);
   transform: translateX(4px);
+  box-shadow: 0 2px 8px rgba(99, 102, 241, 0.15);
 }
 
 .ctd-uploaded-item.empty {

@@ -71,9 +71,11 @@ class RepoOrchestratorService:
         logger.info(f"Ingested {ingestion_result.total_files} files")
         
         # Step 2: Download file contents
+        logger.info(f"Downloading {len(ingestion_result.included_files)} files...")
         repo_files = []
-        for file_info in ingestion_result.included_files:
+        for idx, file_info in enumerate(ingestion_result.included_files, 1):
             try:
+                logger.debug(f"Downloading file {idx}/{len(ingestion_result.included_files)}: {file_info.path}")
                 content = self.github_service.download_file_content(file_info)
                 repo_files.append({
                     "path": file_info.path,
@@ -82,26 +84,30 @@ class RepoOrchestratorService:
             except Exception as e:
                 logger.warning(f"Failed to download {file_info.path}: {e}")
                 continue
+        logger.info(f"Downloaded {len(repo_files)} files successfully")
         
         if not repo_files:
             raise ValidationError("No files could be downloaded from repository")
         
         # Step 3: Scan repository and generate outline
+        logger.info("Starting repository scan and outline generation (this may take 2-5 minutes)...")
         chapters = self.repo_scan_service.scan_repository(
             repo_files=repo_files,
             repo_name=ingestion_result.repo_name,
             owner=ingestion_result.owner
         )
-        logger.info(f"Generated {len(chapters)} chapters")
+        logger.info(f"Repository scan completed. Generated {len(chapters)} chapters")
         
         # Step 4: Build RAG index
+        logger.info(f"Building RAG index for {len(repo_files)} files (this may take several minutes)...")
         index_path, metadata = self.rag_index_service.build_repo_index(
             repo_id=repo_id,
             repo_files=repo_files
         )
-        logger.info(f"Built RAG index with {len(metadata)} chunks")
+        logger.info(f"RAG index built successfully with {len(metadata)} chunks")
         
         # Step 5: Generate documentation chapter by chapter
+        logger.info(f"Generating documentation for {len(chapters)} chapters (this may take 5-10 minutes)...")
         doc_title = title or f"{ingestion_result.repo_name} Documentation"
         markdown = self.repo_doc_service.generate_documentation(
             chapters=chapters,
@@ -109,6 +115,7 @@ class RepoOrchestratorService:
             repo_name=ingestion_result.repo_name,
             owner=ingestion_result.owner
         )
+        logger.info(f"Documentation generation completed. Generated {len(markdown)} characters")
         
         # Step 6: Generate PDF
         timestamp = int(time.time())

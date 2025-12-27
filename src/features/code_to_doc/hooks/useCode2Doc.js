@@ -1,5 +1,4 @@
 import { useCallback, useMemo, useRef, useState, useEffect } from 'react';
-import { loadUploads, saveUploads } from './projectStorage';
 
 const getApiBase = () => {
   if (typeof window === 'undefined') return 'http://localhost:5001';
@@ -18,7 +17,7 @@ const getApiBase = () => {
 
 // Removed fallback output - we want real documentation or proper errors
 
-const useCode2Doc = (activeProjectId = null) => {
+const useCode2Doc = () => {
   const apiBase = useMemo(getApiBase, []);
   const [fileInfo, setFileInfo] = useState('');
   const [output, setOutput] = useState('Generated documentation will appear here.');
@@ -31,7 +30,6 @@ const useCode2Doc = (activeProjectId = null) => {
   const timersRef = useRef([]);
   const [summary, setSummary] = useState('');
   const [lastUploadMeta, setLastUploadMeta] = useState({ fileCount: null, contentType: null });
-  const [allUploads, setAllUploads] = useState(() => loadUploads());
   const [uploads, setUploads] = useState([]);
   const [apiHealth, setApiHealth] = useState({ status: 'unknown', lastCheck: null });
   const [repoInfo, setRepoInfo] = useState(null);
@@ -70,21 +68,15 @@ const useCode2Doc = (activeProjectId = null) => {
     return () => clearInterval(interval);
   }, [apiBase]);
 
+  // Clear repoInfo when component unmounts (session-based)
   useEffect(() => {
-    if (!activeProjectId) {
-      setUploads([]);
-      return;
-    }
-    setUploads(allUploads.filter((item) => item.projectId === activeProjectId));
-  }, [activeProjectId, allUploads]);
+    return () => {
+      setRepoInfo(null);
+    };
+  }, []);
 
   const handleUpload = useCallback(
     async (files) => {
-      if (!activeProjectId) {
-        showToast('Select or create a project first.', 'error');
-        return;
-      }
-
       if (!files || files.length === 0) {
         showToast('Please choose file(s) first.', 'error');
         return;
@@ -106,8 +98,6 @@ const useCode2Doc = (activeProjectId = null) => {
           throw new Error(data.error || 'Upload failed');
         }
 
-        const extractedContent = data.content || '';
-        setRawContent(extractedContent);
         setLastUploadMeta({
           fileCount: data.file_count || null,
           contentType: data.content_type || null,
@@ -132,18 +122,13 @@ const useCode2Doc = (activeProjectId = null) => {
             (typeof crypto !== 'undefined' && crypto.randomUUID)
               ? crypto.randomUUID()
               : `upload-${Date.now()}-${idx}`,
-          projectId: activeProjectId,
           name: file.name,
           size: file.size,
           type: file.type || 'unknown',
           uploadedAt: now,
         }));
 
-        setAllUploads((prev) => {
-          const next = [...prev, ...newUploads];
-          saveUploads(next);
-          return next;
-        });
+        setUploads((prev) => [...prev, ...newUploads]);
       } catch (err) {
         const message = err?.message || 'Upload error';
         showToast(message, 'error');
@@ -151,14 +136,10 @@ const useCode2Doc = (activeProjectId = null) => {
         setIsUploading(false);
       }
     },
-    [activeProjectId, apiBase, showToast]
+    [apiBase, showToast]
   );
 
   const handleGenerate = useCallback(async () => {
-    if (!activeProjectId) {
-      showToast('Select or create a project first.', 'error');
-      return;
-    }
 
     // Check code-to-doc usage limit
     try {
@@ -180,11 +161,6 @@ const useCode2Doc = (activeProjectId = null) => {
       return;
     }
 
-    if (!rawContent || !rawContent.trim()) {
-      showToast('No content available. Please upload files first.', 'error');
-      return;
-    }
-
     clearTimers();
     setIsGenerating(true);
     setOutput('Generated documentation will appear here.');
@@ -200,6 +176,11 @@ const useCode2Doc = (activeProjectId = null) => {
     let toastKind = 'info';
 
     try {
+      const payload = {
+        file_count: lastUploadMeta.fileCount,
+        content_type: lastUploadMeta.contentType || 'code',
+      };
+      
       const res = await fetch(`${apiBase}/api/generate`, {
         method: 'POST',
         headers: {
@@ -279,14 +260,9 @@ const useCode2Doc = (activeProjectId = null) => {
     } catch (err) {
       console.error('Failed to update usage:', err);
     }
-  }, [activeProjectId, apiBase, clearTimers, lastUploadMeta, rawContent, showToast]);
+  }, [apiBase, clearTimers, lastUploadMeta, showToast]);
 
   const handleRepoIngest = useCallback(async (repoUrl) => {
-    if (!activeProjectId) {
-      showToast('Select or create a project first.', 'error');
-      return null;
-    }
-
     setIsIngesting(true);
     setRepoInfo(null);
 
@@ -324,14 +300,9 @@ const useCode2Doc = (activeProjectId = null) => {
     } finally {
       setIsIngesting(false);
     }
-  }, [activeProjectId, apiBase, showToast]);
+  }, [apiBase, showToast]);
 
   const handleRepoGenerate = useCallback(async (repoUrl, repoId) => {
-    if (!activeProjectId) {
-      showToast('Select or create a project first.', 'error');
-      return;
-    }
-
     if (!repoId) {
       showToast('Please ingest the repository first.', 'error');
       return;
@@ -423,7 +394,7 @@ const useCode2Doc = (activeProjectId = null) => {
       clearTimers();
       setIsGenerating(false);
     }
-  }, [activeProjectId, apiBase, clearTimers, showToast]);
+  }, [apiBase, clearTimers, showToast]);
 
   return {
     state: {

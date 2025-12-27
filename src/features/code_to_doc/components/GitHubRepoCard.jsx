@@ -7,18 +7,12 @@ const GitHubRepoCard = ({
   isIngesting,
   isGenerating,
   repoInfo,
-  activeProject,
   onError,
 }) => {
   const [repoUrl, setRepoUrl] = useState('');
   const [repoId, setRepoId] = useState('');
 
   const handleIngest = async () => {
-    if (!activeProject) {
-      onError?.('Select or create a project first.');
-      return;
-    }
-
     if (!repoUrl.trim()) {
       onError?.('Please enter a GitHub repository URL.');
       return;
@@ -35,11 +29,6 @@ const GitHubRepoCard = ({
   };
 
   const handleGenerate = async () => {
-    if (!activeProject) {
-      onError?.('Select or create a project first.');
-      return;
-    }
-
     if (!repoUrl.trim()) {
       onError?.('Please enter a GitHub repository URL.');
       return;
@@ -61,9 +50,6 @@ const GitHubRepoCard = ({
   return (
     <div className="ctd-card">
       <h3>GitHub Repository</h3>
-      <div className="ctd-muted" style={{ marginBottom: '16px' }}>
-        Project: <strong>{activeProject?.name || 'No project selected'}</strong>
-      </div>
 
       <label htmlFor="repoUrlInput">Repository URL</label>
       <input
@@ -114,7 +100,7 @@ const GitHubRepoCard = ({
       <div className="ctd-repo-actions">
         <button
           onClick={handleIngest}
-          disabled={!isValidUrl || isIngesting || isGenerating || !activeProject}
+          disabled={!isValidUrl || isIngesting || isGenerating}
           className="ctd-btn-secondary"
         >
           {isIngesting ? (
@@ -129,7 +115,7 @@ const GitHubRepoCard = ({
 
         <button
           onClick={handleGenerate}
-          disabled={!repoId || isGenerating || isIngesting || !activeProject}
+          disabled={!repoId || isGenerating || isIngesting}
           className="ctd-btn-primary"
         >
           {isGenerating ? (

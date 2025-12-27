@@ -10,7 +10,7 @@ class Settings:
     
     # LM Studio Configuration
     LM_STUDIO_BASE_URL: str = os.getenv("LM_STUDIO_BASE_URL", "http://192.168.1.83:1234/v1")
-    LM_MODEL_NAME: str = os.getenv("LM_MODEL_NAME", "gpt-oss-20b")
+    LM_MODEL_NAME: str = os.getenv("LM_MODEL_NAME", "qwen3-14b")
     LM_STUDIO_TIMEOUT: int = int(os.getenv("LM_STUDIO_TIMEOUT", "90"))
     
     # File Upload Configuration

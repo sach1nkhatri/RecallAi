@@ -80,10 +80,13 @@ class RepoDocService:
         )
         
         try:
+            # Chapter generation can also take time with 14B models
+            # Use extended timeout: 5 minutes (300 seconds) for chapter generation
             markdown = self.llm_client.generate_documentation(
                 content=prompt,
                 content_type="code",
-                title=chapter.title
+                title=chapter.title,
+                timeout=300  # 5 minutes for chapter generation
             )
             
             # Ensure chapter has proper heading

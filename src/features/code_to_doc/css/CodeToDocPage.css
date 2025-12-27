@@ -84,12 +84,11 @@
   position: sticky;
   top: 0;
   z-index: 100;
-  background: var(--ctd-panel);
+  background: rgba(255, 255, 255, 0.98);
   border-bottom: 1px solid var(--ctd-border);
-  padding: 24px 32px;
-  box-shadow: var(--ctd-shadow-sm);
-  backdrop-filter: blur(10px);
-  background: rgba(255, 255, 255, 0.95);
+  padding: 28px 32px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+  backdrop-filter: blur(20px);
   margin: 0;
 }
 
@@ -270,14 +269,15 @@
 }
 
 .ctd-page .ctd-header-left h1 {
-  margin: 0 0 8px;
-  font-size: 32px;
-  font-weight: 700;
+  margin: 0 0 10px;
+  font-size: 36px;
+  font-weight: 800;
   background: linear-gradient(135deg, var(--ctd-primary) 0%, var(--ctd-primary-light) 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
-  letter-spacing: -0.5px;
+  letter-spacing: -0.8px;
+  line-height: 1.2;
 }
 
 .ctd-page .ctd-step-label {
@@ -294,47 +294,21 @@
 }
 
 .ctd-page .ctd-tagline {
-  margin: 8px 0 0;
+  margin: 10px 0 0;
   color: var(--ctd-text-light);
-  font-size: 15px;
-  line-height: 1.5;
+  font-size: 16px;
+  line-height: 1.6;
+  font-weight: 400;
 }
 
 .ctd-page .ctd-header-right {
   display: flex;
   align-items: center;
-  gap: 16px;
+  gap: 20px;
+  flex-wrap: wrap;
 }
 
-.ctd-page .ctd-active-project {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  gap: 6px;
-  padding: 12px 20px;
-  background: linear-gradient(135deg, var(--ctd-primary) 0%, var(--ctd-primary-dark) 100%);
-  border-radius: var(--ctd-radius-lg);
-  color: var(--ctd-text-inverse);
-  box-shadow: var(--ctd-shadow-md);
-  transition: var(--ctd-transition);
-}
-
-.ctd-page .ctd-active-project:hover {
-  box-shadow: var(--ctd-shadow-lg);
-  /* Removed transform to prevent scroll interference */
-}
-
-.ctd-page .ctd-active-project .ctd-label {
-  font-size: 11px;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  opacity: 0.9;
-}
-
-.ctd-page .ctd-active-project strong {
-  font-size: 16px;
-  font-weight: 600;
-}
+/* Removed active project styles - no longer needed */
 
 /* API Health Indicator - scoped to code-to-doc page */
 .ctd-page .ctd-api-health {
@@ -401,15 +375,15 @@
 
 .ctd-page .ctd-workspace {
   display: grid;
-  grid-template-columns: minmax(400px, 480px) 1fr;
-  gap: 24px;
+  grid-template-columns: minmax(420px, 520px) 1fr;
+  gap: 32px;
   align-items: start;
 }
 
 .ctd-page .ctd-left {
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: 24px;
 }
 
 .ctd-page .ctd-right {
@@ -418,14 +392,16 @@
   height: fit-content;
   max-height: calc(100vh - 48px);
   overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--ctd-border) var(--ctd-border-light);
 }
 
 /* Panels - scoped to code-to-doc page */
 .ctd-page .ctd-panel {
   background: var(--ctd-panel);
   border-radius: var(--ctd-radius-lg);
-  padding: 28px;
-  box-shadow: var(--ctd-shadow);
+  padding: 32px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08), 0 2px 4px rgba(0, 0, 0, 0.04);
   border: 1px solid var(--ctd-border);
   transition: var(--ctd-transition);
   position: relative;
@@ -445,9 +421,9 @@
 }
 
 .ctd-page .ctd-panel:hover {
-  box-shadow: var(--ctd-shadow-lg);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12), 0 4px 8px rgba(0, 0, 0, 0.06);
   border-color: var(--ctd-primary-light);
-  /* Use will-change for better performance, but don't transform during scroll */
+  transform: translateY(-2px);
 }
 
 .ctd-page .ctd-panel:hover::before {
@@ -466,13 +442,14 @@
 }
 
 .ctd-page .ctd-section-title {
-  font-size: 18px;
+  font-size: 20px;
   font-weight: 700;
-  margin: 0 0 20px;
+  margin: 0 0 24px;
   color: var(--ctd-text);
   display: flex;
   align-items: center;
   gap: 12px;
+  letter-spacing: -0.3px;
 }
 
 .ctd-page .ctd-section-title::before {
@@ -489,80 +466,7 @@
   line-height: 1.5;
 }
 
-/* Project Selector - scoped to code-to-doc page */
-.ctd-page .ctd-project-panel {
-  background: linear-gradient(135deg, rgba(99, 102, 241, 0.05) 0%, rgba(139, 92, 246, 0.05) 100%);
-  border: 2px solid rgba(99, 102, 241, 0.1);
-}
-
-.ctd-page .ctd-project-selector {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-}
-
-.ctd-page .ctd-project-info {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 12px 16px;
-  background: var(--ctd-panel);
-  border-radius: var(--ctd-radius);
-  border: 1px solid var(--ctd-border);
-}
-
-.ctd-page .ctd-project-actions {
-  display: flex;
-  gap: 12px;
-  flex-wrap: wrap;
-}
-
-.ctd-page .ctd-select {
-  flex: 1;
-  min-width: 200px;
-  padding: 12px 16px;
-  border-radius: var(--ctd-radius);
-  border: 2px solid var(--ctd-border);
-  background: var(--ctd-panel);
-  font-size: 14px;
-  font-weight: 500;
-  color: var(--ctd-text);
-  transition: var(--ctd-transition);
-  cursor: pointer;
-}
-
-.ctd-page .ctd-select:hover {
-  border-color: var(--ctd-primary-light);
-}
-
-.ctd-page .ctd-select:focus {
-  outline: none;
-  border-color: var(--ctd-primary);
-  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
-}
-
-.ctd-page .ctd-project-create {
-  padding: 12px 24px;
-  border-radius: var(--ctd-radius);
-  border: none;
-  background: linear-gradient(135deg, var(--ctd-primary) 0%, var(--ctd-primary-dark) 100%);
-  color: var(--ctd-text-inverse);
-  font-weight: 600;
-  font-size: 14px;
-  cursor: pointer;
-  transition: var(--ctd-transition);
-  box-shadow: var(--ctd-shadow-md);
-  white-space: nowrap;
-}
-
-.ctd-page .ctd-project-create:hover {
-  box-shadow: var(--ctd-shadow-lg);
-  /* Removed transform to prevent scroll interference */
-}
-
-.ctd-page .ctd-project-create:active {
-  opacity: 0.9;
-}
+/* Removed project selector styles - no longer needed */
 
 /* Progress Bar - scoped to code-to-doc page */
 .ctd-page .ctd-progress-container {

@@ -17,7 +17,9 @@ class LMStudioEmbedder:
     
     def __init__(self, base_url: str):
         self.base_url = base_url.rstrip("/")
-        self.model = os.getenv("LM_STUDIO_EMBED_MODEL", "Qwen3-Embedding-0.6B-GGUF")
+        # Default to nomic embedding model if qwen embedding has issues
+        # User can override with LM_STUDIO_EMBED_MODEL env var
+        self.model = os.getenv("LM_STUDIO_EMBED_MODEL", "text-embedding-nomic-embed-text-v1.5")
         
         # Create session with retry strategy
         self.session = requests.Session()
@@ -32,9 +34,9 @@ class LMStudioEmbedder:
         self.session.mount("https://", adapter)
 
     def _check_connection(self) -> bool:
-        """Check if LM Studio is reachable."""
+        """Check if LM Studio is reachable using /v1/models endpoint."""
         try:
-            resp = self.session.get(f"{self.base_url}/v1/models", timeout=5)
+            resp = self.session.get(f"{self.base_url}/models", timeout=5)
             return resp.status_code == 200
         except Exception as e:
             logger.warning(f"LM Studio connection check failed: {e}")
@@ -68,8 +70,9 @@ class LMStudioEmbedder:
             
             for attempt in range(max_retries):
                 try:
+                    # base_url already includes /v1, so just use /embeddings
                     resp = self.session.post(
-                        f"{self.base_url}/v1/embeddings",
+                        f"{self.base_url}/embeddings",
                         json=payload,
                         timeout=60
                     )

@@ -8,7 +8,7 @@ const SUPPORTED_EXT = new Set([
   'pdf', 'doc', 'docx', 'xml'
 ]);
 
-const FileUploadCard = ({ onUpload, fileInfo, isUploading, onError, uploads = [], activeProject, onAutoGenerate, isGenerating, mode = 'upload', rawContent = '' }) => {
+const FileUploadCard = ({ onUpload, fileInfo, isUploading, onError, uploads = [], onAutoGenerate, isGenerating, mode = 'upload', rawContent = '' }) => {
   const fileRef = useRef(null);
   const [selectedNames, setSelectedNames] = useState([]);
   const [isDragging, setIsDragging] = useState(false);
@@ -84,9 +84,6 @@ const FileUploadCard = ({ onUpload, fileInfo, isUploading, onError, uploads = []
   return (
     <div className="ctd-card">
       <h3>Upload Files</h3>
-      <div className="ctd-muted" style={{ marginBottom: '16px' }}>
-        Project: <strong>{activeProject?.name || 'No project selected'}</strong>
-      </div>
       
       <div
         className={`ctd-file-upload-area ${isDragging ? 'dragover' : ''}`}
@@ -182,10 +179,10 @@ const FileUploadCard = ({ onUpload, fileInfo, isUploading, onError, uploads = []
       )}
 
       <div className="ctd-uploaded-list">
-        <div className="ctd-uploaded-list-title">Project Uploads</div>
+        <div className="ctd-uploaded-list-title">Current Session Uploads</div>
         <div className="ctd-uploaded-items">
           {uploads.length === 0 ? (
-            <div className="ctd-uploaded-item empty">No uploads yet for this project.</div>
+            <div className="ctd-uploaded-item empty">No files uploaded in this session.</div>
           ) : (
             uploads.map((u) => {
               const sizeKb = Number.isFinite(u.size) ? (u.size / 1024).toFixed(1) : '0';

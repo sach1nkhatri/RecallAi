@@ -90,16 +90,22 @@ def register_repo_routes(app: Flask):
             repo_id = data.get("repo_id", "").strip()
             title = data.get("title", "").strip() or None
             
+            logger.info(f"Generate request - repo_url: {repo_url}, repo_id: {repo_id}")
+            
             if not repo_url:
+                logger.warning("Missing repo_url in generate request")
                 return jsonify({"error": "repo_url is required"}), 400
             
             # If repo_id not provided, ingest first
             if not repo_id:
+                logger.info(f"repo_id not provided, ingesting repository: {repo_url}")
                 ingestion = github_service.ingest_repository(repo_url)
                 repo_id = ingestion.repo_id
+                logger.info(f"Ingested repository, got repo_id: {repo_id}")
             else:
                 # Validate repo_id format
                 if not repo_id or len(repo_id) < 3:
+                    logger.warning(f"Invalid repo_id format: {repo_id}")
                     return jsonify({"error": "Invalid repo_id format"}), 400
             
             # Generate documentation
@@ -122,7 +128,7 @@ def register_repo_routes(app: Flask):
             }), 200
             
         except ValidationError as e:
-            logger.warning(f"Validation error: {e}")
+            logger.warning(f"Validation error in repo/generate: {e}", exc_info=True)
             return jsonify({"error": str(e)}), 400
         except RuntimeError as e:
             logger.error(f"Runtime error: {e}")

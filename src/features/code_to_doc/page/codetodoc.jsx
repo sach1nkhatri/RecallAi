@@ -1,15 +1,12 @@
 import React from 'react';
 import useCode2Doc from '../hooks/useCode2Doc';
-import useProjects from '../hooks/useProjects';
 import FileUploadCard from '../components/FileUploadCard';
 import GitHubRepoCard from '../components/GitHubRepoCard';
 import OutputPanel from '../components/OutputPanel';
-import ProjectSelector from '../components/ProjectSelector';
 import Toast from '../components/Toast';
 import '../css/CodeToDocPage.css';
 
 const CodeToDocPage = () => {
-  const { projects, activeProject, activeProjectId, createProject, selectProject } = useProjects();
   const {
     state: {
       fileInfo,
@@ -32,10 +29,9 @@ const CodeToDocPage = () => {
       handleRepoGenerate,
       showToast,
     },
-  } = useCode2Doc(activeProjectId);
+  } = useCode2Doc();
 
   const [activeMode, setActiveMode] = React.useState('upload'); // 'upload' or 'github'
-  const noProject = !activeProject;
 
   // Auto-detect mode based on state
   React.useEffect(() => {
@@ -81,31 +77,11 @@ const CodeToDocPage = () => {
               <span className="ctd-api-health-dot"></span>
               <span>{getHealthLabel()}</span>
             </div>
-            <div className="ctd-active-project">
-              <span className="ctd-label">Active Project</span>
-              <strong>{activeProject?.name || 'No project selected'}</strong>
-            </div>
           </div>
         </div>
       </header>
 
       <div className="ctd-container">
-        <section className="ctd-panel ctd-project-panel">
-          <div className="ctd-section-title">1. Select Project</div>
-          <ProjectSelector
-            projects={projects}
-            activeProject={activeProject}
-            activeProjectId={activeProjectId}
-            onSelect={selectProject}
-            onCreate={createProject}
-          />
-          {noProject && (
-            <p className="ctd-muted" style={{ marginTop: '12px' }}>
-              Choose or create a project to start uploading and generating docs.
-            </p>
-          )}
-        </section>
-
         <div className="ctd-workspace">
           <div className="ctd-left">
             <div className="ctd-mode-selector">
@@ -135,60 +111,34 @@ const CodeToDocPage = () => {
             </div>
 
             {activeMode === 'upload' ? (
-              <section className="ctd-panel" aria-disabled={noProject}>
+              <section className="ctd-panel">
                 <div className="ctd-section-header">
-                  <div className="ctd-section-title">2. Upload Files</div>
-                  {!noProject && (
-                    <div className="ctd-step-indicator">
-                      <span className="ctd-step-number">2</span>
-                      <span className="ctd-step-label">of 2</span>
-                    </div>
-                  )}
+                  <div className="ctd-section-title">Upload Files</div>
                 </div>
-                {noProject ? (
-                  <div className="ctd-empty-state">
-                    <p className="ctd-muted">Please select or create a project above to enable file uploads.</p>
-                  </div>
-                ) : (
-                  <FileUploadCard
-                    onUpload={handleUpload}
-                    fileInfo={fileInfo}
-                    isUploading={isUploading}
-                    onError={(msg) => showToast(msg, 'error')}
-                    uploads={uploads}
-                    activeProject={activeProject}
-                    onAutoGenerate={handleGenerate}
-                    isGenerating={isGenerating}
-                    mode="upload"
-                  />
-                )}
+                <FileUploadCard
+                  onUpload={handleUpload}
+                  fileInfo={fileInfo}
+                  isUploading={isUploading}
+                  onError={(msg) => showToast(msg, 'error')}
+                  uploads={uploads}
+                  onAutoGenerate={handleGenerate}
+                  isGenerating={isGenerating}
+                  mode="upload"
+                />
               </section>
             ) : (
-              <section className="ctd-panel" aria-disabled={noProject}>
+              <section className="ctd-panel">
                 <div className="ctd-section-header">
-                  <div className="ctd-section-title">2. GitHub Repository</div>
-                  {!noProject && (
-                    <div className="ctd-step-indicator">
-                      <span className="ctd-step-number">2</span>
-                      <span className="ctd-step-label">of 2</span>
-                    </div>
-                  )}
+                  <div className="ctd-section-title">GitHub Repository</div>
                 </div>
-                {noProject ? (
-                  <div className="ctd-empty-state">
-                    <p className="ctd-muted">Please select or create a project above to enable GitHub repository mode.</p>
-                  </div>
-                ) : (
-                  <GitHubRepoCard
-                    onIngest={handleRepoIngest}
-                    onGenerate={handleRepoGenerate}
-                    isIngesting={isIngesting}
-                    isGenerating={isGenerating}
-                    repoInfo={repoInfo}
-                    activeProject={activeProject}
-                    onError={(msg) => showToast(msg, 'error')}
-                  />
-                )}
+                <GitHubRepoCard
+                  onIngest={handleRepoIngest}
+                  onGenerate={handleRepoGenerate}
+                  isIngesting={isIngesting}
+                  isGenerating={isGenerating}
+                  repoInfo={repoInfo}
+                  onError={(msg) => showToast(msg, 'error')}
+                />
               </section>
             )}
           </div>

@@ -258,6 +258,7 @@ class LMStudioClient(LLMClient):
         content_type: ContentType,
         title: Optional[str] = None,
         file_count: Optional[int] = None,
+        timeout: Optional[int] = None,
     ) -> str:
         """Generate documentation using LM Studio API"""
         if not content or not content.strip():
@@ -309,19 +310,45 @@ class LMStudioClient(LLMClient):
         
         url = f"{settings.LM_STUDIO_BASE_URL}/chat/completions"
         
+        logger.info(f"Using chat model: {settings.LM_MODEL_NAME} for endpoint: {url}")
+        
+        # Use custom timeout if provided, otherwise use default
+        request_timeout = timeout if timeout is not None else settings.LM_STUDIO_TIMEOUT
+        
         try:
-            response = requests.post(url, json=payload, timeout=settings.LM_STUDIO_TIMEOUT)
+            response = requests.post(url, json=payload, timeout=request_timeout)
             response.raise_for_status()
+        except requests.HTTPError as exc:
+            if exc.response.status_code == 404:
+                error_data = exc.response.json() if exc.response.content else {}
+                error_msg = error_data.get("error", {}).get("message", str(exc))
+                logger.error(f"LM Studio 404: {error_msg}. Model '{settings.LM_MODEL_NAME}' may not be loaded for chat completions.")
+                raise RuntimeError(
+                    f"Chat model '{settings.LM_MODEL_NAME}' is not loaded or not available for chat completions. "
+                    f"Please ensure the model is loaded in LM Studio's Developer tab. "
+                    f"Error: {error_msg}"
+                ) from exc
+            raise
         except requests.Timeout:
-            logger.error(f"LM Studio request timed out after {settings.LM_STUDIO_TIMEOUT} seconds")
+            logger.error(f"LM Studio request timed out after {request_timeout} seconds")
             raise RuntimeError(
-                "Request timed out. Please try again or check LM Studio connection."
+                f"Request timed out after {request_timeout} seconds. Please try again or check LM Studio connection."
             ) from None
         except requests.ConnectionError:
             logger.error(f"LM Studio connection failed. Is the server running at {settings.LM_STUDIO_BASE_URL}?")
             raise RuntimeError(
                 f"Cannot connect to LM Studio at {settings.LM_STUDIO_BASE_URL}. Please check the server."
             ) from None
+        except requests.HTTPError as exc:
+            if exc.response.status_code == 404:
+                logger.error(f"LM Studio endpoint not found (404). Model '{settings.LM_MODEL_NAME}' may not be loaded.")
+                raise RuntimeError(
+                    f"Chat model '{settings.LM_MODEL_NAME}' is not loaded in LM Studio. "
+                    f"Please load the model in LM Studio's Developer tab. "
+                    f"Available models: qwen3-14b, gemma-3-1b-it-qat, etc."
+                ) from exc
+            logger.exception(f"LM Studio HTTP error: {exc}")
+            raise RuntimeError(f"Failed to generate documentation: {str(exc)}") from exc
         except requests.RequestException as exc:
             logger.exception(f"LM Studio request failed: {exc}")
             raise RuntimeError(f"Failed to generate documentation: {str(exc)}") from exc

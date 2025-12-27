@@ -56,7 +56,8 @@ def create_app() -> Flask:
         try:
             lm_status = "unknown"
             try:
-                test_url = f"{settings.LM_STUDIO_BASE_URL.replace('/v1', '')}/models"
+                # Use /v1/models endpoint (LM Studio supports this)
+                test_url = f"{settings.LM_STUDIO_BASE_URL}/models"
                 response = requests.get(test_url, timeout=2)
                 lm_status = "connected" if response.status_code == 200 else "unavailable"
             except Exception:
