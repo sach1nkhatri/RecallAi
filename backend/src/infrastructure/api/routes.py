@@ -17,6 +17,8 @@ from src.application.services.file_service import FileService
 from src.application.services.document_service import DocumentService
 from src.infrastructure.external import LMStudioClient, FPDFGenerator
 from src.infrastructure.api.bot_routes import register_bot_routes
+from src.infrastructure.api.user_routes import register_user_routes
+from src.infrastructure.api.repo_routes import register_repo_routes
 
 logging.basicConfig(
     level=logging.INFO,
@@ -83,9 +85,14 @@ def create_app() -> Flask:
             # Save files using service
             saved_uploads, skipped = file_service.save_uploaded_files(files)
             
-            # Combine content
+            # Combine content - read FULL files
             combined_content = file_service.combine_file_contents(saved_uploads)
             content_type = file_service.get_batch_content_type(saved_uploads)
+            
+            logger.info(
+                f"Upload successful | files={len(saved_uploads)} | "
+                f"content_length={len(combined_content)} | type={content_type}"
+            )
             
             return jsonify({
                 "filename": ", ".join(upload.filename for upload in saved_uploads),
@@ -108,7 +115,7 @@ def create_app() -> Flask:
     
     @app.route("/api/generate", methods=["POST"])
     def generate():
-        """Generate documentation"""
+        """Generate documentation from uploaded files only (no direct text mode)"""
         try:
             data = request.get_json(silent=True) or {}
             raw_content: str = (data.get("rawContent") or "").strip()
@@ -116,11 +123,28 @@ def create_app() -> Flask:
             title: Optional[str] = (data.get("title") or "").strip() or None
             file_count = data.get("file_count")
             
+            # Validate input - only allow file uploads, no direct text
+            if not raw_content:
+                return jsonify({
+                    "error": "No content provided. Please upload files or use GitHub repo mode."
+                }), 400
+            
+            # Require file_count to ensure this came from file upload
+            if not file_count or file_count < 1:
+                return jsonify({
+                    "error": "Direct text mode is not supported. Please upload files or use GitHub repo mode."
+                }), 400
+            
             # Validate content type
             if content_type_str not in {"code", "text"}:
                 return jsonify({"error": "contentType must be 'code' or 'text'"}), 400
             
             content_type: ContentType = content_type_str  # type: ignore
+            
+            # Auto-detect content type if ambiguous
+            if content_type == "text" and any(keyword in raw_content.lower() for keyword in ["function", "class", "def ", "import ", "export "]):
+                logger.info("Auto-detected code content, switching content_type")
+                content_type = "code"
             
             # Create generation request
             generation = DocumentGeneration(
@@ -146,10 +170,20 @@ def create_app() -> Flask:
         except ValidationError as e:
             logger.warning(f"Validation error: {e}")
             return jsonify({"error": str(e)}), 400
+        except RuntimeError as e:
+            logger.error(f"Runtime error during generation: {e}")
+            return jsonify({"error": str(e)}), 500
         except Exception as e:
             logger.exception("Document generation failed")
             include_trace = bool(os.environ.get("DEBUG_TRACE", "").lower() in {"1", "true", "yes"})
             return _error_response(str(e), status=500, include_trace=include_trace)
+    
+    # Register API routes BEFORE static routes to ensure proper matching
+    logger.info("Registering bot, user, and repo API routes...")
+    register_bot_routes(app)
+    register_user_routes(app)
+    register_repo_routes(app)
+    logger.info("API routes registered successfully")
     
     @app.route("/uploads/<path:filename>", methods=["GET"])
     def serve_upload(filename: str):
@@ -164,13 +198,14 @@ def create_app() -> Flask:
     @app.route("/<path:path>")
     def static_proxy(path: str):
         """Serve frontend static files"""
+        # Don't match API routes
+        if path.startswith("api/"):
+            return jsonify({"error": "API route not found"}), 404
+        
         target = Path(app.static_folder) / path
         if target.exists():
             return send_from_directory(app.static_folder, path)
         return send_from_directory(app.static_folder, "index.html")
-    
-    # Register bot routes
-    register_bot_routes(app)
     
     return app
 

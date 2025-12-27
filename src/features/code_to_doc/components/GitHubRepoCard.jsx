@@ -1,0 +1,166 @@
+import React, { useState } from 'react';
+import '../css/GitHubRepoCard.css';
+
+const GitHubRepoCard = ({
+  onIngest,
+  onGenerate,
+  isIngesting,
+  isGenerating,
+  repoInfo,
+  activeProject,
+  onError,
+}) => {
+  const [repoUrl, setRepoUrl] = useState('');
+  const [repoId, setRepoId] = useState('');
+
+  const handleIngest = async () => {
+    if (!activeProject) {
+      onError?.('Select or create a project first.');
+      return;
+    }
+
+    if (!repoUrl.trim()) {
+      onError?.('Please enter a GitHub repository URL.');
+      return;
+    }
+
+    try {
+      const result = await onIngest(repoUrl.trim());
+      if (result?.repo_id) {
+        setRepoId(result.repo_id);
+      }
+    } catch (err) {
+      // Error handled by parent
+    }
+  };
+
+  const handleGenerate = async () => {
+    if (!activeProject) {
+      onError?.('Select or create a project first.');
+      return;
+    }
+
+    if (!repoUrl.trim()) {
+      onError?.('Please enter a GitHub repository URL.');
+      return;
+    }
+
+    if (!repoId) {
+      onError?.('Please ingest the repository first.');
+      return;
+    }
+
+    await onGenerate(repoUrl.trim(), repoId);
+  };
+
+  const isValidUrl = repoUrl.trim() && (
+    repoUrl.includes('github.com') ||
+    (repoUrl.includes('/') && !repoUrl.includes('://'))
+  );
+
+  return (
+    <div className="ctd-card">
+      <h3>GitHub Repository</h3>
+      <div className="ctd-muted" style={{ marginBottom: '16px' }}>
+        Project: <strong>{activeProject?.name || 'No project selected'}</strong>
+      </div>
+
+      <label htmlFor="repoUrlInput">Repository URL</label>
+      <input
+        type="text"
+        id="repoUrlInput"
+        placeholder="https://github.com/owner/repo or owner/repo"
+        value={repoUrl}
+        onChange={(e) => {
+          setRepoUrl(e.target.value);
+          setRepoId(''); // Reset repo_id when URL changes
+        }}
+        disabled={isIngesting || isGenerating}
+        className={!isValidUrl && repoUrl.trim() ? 'ctd-input-error' : ''}
+      />
+      <div className="ctd-muted" style={{ marginTop: '4px', marginBottom: '16px' }}>
+        Enter a public GitHub repository URL or owner/repo format
+      </div>
+
+      {repoInfo && (
+        <div className="ctd-repo-info">
+          <div className="ctd-repo-info-header">
+            <span className="ctd-success-icon">✓</span>
+            <strong>Repository Ingested</strong>
+          </div>
+          <div className="ctd-repo-info-details">
+            <div>
+              <span className="ctd-label">Repository:</span>
+              <span>{repoInfo.owner}/{repoInfo.repo_name}</span>
+            </div>
+            <div>
+              <span className="ctd-label">Files:</span>
+              <span>{repoInfo.total_files} included</span>
+            </div>
+            {repoInfo.warnings && repoInfo.warnings.length > 0 && (
+              <div className="ctd-repo-warnings">
+                <strong>Warnings:</strong>
+                <ul>
+                  {repoInfo.warnings.slice(0, 3).map((w, i) => (
+                    <li key={i}>{w}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      <div className="ctd-repo-actions">
+        <button
+          onClick={handleIngest}
+          disabled={!isValidUrl || isIngesting || isGenerating || !activeProject}
+          className="ctd-btn-secondary"
+        >
+          {isIngesting ? (
+            <>
+              <span className="spinner"></span>
+              Ingesting Repository...
+            </>
+          ) : (
+            '1. Ingest Repository'
+          )}
+        </button>
+
+        <button
+          onClick={handleGenerate}
+          disabled={!repoId || isGenerating || isIngesting || !activeProject}
+          className="ctd-btn-primary"
+        >
+          {isGenerating ? (
+            <>
+              <span className="spinner"></span>
+              Generating Documentation...
+            </>
+          ) : (
+            <>
+              <span>🚀</span>
+              2. Generate Documentation
+            </>
+          )}
+        </button>
+      </div>
+
+      <div className="ctd-repo-hint">
+        <p><strong>How it works:</strong></p>
+        <ol>
+          <li>Enter a public GitHub repository URL</li>
+          <li>Click "Ingest Repository" to scan and index files</li>
+          <li>Click "Generate Documentation" to create comprehensive docs using RAG</li>
+        </ol>
+        <p className="ctd-muted">
+          The system will automatically filter files, build a vector index, and generate
+          chapter-by-chapter documentation.
+        </p>
+      </div>
+    </div>
+  );
+};
+
+export default GitHubRepoCard;
+

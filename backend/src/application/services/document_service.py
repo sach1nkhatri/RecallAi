@@ -45,19 +45,53 @@ class DocumentService:
         # Validate request
         generation.validate()
         
-        if len(generation.raw_content) > settings.MAX_CONTENT_PREVIEW:
-            raise ValidationError(
-                f"Content too long. Limit is {settings.MAX_CONTENT_PREVIEW} characters."
+        # Log content info for debugging
+        logger.info(
+            f"Generating documentation | content_length={len(generation.raw_content)} | "
+            f"type={generation.content_type} | files={generation.file_count or 'direct'}"
+        )
+        
+        # Check if content exceeds limit (warn but don't fail for slightly over)
+        if len(generation.raw_content) > settings.MAX_CONTENT_PREVIEW * 1.1:
+            logger.warning(
+                f"Content length {len(generation.raw_content)} exceeds limit {settings.MAX_CONTENT_PREVIEW}. "
+                f"Processing anyway but may be truncated by LLM."
             )
+        
+        # Pre-process content for better results - NO TRUNCATION, send full content
+        processed_content = generation.raw_content.strip()
+        
+        # Only truncate if absolutely necessary (way over limit) and preserve structure
+        if len(processed_content) > settings.MAX_CONTENT_PREVIEW * 1.5:
+            logger.warning(f"Content very large ({len(processed_content)} chars), truncating to preserve structure")
+            # Keep first 70% and last 30% to preserve both start and end context
+            keep_start = int(settings.MAX_CONTENT_PREVIEW * 0.7)
+            keep_end = int(settings.MAX_CONTENT_PREVIEW * 0.3)
+            processed_content = (
+                processed_content[:keep_start] + 
+                "\n\n[... content truncated for processing - middle section removed ...]\n\n" + 
+                processed_content[-keep_end:]
+            )
+            logger.info(f"Truncated to {len(processed_content)} characters")
         
         # Generate markdown documentation
         start_time = time.time()
         try:
             markdown_content = self.llm_client.generate_documentation(
-                content=generation.raw_content,
+                content=processed_content,
                 content_type=generation.content_type,
                 title=generation.title,
+                file_count=generation.file_count,
             )
+            
+            # Validate the generated content
+            if not markdown_content or len(markdown_content.strip()) < 50:
+                logger.error("Generated documentation is too short or empty")
+                raise RuntimeError("Generated documentation is incomplete. Please try again.")
+            
+        except RuntimeError:
+            # Re-raise runtime errors as-is
+            raise
         except Exception as e:
             logger.exception("Document generation failed")
             raise RuntimeError(f"Failed to generate documentation: {e}") from e

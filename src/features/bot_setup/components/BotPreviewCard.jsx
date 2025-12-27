@@ -35,6 +35,20 @@ const BotPreviewCard = ({ bot, onError }) => {
     e.preventDefault();
     if (!input.trim() || isLoading || !bot?.id) return;
 
+    // Check chat limit
+    try {
+      const usageResponse = await fetch(`${getApiBase()}/api/user/usage`);
+      if (usageResponse.ok) {
+        const usage = await usageResponse.json();
+        if (usage.chats.today >= usage.chats.limit) {
+          onError(`Daily chat limit reached. Free plan allows ${usage.chats.limit} chats per day. Upgrade for more.`);
+          return;
+        }
+      }
+    } catch (err) {
+      console.error('Failed to check usage:', err);
+    }
+
     const userMessage = input.trim();
     setInput('');
     setMessages((prev) => [...prev, { role: 'user', content: userMessage }]);
@@ -94,20 +108,31 @@ const BotPreviewCard = ({ bot, onError }) => {
           }
         }
       }
+
+      // Increment chat usage after successful response
+      try {
+        await fetch(`${getApiBase()}/api/user/usage/increment`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ type: 'chats', amount: 1 }),
+        });
+      } catch (err) {
+        console.error('Failed to increment usage:', err);
+      }
     } catch (error) {
-      console.error('Chat error:', error);
-      onError(error.message || 'Failed to get response from bot');
-      setMessages((prev) => [
-        ...prev,
-        {
-          role: 'assistant',
-          content: `Sorry, I encountered an error: ${error.message}`,
-        },
-      ]);
-    } finally {
-      setIsLoading(false);
-    }
-  };
+        console.error('Chat error:', error);
+        onError(error.message || 'Failed to get response from bot');
+        setMessages((prev) => [
+          ...prev,
+          {
+            role: 'assistant',
+            content: `Sorry, I encountered an error: ${error.message}`,
+          },
+        ]);
+      } finally {
+        setIsLoading(false);
+      }
+    };
 
   if (!bot) {
     return null;
@@ -117,7 +142,7 @@ const BotPreviewCard = ({ bot, onError }) => {
     <div className="bot-preview-card">
       <div className="bot-preview-header">
         <div className="bot-preview-header-main">
-          <div className="bot-preview-header-icon">💬</div>
+          <div className="bot-preview-header-icon"></div>
           <div>
             <h3>Step 3: Test Your Bot</h3>
             <p className="bot-preview-header-subtitle">Ask questions and see how your bot responds!</p>

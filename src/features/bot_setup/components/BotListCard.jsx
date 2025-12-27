@@ -24,7 +24,7 @@ const BotListCard = ({ bots, activeBotId, onSelect, onDelete, onCreateNew }) => 
               onClick={() => onSelect(bot.id)}
             >
               <div className="bot-list-item-content">
-                <div className="bot-list-item-icon">🤖</div>
+                <div className="bot-list-item-icon"></div>
                 <div className="bot-list-item-info">
                   <h4>{bot.name || 'Unnamed Bot'}</h4>
                   <p className="bot-list-item-desc">

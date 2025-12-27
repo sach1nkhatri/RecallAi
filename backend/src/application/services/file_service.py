@@ -36,11 +36,33 @@ class FileService:
     
     @staticmethod
     def read_file_content(file_path: Path, limit_bytes: int = None) -> str:
-        """Read file content with optional size limit"""
-        limit = limit_bytes or settings.MAX_CONTENT_PREVIEW
+        """Read file content with optional size limit
+        
+        Args:
+            file_path: Path to the file to read
+            limit_bytes: Optional limit. If None, reads up to MAX_CONTENT_PREVIEW.
+                        Pass a large number or None to read full file for generation.
+        """
         try:
-            with file_path.open("r", encoding="utf-8", errors="ignore") as f:
-                return f.read(limit)
+            # For generation, we want full content, so use MAX_CONTENT_PREVIEW as soft limit
+            # Only apply hard limit if explicitly set
+            if limit_bytes is None:
+                # Read full file but warn if exceeds MAX_CONTENT_PREVIEW
+                with file_path.open("r", encoding="utf-8", errors="ignore") as f:
+                    content = f.read()
+                    if len(content) > settings.MAX_CONTENT_PREVIEW:
+                        logger.warning(
+                            f"File {file_path.name} is {len(content)} chars, exceeds limit {settings.MAX_CONTENT_PREVIEW}. "
+                            f"Processing anyway but may be truncated later."
+                        )
+                    logger.info(f"Read {len(content)} characters from {file_path.name}")
+                    return content
+            else:
+                # Explicit limit provided
+                with file_path.open("r", encoding="utf-8", errors="ignore") as f:
+                    content = f.read(limit_bytes)
+                    logger.info(f"Read {len(content)} characters (limited) from {file_path.name}")
+                    return content
         except OSError as e:
             logger.error(f"Failed to read file {file_path}: {e}")
             raise FileProcessingError(f"Cannot read file: {e}") from e
@@ -94,19 +116,35 @@ class FileService:
     
     @staticmethod
     def combine_file_contents(uploads: List[FileUpload]) -> str:
-        """Combine contents of multiple files into a single string"""
+        """Combine contents of multiple files into a single string with intelligent formatting"""
         combined_parts: List[str] = []
         
-        for upload in uploads:
+        for idx, upload in enumerate(uploads, 1):
             ext = upload.extension
             if ext in {"pdf", "doc", "docx"}:
-                content = f"[Binary document detected: {upload.filename}]"
+                logger.warning(f"Binary document {upload.filename} cannot be processed - content extraction not available")
+                content = f"[Binary document detected: {upload.filename} - Content extraction not available for this file type]"
             else:
-                content = FileService.read_file_content(upload.file_path)
+                try:
+                    # Read full file content without truncation for generation
+                    content = FileService.read_file_content(upload.file_path, limit_bytes=None)
+                    logger.info(f"Successfully read {len(content)} characters from {upload.filename}")
+                    # Add file metadata header for context
+                    file_header = f"---\nFile: {upload.filename}\nType: {upload.content_type}\nSize: {upload.size} bytes\n---\n\n"
+                    content = file_header + content
+                except Exception as e:
+                    logger.error(f"Failed to read file {upload.filename}: {e}")
+                    raise FileProcessingError(f"Failed to read file {upload.filename}: {e}") from e
             
-            combined_parts.append(f"## {upload.filename}\n{content}")
+            # Use clear separators between files
+            if idx > 1:
+                combined_parts.append("\n" + "="*80 + "\n")
+            
+            combined_parts.append(f"FILE {idx}: {upload.filename}\n{content}")
         
-        return "\n\n".join(combined_parts)
+        combined = "\n\n".join(combined_parts)
+        logger.info(f"Combined {len(uploads)} files into {len(combined)} characters total")
+        return combined
     
     @staticmethod
     def get_batch_content_type(uploads: List[FileUpload]) -> ContentType:

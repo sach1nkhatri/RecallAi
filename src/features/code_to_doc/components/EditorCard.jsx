@@ -10,21 +10,23 @@ const EditorCard = ({
   onRawContentChange,
   onGenerate,
   isGenerating,
-  status,
-  progress,
+  mode = 'direct',
 }) => {
-  const showProgress = progress && progress.stage === 'generating';
-  const getStatusClass = () => {
-    if (!status) return '';
-    if (status.includes('failed') || status.includes('error')) return 'error';
-    if (status.includes('Done') || status.includes('ready')) return 'success';
-    if (status.includes('Generating')) return 'warning';
-    return '';
-  };
+
+  const hasContent = rawContent && rawContent.trim().length > 0;
+  const charCount = rawContent ? rawContent.length : 0;
 
   return (
     <div className="ctd-card">
-      <h3>Live Editor</h3>
+      <div className="ctd-card-header">
+        <h3>Direct Text Input</h3>
+        {hasContent && (
+          <span className="ctd-char-count">{charCount.toLocaleString()} characters</span>
+        )}
+      </div>
+      <p className="ctd-muted" style={{ marginBottom: '16px' }}>
+        Type or paste your text or code below. Select the content type and generate professional documentation.
+      </p>
 
       <label htmlFor="titleInput">Document Title (optional)</label>
       <input
@@ -36,55 +38,50 @@ const EditorCard = ({
         disabled={isGenerating}
       />
 
-      <div className="ctd-radio-group">
-        <span>Content Type:</span>
-        <label>
-          <input
-            type="radio"
-            name="contentType"
-            value="text"
-            checked={contentType === 'text'}
-            onChange={(e) => onContentTypeChange(e.target.value)}
-            disabled={isGenerating}
-          />
-          <span>Text</span>
-        </label>
-        <label>
-          <input
-            type="radio"
-            name="contentType"
-            value="code"
-            checked={contentType === 'code'}
-            onChange={(e) => onContentTypeChange(e.target.value)}
-            disabled={isGenerating}
-          />
-          <span>Code</span>
-        </label>
+      <div className="ctd-content-type-selector">
+        <label className="ctd-content-type-label">Content Type:</label>
+        <div className="ctd-radio-group">
+          <label className={`ctd-radio-option ${contentType === 'text' ? 'active' : ''}`}>
+            <input
+              type="radio"
+              name="contentType"
+              value="text"
+              checked={contentType === 'text'}
+              onChange={(e) => onContentTypeChange(e.target.value)}
+              disabled={isGenerating}
+            />
+            <span className="ctd-radio-custom"></span>
+            <span className="ctd-radio-text">Text</span>
+            <span className="ctd-radio-hint">For documents, articles, notes</span>
+          </label>
+          <label className={`ctd-radio-option ${contentType === 'code' ? 'active' : ''}`}>
+            <input
+              type="radio"
+              name="contentType"
+              value="code"
+              checked={contentType === 'code'}
+              onChange={(e) => onContentTypeChange(e.target.value)}
+              disabled={isGenerating}
+            />
+            <span className="ctd-radio-custom"></span>
+            <span className="ctd-radio-text">Code</span>
+            <span className="ctd-radio-hint">For programming code, scripts</span>
+          </label>
+        </div>
       </div>
 
       <textarea
         id="rawContent"
         rows={12}
-        placeholder="Paste or edit your content here...&#10;&#10;You can upload files above or type directly. The content will be processed to generate professional documentation."
+        placeholder="Paste your text or code here...&#10;&#10;The content will be processed to generate professional documentation based on the selected content type."
         value={rawContent}
         onChange={(e) => onRawContentChange(e.target.value)}
         disabled={isGenerating}
       />
       
       <div className="ctd-muted" style={{ marginBottom: '16px' }}>
-        Uploaded content can be edited before generating. Make sure your content is ready.
+        Make sure your content is ready. Select "Text" for regular text or "Code" for programming code.
       </div>
-
-      {showProgress && (
-        <div className="ctd-editor-progress">
-          <div className="ctd-progress-container">
-            <div className="ctd-progress-bar">
-              <div className="ctd-progress-fill" style={{ width: `${progress.percentage}%` }}></div>
-            </div>
-            <div className="ctd-progress-text">{progress.stage} documentation... {Math.round(progress.percentage)}%</div>
-          </div>
-        </div>
-      )}
 
       <button className="primary" onClick={onGenerate} disabled={isGenerating || !rawContent.trim()}>
         {isGenerating ? (
@@ -94,17 +91,11 @@ const EditorCard = ({
           </>
         ) : (
           <>
-            <span>✨</span>
+            <span></span>
             Generate Documentation
           </>
         )}
       </button>
-
-      {status && (
-        <div className={`ctd-status-text ${getStatusClass()}`}>
-          {status}
-        </div>
-      )}
     </div>
   );
 };

@@ -110,7 +110,7 @@ const DocumentUploadCard = ({ botId, onUploadComplete, onError }) => {
     <div className="doc-upload-card">
       <div className="doc-upload-header">
         <div className="doc-upload-header-main">
-          <div className="doc-upload-header-icon">📚</div>
+          <div className="doc-upload-header-icon"></div>
           <div>
             <h3>Step 2: Add Your Documents</h3>
             <p className="doc-upload-subtitle">
@@ -148,7 +148,7 @@ const DocumentUploadCard = ({ botId, onUploadComplete, onError }) => {
           </div>
         ) : (
           <>
-            <div className="doc-upload-icon">📄</div>
+            <div className="doc-upload-icon"></div>
             <p className="doc-upload-text">
               Click or drag files to upload
             </p>
@@ -165,7 +165,7 @@ const DocumentUploadCard = ({ botId, onUploadComplete, onError }) => {
           <div className="doc-upload-items">
             {uploadedDocs.map((doc, idx) => (
               <div key={idx} className="doc-upload-item">
-                <span className="doc-upload-item-icon">📄</span>
+                <span className="doc-upload-item-icon"></span>
                 <span className="doc-upload-item-name">{doc.filename || doc.name}</span>
                 {doc.status && (
                   <span className={`doc-upload-item-status ${doc.status}`}>

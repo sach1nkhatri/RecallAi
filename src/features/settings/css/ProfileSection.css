@@ -1,0 +1,167 @@
+.settings-section {
+  background: var(--settings-panel);
+  border-radius: 16px;
+  padding: 28px;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  border: 1px solid var(--settings-border);
+}
+
+.settings-section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 24px;
+  padding-bottom: 20px;
+  border-bottom: 1px solid var(--settings-border);
+}
+
+.settings-section-header h2 {
+  margin: 0 0 4px;
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--settings-text);
+}
+
+.settings-section-header p {
+  margin: 0;
+  font-size: 14px;
+  color: var(--settings-text-light);
+}
+
+.settings-edit-btn {
+  padding: 10px 20px;
+  border-radius: 8px;
+  border: 2px solid var(--settings-border);
+  background: white;
+  color: var(--settings-text);
+  font-weight: 600;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.settings-edit-btn:hover:not(:disabled) {
+  border-color: var(--settings-primary);
+  color: var(--settings-primary);
+}
+
+.settings-edit-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.settings-form {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.settings-field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.settings-field label {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--settings-text);
+}
+
+.settings-field input {
+  padding: 12px 16px;
+  border-radius: 8px;
+  border: 2px solid var(--settings-border);
+  background: white;
+  font-size: 14px;
+  color: var(--settings-text);
+  transition: all 0.2s;
+  font-family: inherit;
+}
+
+.settings-field input:focus {
+  outline: none;
+  border-color: var(--settings-primary);
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+}
+
+.settings-field input:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  background: #f9fafb;
+}
+
+.settings-form-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end;
+  padding-top: 8px;
+}
+
+.settings-cancel-btn {
+  padding: 12px 24px;
+  border-radius: 8px;
+  border: 2px solid var(--settings-border);
+  background: white;
+  color: var(--settings-text);
+  font-weight: 600;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.settings-cancel-btn:hover:not(:disabled) {
+  background: #f9fafb;
+  border-color: var(--settings-text-light);
+}
+
+.settings-save-btn {
+  padding: 12px 24px;
+  border-radius: 8px;
+  border: none;
+  background: linear-gradient(135deg, var(--settings-primary) 0%, var(--settings-primary-dark) 100%);
+  color: white;
+  font-weight: 600;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.2s;
+  box-shadow: 0 4px 8px rgba(99, 102, 241, 0.3);
+}
+
+.settings-save-btn:hover:not(:disabled) {
+  box-shadow: 0 6px 12px rgba(99, 102, 241, 0.4);
+}
+
+.settings-save-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.settings-info-display {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.settings-info-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px;
+  background: #f9fafb;
+  border-radius: 8px;
+  border: 1px solid var(--settings-border);
+}
+
+.settings-info-label {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--settings-text-light);
+}
+
+.settings-info-value {
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--settings-text);
+}
+

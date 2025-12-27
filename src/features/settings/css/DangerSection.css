@@ -1,0 +1,212 @@
+.settings-section-danger {
+  border: 2px solid rgba(239, 68, 68, 0.2);
+  background: linear-gradient(135deg, rgba(239, 68, 68, 0.02) 0%, rgba(220, 38, 38, 0.02) 100%);
+}
+
+.danger-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.danger-action-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 24px;
+  padding: 20px;
+  background: white;
+  border-radius: 12px;
+  border: 1px solid rgba(239, 68, 68, 0.2);
+}
+
+.danger-action-content {
+  flex: 1;
+}
+
+.danger-action-title {
+  margin: 0 0 8px;
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--settings-text);
+}
+
+.danger-action-description {
+  margin: 0;
+  font-size: 14px;
+  color: var(--settings-text-light);
+  line-height: 1.5;
+}
+
+.danger-action-btn {
+  padding: 12px 24px;
+  border-radius: 8px;
+  border: 2px solid;
+  font-weight: 600;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+
+.danger-btn-danger {
+  background: white;
+  border-color: var(--settings-danger);
+  color: var(--settings-danger);
+}
+
+.danger-btn-danger:hover:not(:disabled) {
+  background: rgba(239, 68, 68, 0.05);
+}
+
+.danger-btn-warning {
+  background: white;
+  border-color: var(--settings-warning);
+  color: var(--settings-warning);
+}
+
+.danger-btn-warning:hover:not(:disabled) {
+  background: rgba(245, 158, 11, 0.05);
+}
+
+.danger-btn-critical {
+  background: white;
+  border-color: var(--settings-danger);
+  color: var(--settings-danger);
+  border-width: 3px;
+}
+
+.danger-btn-critical:hover:not(:disabled) {
+  background: rgba(239, 68, 68, 0.1);
+}
+
+.danger-action-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.danger-confirm-box {
+  min-width: 300px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 20px;
+  background: rgba(239, 68, 68, 0.05);
+  border: 2px solid rgba(239, 68, 68, 0.3);
+  border-radius: 12px;
+}
+
+.danger-confirm-warning {
+  padding: 12px;
+  background: rgba(239, 68, 68, 0.1);
+  border-left: 4px solid var(--settings-danger);
+  border-radius: 6px;
+  font-size: 13px;
+  color: var(--settings-danger);
+  font-weight: 600;
+}
+
+.danger-confirm-input-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.danger-confirm-input-wrapper label {
+  font-size: 13px;
+  color: var(--settings-text);
+  font-weight: 500;
+}
+
+.danger-confirm-input-wrapper strong {
+  color: var(--settings-danger);
+  font-weight: 700;
+}
+
+.danger-confirm-input {
+  padding: 12px 16px;
+  border-radius: 8px;
+  border: 2px solid rgba(239, 68, 68, 0.3);
+  background: white;
+  font-size: 14px;
+  color: var(--settings-text);
+  font-family: inherit;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  transition: all 0.2s;
+}
+
+.danger-confirm-input:focus {
+  outline: none;
+  border-color: var(--settings-danger);
+  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1);
+}
+
+.danger-confirm-input:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.danger-confirm-actions {
+  display: flex;
+  gap: 12px;
+}
+
+.danger-confirm-cancel {
+  flex: 1;
+  padding: 12px;
+  border-radius: 8px;
+  border: 2px solid var(--settings-border);
+  background: white;
+  color: var(--settings-text);
+  font-weight: 600;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.danger-confirm-cancel:hover:not(:disabled) {
+  background: #f9fafb;
+  border-color: var(--settings-text-light);
+}
+
+.danger-confirm-delete {
+  flex: 1;
+  padding: 12px;
+  border-radius: 8px;
+  border: none;
+  font-weight: 600;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.2s;
+  color: white;
+}
+
+.danger-confirm-delete.danger-btn-danger,
+.danger-confirm-delete.danger-btn-warning,
+.danger-confirm-delete.danger-btn-critical {
+  background: var(--settings-danger);
+  box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
+}
+
+.danger-confirm-delete:hover:not(:disabled) {
+  box-shadow: 0 6px 16px rgba(239, 68, 68, 0.4);
+  transform: translateY(-1px);
+}
+
+.danger-confirm-delete:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+@media (max-width: 768px) {
+  .danger-action-item {
+    flex-direction: column;
+  }
+
+  .danger-confirm-box {
+    min-width: 100%;
+  }
+}
+

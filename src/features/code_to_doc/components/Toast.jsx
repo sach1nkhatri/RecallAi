@@ -16,13 +16,13 @@ const Toast = ({ message, type = 'info' }) => {
   const getIcon = () => {
     switch (type) {
       case 'error':
-        return '❌';
+        return '×';
       case 'success':
-        return '✅';
+        return '✓';
       case 'warning':
-        return '⚠️';
+        return '!';
       default:
-        return 'ℹ️';
+        return 'i';
     }
   };
 

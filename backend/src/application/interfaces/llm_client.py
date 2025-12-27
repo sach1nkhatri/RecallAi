@@ -15,6 +15,7 @@ class LLMClient(ABC):
         content: str,
         content_type: ContentType,
         title: Optional[str] = None,
+        file_count: Optional[int] = None,
     ) -> str:
         """
         Generate documentation from content.

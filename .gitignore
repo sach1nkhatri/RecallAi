@@ -1,25 +1,281 @@
-# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
+# ============================================
+# Python
+# ============================================
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
 
-# dependencies
-/node_modules
-/.pnp
-.pnp.js
+# Virtual environments
+venv/
+env/
+ENV/
+.venv
+backend/venv/
+backend/node_backend/venv/
+backend/env/
+node_backend/venv/
 
-# testing
-/coverage
+# Python distribution / packaging
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
 
-# production
+# PyInstaller
+*.manifest
+*.spec
+
+# Unit test / coverage reports
+htmlcov/
+.tox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+.hypothesis/
+.pytest_cache/
+
+# ============================================
+# Node.js / React
+# ============================================
+# Dependencies
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
+.pnpm-debug.log*
+
+# Build outputs
+build/
+dist/
+.next/
+out/
+*.tsbuildinfo
+
+# React build
 /build
+/build/
 
-# misc
-.DS_Store
+# ============================================
+# Environment Variables
+# ============================================
+.env
 .env.local
 .env.development.local
 .env.test.local
 .env.production.local
+.env*.local
+*.env
 
+# ============================================
+# Generated Files & Data
+# ============================================
+# Uploaded files
+backend/uploads/*
+!backend/uploads/.gitkeep
+!backend/uploads/index.html
+
+# Generated data
+backend/data/
+!backend/data/.gitkeep
+
+# RAG indices
+backend/data/rag_indices/*
+!backend/data/rag_indices/.gitkeep
+
+# Bot data
+backend/data/bots/*
+!backend/data/bots/.gitkeep
+
+# User data
+backend/data/users/*
+!backend/data/users/.gitkeep
+
+# Generated PDFs (from code-to-doc feature)
+backend/uploads/doc-*.pdf
+backend/uploads/repo-doc-*.pdf
+*.pdf
+!README.pdf
+!*.README.pdf
+
+# ============================================
+# IDE & Editor
+# ============================================
+# IntelliJ IDEA
+.idea/
+*.iml
+*.iws
+*.ipr
+out/
+
+# VS Code
+.vscode/
+*.code-workspace
+
+# Sublime Text
+*.sublime-project
+*.sublime-workspace
+
+# Vim
+*.swp
+*.swo
+*~
+.vim/
+
+# Emacs
+*~
+\#*\#
+/.emacs.desktop
+/.emacs.desktop.lock
+*.elc
+auto-save-list
+tramp
+.\#*
+
+# ============================================
+# OS Files
+# ============================================
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+Icon
+._*
+.DocumentRevisions-V100
+.fseventsd
+.Spotlight-V100
+.TemporaryItems
+.Trashes
+.VolumeIcon.icns
+.com.apple.timemachine.donotpresent
+.AppleDB
+.AppleDesktop
+Network Trash Folder
+Temporary Items
+.apdisk
+
+# Windows
+Thumbs.db
+Thumbs.db:encryptable
+ehthumbs.db
+ehthumbs_vista.db
+*.stackdump
+[Dd]esktop.ini
+$RECYCLE.BIN/
+*.cab
+*.msi
+*.msix
+*.msm
+*.msp
+*.lnk
+
+# Linux
+*~
+.fuse_hidden*
+.directory
+.Trash-*
+.nfs*
+
+# ============================================
+# Logs
+# ============================================
+logs/
+*.log
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+lerna-debug.log*
+.pnpm-debug.log*
 
-/backend
+# ============================================
+# Temporary Files
+# ============================================
+*.tmp
+*.temp
+*.bak
+*.backup
+*.swp
+*.swo
+*~
+.cache/
+
+# ============================================
+# Database
+# ============================================
+*.db
+*.sqlite
+*.sqlite3
+*.db-journal
+
+# ============================================
+# Testing
+# ============================================
+.coverage
+.pytest_cache/
+.tox/
+.hypothesis/
+test-results/
+coverage/
+
+# ============================================
+# Misc
+# ============================================
+# Package manager lock files (optional - uncomment if you want to ignore)
+# package-lock.json
+# yarn.lock
+# pnpm-lock.yaml
+
+# Local configuration
+config.local.json
+settings.local.py
+
+# Secrets
+secrets/
+*.pem
+*.key
+*.cert
+
+# Archives
+*.zip
+*.tar
+*.tar.gz
+*.rar
+*.7z
+
+# Compiled files
+*.class
+*.dll
+*.exe
+*.o
+*.so
+
+# ============================================
+# Project Specific
+# ============================================
+# Keep structure but ignore content
+backend/uploads/*
+!backend/uploads/.gitkeep
+
+backend/data/*
+!backend/data/.gitkeep
+!backend/data/bots/.gitkeep
+!backend/data/rag_indices/.gitkeep
+!backend/data/users/.gitkeep
+

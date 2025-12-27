@@ -9,11 +9,11 @@ const DashboardHome = () => {
       <div className="dashboard-hero">
         <div className="dashboard-hero-content">
           <div className="dashboard-hero-badge">
-            <span className="dashboard-hero-badge-icon">✨</span>
+            <span className="dashboard-hero-badge-icon"></span>
             <span>AI-Powered Platform</span>
           </div>
           <h1 className="dashboard-hero-title">
-            Welcome back! 👋
+            Welcome back!
           </h1>
           <p className="dashboard-hero-subtitle">
             Transform your workflow with intelligent automation. Create bots, generate docs, and boost productivity.
@@ -74,7 +74,7 @@ const DashboardHome = () => {
             <div className="dashboard-feature-glow"></div>
             <div className="dashboard-feature-header">
               <div className="dashboard-feature-icon-wrapper">
-                <div className="dashboard-feature-icon">📄</div>
+                <div className="dashboard-feature-icon"></div>
               </div>
               <div className="dashboard-feature-badge">Popular</div>
             </div>
@@ -104,7 +104,7 @@ const DashboardHome = () => {
             <div className="dashboard-feature-glow"></div>
             <div className="dashboard-feature-header">
               <div className="dashboard-feature-icon-wrapper">
-                <div className="dashboard-feature-icon">🤖</div>
+                <div className="dashboard-feature-icon"></div>
               </div>
               <div className="dashboard-feature-badge dashboard-feature-badge-new">New</div>
             </div>
@@ -133,7 +133,7 @@ const DashboardHome = () => {
           <div className="dashboard-feature-card dashboard-feature-coming-soon">
             <div className="dashboard-feature-header">
               <div className="dashboard-feature-icon-wrapper">
-                <div className="dashboard-feature-icon">📊</div>
+                <div className="dashboard-feature-icon"></div>
               </div>
               <div className="dashboard-feature-badge dashboard-feature-badge-soon">Soon</div>
             </div>
@@ -160,7 +160,7 @@ const DashboardHome = () => {
       {/* Quick Tips */}
       <div className="dashboard-tips">
         <div className="dashboard-tip">
-          <div className="dashboard-tip-icon">💡</div>
+          <div className="dashboard-tip-icon"></div>
           <div className="dashboard-tip-content">
             <strong>Pro Tip:</strong> Start with Code to Document to generate docs, then create a bot to answer questions about them!
           </div>

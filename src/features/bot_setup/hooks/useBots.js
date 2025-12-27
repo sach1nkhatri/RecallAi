@@ -43,6 +43,15 @@ const useBots = () => {
     setIsLoading(true);
     setError(null);
     try {
+      // Check bot limit
+      const usageResponse = await fetch(`${getApiBase()}/api/user/usage`);
+      if (usageResponse.ok) {
+        const usage = await usageResponse.json();
+        if (usage.bots.current >= usage.bots.limit) {
+          throw new Error(`Bot limit reached. Free plan allows ${usage.bots.limit} bot(s). Upgrade to create more.`);
+        }
+      }
+
       const response = await fetch(`${getApiBase()}/api/bots`, {
         method: 'POST',
         headers: {
@@ -57,6 +66,14 @@ const useBots = () => {
       }
 
       const newBot = await response.json();
+      
+      // Increment bot usage
+      await fetch(`${getApiBase()}/api/user/usage/increment`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ type: 'bots', amount: 1 }),
+      });
+      
       setBots((prev) => [...prev, newBot.bot]);
       setActiveBotId(newBot.bot.id);
       return newBot.bot;

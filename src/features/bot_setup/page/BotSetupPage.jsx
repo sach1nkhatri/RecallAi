@@ -154,7 +154,7 @@ const BotSetupPage = () => {
             ) : (
               <div className="bot-setup-placeholder">
                 <div className="bot-setup-placeholder-content">
-                  <div className="bot-setup-placeholder-icon">🤖</div>
+                  <div className="bot-setup-placeholder-icon"></div>
                   <h3>Create Your First Bot</h3>
                   <p>Configure your bot settings on the left to get started.</p>
                 </div>

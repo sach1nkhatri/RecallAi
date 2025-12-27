@@ -15,6 +15,8 @@ import Checkout from '../features/payment_gateway/component/CheckoutPage';
 import CodeToDocPage from '../features/code_to_doc/page/codetodoc';
 import DashboardHome from '../features/dashboard/pages/DashboardHome';
 import BotSetupPage from '../features/bot_setup/page/BotSetupPage';
+import HelpAndFAQPage from '../features/help/pages/HelpAndFAQPage';
+import SettingsPage from '../features/settings/page/SettingsPage';
 
 // Protected Route Component
 const ProtectedRoute = ({ children }) => {
@@ -117,16 +119,12 @@ const AppRoutes = () => {
                     </ProtectedRoute>
                 }
             />
-            {/* Placeholder routes for future pages */}
             <Route
                 path="/dashboard/faq"
                 element={
                     <ProtectedRoute>
                         <DashboardLayout>
-                            <div style={{ padding: '40px', textAlign: 'center' }}>
-                                <h2>Help & FAQ</h2>
-                                <p>Coming soon...</p>
-                            </div>
+                            <HelpAndFAQPage />
                         </DashboardLayout>
                     </ProtectedRoute>
                 }
@@ -136,10 +134,7 @@ const AppRoutes = () => {
                 element={
                     <ProtectedRoute>
                         <DashboardLayout>
-                            <div style={{ padding: '40px', textAlign: 'center' }}>
-                                <h2>Settings</h2>
-                                <p>Coming soon...</p>
-                            </div>
+                            <SettingsPage />
                         </DashboardLayout>
                     </ProtectedRoute>
                 }

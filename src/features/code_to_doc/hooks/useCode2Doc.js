@@ -1,5 +1,5 @@
 import { useCallback, useMemo, useRef, useState, useEffect } from 'react';
-import { loadUploads, saveUploads, loadGenerations, saveGenerations } from './projectStorage';
+import { loadUploads, saveUploads } from './projectStorage';
 
 const getApiBase = () => {
   if (typeof window === 'undefined') return 'http://localhost:5001';
@@ -16,41 +16,25 @@ const getApiBase = () => {
   return 'http://localhost:5001';
 };
 
-const buildFallbackOutput = (rawContent, title) => {
-  const safeTitle = title || 'Untitled Document';
-  return [
-    `# ${safeTitle}`,
-    '',
-    '## Overview',
-    'Backend was unavailable. This is a local draft based on your input.',
-    '',
-    '## Source Excerpt',
-    rawContent ? rawContent.slice(0, 800) : '(no content)',
-  ].join('\n');
-};
+// Removed fallback output - we want real documentation or proper errors
 
 const useCode2Doc = (activeProjectId = null) => {
   const apiBase = useMemo(getApiBase, []);
   const [fileInfo, setFileInfo] = useState('');
-  const [title, setTitle] = useState('');
-  const [contentType, setContentType] = useState('text');
-  const [rawContent, setRawContent] = useState('');
-  const [status, setStatus] = useState('');
   const [output, setOutput] = useState('Generated documentation will appear here.');
   const [pdfLink, setPdfLink] = useState('');
   const [pdfInfo, setPdfInfo] = useState('');
   const [isUploading, setIsUploading] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
+  const [isIngesting, setIsIngesting] = useState(false);
   const [toast, setToast] = useState({ message: '', type: 'info' });
   const timersRef = useRef([]);
   const [summary, setSummary] = useState('');
   const [lastUploadMeta, setLastUploadMeta] = useState({ fileCount: null, contentType: null });
   const [allUploads, setAllUploads] = useState(() => loadUploads());
   const [uploads, setUploads] = useState([]);
-  const [allGenerations, setAllGenerations] = useState(() => loadGenerations());
-  const [generations, setGenerations] = useState([]);
-  const [progress, setProgress] = useState({ stage: '', percentage: 0 });
   const [apiHealth, setApiHealth] = useState({ status: 'unknown', lastCheck: null });
+  const [repoInfo, setRepoInfo] = useState(null);
 
   const showToast = useCallback((message, type = 'info') => {
     setToast({ message, type });
@@ -89,12 +73,10 @@ const useCode2Doc = (activeProjectId = null) => {
   useEffect(() => {
     if (!activeProjectId) {
       setUploads([]);
-      setGenerations([]);
       return;
     }
     setUploads(allUploads.filter((item) => item.projectId === activeProjectId));
-    setGenerations(allGenerations.filter((g) => g.projectId === activeProjectId));
-  }, [activeProjectId, allUploads, allGenerations]);
+  }, [activeProjectId, allUploads]);
 
   const handleUpload = useCallback(
     async (files) => {
@@ -112,33 +94,20 @@ const useCode2Doc = (activeProjectId = null) => {
       files.forEach((file) => formData.append('file', file));
 
       setIsUploading(true);
-      setStatus('Uploading...');
-      setProgress({ stage: 'uploading', percentage: 0 });
 
       try {
-        // Simulate progress for better UX
-        const progressInterval = setInterval(() => {
-          setProgress((prev) => ({
-            ...prev,
-            percentage: Math.min(prev.percentage + 10, 90),
-          }));
-        }, 200);
-
         const res = await fetch(`${apiBase}/api/upload`, {
           method: 'POST',
           body: formData,
         });
-
-        clearInterval(progressInterval);
-        setProgress({ stage: 'processing', percentage: 95 });
 
         const data = await res.json();
         if (!res.ok) {
           throw new Error(data.error || 'Upload failed');
         }
 
-        setRawContent(data.content || '');
-        setContentType(data.content_type || 'text');
+        const extractedContent = data.content || '';
+        setRawContent(extractedContent);
         setLastUploadMeta({
           fileCount: data.file_count || null,
           contentType: data.content_type || null,
@@ -150,12 +119,11 @@ const useCode2Doc = (activeProjectId = null) => {
           : data.filename || 'files loaded';
 
         setFileInfo(`Loaded ${label} (${data.content_type})`);
-        setStatus('File loaded. You can edit the content before generating.');
 
         if (data.skipped && data.skipped.length) {
           showToast(`Skipped unsupported: ${data.skipped.join(', ')}`, 'error');
         } else {
-          showToast('Upload ready', 'info');
+          showToast(`Successfully loaded ${data.file_count || 1} file(s). Ready to generate.`, 'info');
         }
 
         const now = new Date().toISOString();
@@ -176,12 +144,8 @@ const useCode2Doc = (activeProjectId = null) => {
           saveUploads(next);
           return next;
         });
-        setProgress({ stage: 'complete', percentage: 100 });
-        setTimeout(() => setProgress({ stage: '', percentage: 0 }), 1000);
       } catch (err) {
         const message = err?.message || 'Upload error';
-        setStatus('Upload failed');
-        setProgress({ stage: 'error', percentage: 0 });
         showToast(message, 'error');
       } finally {
         setIsUploading(false);
@@ -196,57 +160,46 @@ const useCode2Doc = (activeProjectId = null) => {
       return;
     }
 
-    const payload = {
-      title: title.trim() || undefined,
-      rawContent: rawContent.trim(),
-      contentType,
-      file_count: lastUploadMeta.fileCount || undefined,
-    };
+    // Check code-to-doc usage limit
+    try {
+      const usageResponse = await fetch(`${apiBase}/api/user/usage`);
+      if (usageResponse.ok) {
+        const usage = await usageResponse.json();
+        if (usage.codeToDoc.used >= usage.codeToDoc.limit) {
+          showToast(`Code to Doc limit reached. Free plan allows ${usage.codeToDoc.limit} uses. Upgrade for more.`, 'error');
+          return;
+        }
+      }
+    } catch (err) {
+      console.error('Failed to check usage:', err);
+    }
 
-    if (!payload.rawContent) {
-      showToast('Please add some content first.', 'error');
+    // Only allow generation from file uploads (file_count required)
+    if (!lastUploadMeta.fileCount || lastUploadMeta.fileCount < 1) {
+      showToast('Please upload files first. Direct text mode is not supported.', 'error');
+      return;
+    }
+
+    if (!rawContent || !rawContent.trim()) {
+      showToast('No content available. Please upload files first.', 'error');
       return;
     }
 
     clearTimers();
     setIsGenerating(true);
-    setStatus('Generating documentation...');
-    setOutput('Generating document...');
+    setOutput('Generated documentation will appear here.');
     setPdfLink('');
     setPdfInfo('');
     setSummary('');
-    setProgress({ stage: 'generating', percentage: 0 });
-
-    const genId = Date.now();
-    const draftTitle = payload.title || 'Untitled Document';
-
-    // Progressive UI updates
-    const step1 = setTimeout(() => {
-      setOutput(`# ${draftTitle}`);
-      setProgress({ stage: 'generating', percentage: 10 });
-    }, 200);
-    const step2 = setTimeout(() => {
-      setOutput(`# ${draftTitle}\n\n## Table of Contents\n1. Overview\n2. Details\n3. Summary`);
-      setProgress({ stage: 'generating', percentage: 30 });
-    }, 500);
-    const step3 = setTimeout(() => {
-      setOutput(
-        `# ${draftTitle}\n\n## Table of Contents\n1. Overview\n2. Details\n3. Summary\n\n## Overview\nDocument outline is being prepared...\n\n## Details\nCompiling key sections...`
-      );
-      setProgress({ stage: 'generating', percentage: 50 });
-    }, 900);
-    timersRef.current = [step1, step2, step3];
 
     let finalOutput = '';
     let finalPdfPath = '';
-    let fileSummary = lastUploadMeta.fileCount;
-    let typeSummary = lastUploadMeta.contentType || contentType;
-    let statusMessage = 'Done.';
-    let toastMessage = 'Documentation generated';
+      let fileSummary = lastUploadMeta.fileCount;
+      let typeSummary = lastUploadMeta.contentType || 'code';
+    let toastMessage = 'Documentation generated successfully';
     let toastKind = 'info';
 
     try {
-      setProgress({ stage: 'generating', percentage: 60 });
       const res = await fetch(`${apiBase}/api/generate`, {
         method: 'POST',
         headers: {
@@ -254,28 +207,30 @@ const useCode2Doc = (activeProjectId = null) => {
         },
         body: JSON.stringify(payload),
       });
-
-      setProgress({ stage: 'generating', percentage: 80 });
-      const data = await res.json();
+      
       if (!res.ok) {
-        throw new Error(data.error || 'Generation failed');
+        const errorData = await res.json().catch(() => ({ error: `HTTP ${res.status}` }));
+        throw new Error(errorData.error || `Generation failed with status ${res.status}`);
       }
-
+      
+      const data = await res.json();
       finalOutput = data.output || data.docText || '';
+      
+      if (!finalOutput || finalOutput.trim().length < 50) {
+        throw new Error('Generated documentation is too short or empty. Please try again.');
+      }
+      
       finalPdfPath = data.pdfPath || data.pdfUrl || '';
       fileSummary = data.file_count || lastUploadMeta.fileCount;
-      typeSummary = data.content_type || lastUploadMeta.contentType || contentType;
-      setProgress({ stage: 'generating', percentage: 95 });
+      typeSummary = data.content_type || lastUploadMeta.contentType || 'code';
     } catch (err) {
-      finalOutput = buildFallbackOutput(payload.rawContent, payload.title);
-      statusMessage = 'Backend unavailable, used fallback draft.';
-      toastMessage = err?.message || 'Backend unavailable, used fallback draft.';
+      console.error('Documentation generation error:', err);
+      finalOutput = `# Error Generating Documentation\n\n**Error:** ${err?.message || 'Failed to generate documentation. Please check your connection and try again.'}\n\nPlease ensure:\n- Your files were uploaded successfully\n- The backend server is running\n- LM Studio is connected and running\n- Your content is valid and readable`;
+      toastMessage = err?.message || 'Failed to generate documentation. Please check your connection and try again.';
       toastKind = 'error';
     } finally {
       clearTimers();
       setIsGenerating(false);
-      setProgress({ stage: 'complete', percentage: 100 });
-      setTimeout(() => setProgress({ stage: '', percentage: 0 }), 1500);
     }
 
     const summaryText = `Generated from ${fileSummary ? `${fileSummary} file(s)` : 'N/A'}, type: ${
@@ -291,53 +246,205 @@ const useCode2Doc = (activeProjectId = null) => {
       setPdfLink('');
       setPdfInfo('');
     }
-    setStatus(statusMessage);
     showToast(toastMessage, toastKind);
 
-    const newGen = {
-      id:
-        (typeof crypto !== 'undefined' && crypto.randomUUID)
-          ? crypto.randomUUID()
-          : `gen-${Date.now()}`,
-      projectId: activeProjectId,
-      prompt: payload.rawContent,
-      output: finalOutput,
-      createdAt: new Date().toISOString(),
-      pdfPath: finalPdfPath || undefined,
-    };
+    // Note: History saving disabled until auth is implemented
+    // Increment usage after successful generation
+    try {
+      // Estimate tokens (rough: 1 token ≈ 4 characters)
+      const estimatedTokens = Math.ceil(finalOutput.length / 4);
+      
+      // Check token limit
+      const usageResponse = await fetch(`${apiBase}/api/user/usage`);
+      if (usageResponse.ok) {
+        const usage = await usageResponse.json();
+        if ((usage.tokens.used + estimatedTokens) > usage.tokens.limit) {
+          showToast(`Token limit would be exceeded. Free plan allows ${usage.tokens.limit.toLocaleString()} tokens.`, 'error');
+          return;
+        }
+      }
 
-    setAllGenerations((prev) => {
-      const next = [...prev, newGen];
-      saveGenerations(next);
-      return next;
-    });
-  }, [activeProjectId, apiBase, clearTimers, contentType, lastUploadMeta, rawContent, showToast, title]);
+      // Increment code-to-doc and token usage
+      await fetch(`${apiBase}/api/user/usage/increment`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ type: 'codeToDoc', amount: 1 }),
+      });
+      
+      await fetch(`${apiBase}/api/user/usage/increment`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ type: 'tokens', amount: estimatedTokens }),
+      });
+    } catch (err) {
+      console.error('Failed to update usage:', err);
+    }
+  }, [activeProjectId, apiBase, clearTimers, lastUploadMeta, rawContent, showToast]);
+
+  const handleRepoIngest = useCallback(async (repoUrl) => {
+    if (!activeProjectId) {
+      showToast('Select or create a project first.', 'error');
+      return null;
+    }
+
+    setIsIngesting(true);
+    setRepoInfo(null);
+
+    try {
+      const res = await fetch(`${apiBase}/api/repo/ingest`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ repo_url: repoUrl }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error || 'Repository ingestion failed');
+      }
+
+      setRepoInfo({
+        repo_id: data.repo_id,
+        owner: data.owner,
+        repo_name: data.repo_name,
+        total_files: data.total_files,
+        total_chars: data.total_chars,
+        warnings: data.warnings || [],
+      });
+
+      showToast(
+        `Repository ingested: ${data.total_files} files included. ${data.warnings?.length || 0} warnings.`,
+        'info'
+      );
+
+      return data;
+    } catch (err) {
+      const message = err?.message || 'Repository ingestion failed';
+      showToast(message, 'error');
+      return null;
+    } finally {
+      setIsIngesting(false);
+    }
+  }, [activeProjectId, apiBase, showToast]);
+
+  const handleRepoGenerate = useCallback(async (repoUrl, repoId) => {
+    if (!activeProjectId) {
+      showToast('Select or create a project first.', 'error');
+      return;
+    }
+
+    if (!repoId) {
+      showToast('Please ingest the repository first.', 'error');
+      return;
+    }
+
+    // Check usage limits
+    try {
+      const usageResponse = await fetch(`${apiBase}/api/user/usage`);
+      if (usageResponse.ok) {
+        const usage = await usageResponse.json();
+        if (usage.codeToDoc.used >= usage.codeToDoc.limit) {
+          showToast(`Code to Doc limit reached. Free plan allows ${usage.codeToDoc.limit} uses.`, 'error');
+          return;
+        }
+      }
+    } catch (err) {
+      console.error('Failed to check usage:', err);
+    }
+
+    clearTimers();
+    setIsGenerating(true);
+    setOutput('Generating documentation from repository...');
+    setPdfLink('');
+    setPdfInfo('');
+    setSummary('');
+
+    try {
+      const res = await fetch(`${apiBase}/api/repo/generate`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          repo_url: repoUrl,
+          repo_id: repoId,
+        }),
+      });
+
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({ error: `HTTP ${res.status}` }));
+        throw new Error(errorData.error || `Generation failed with status ${res.status}`);
+      }
+
+      const data = await res.json();
+      const finalOutput = data.output || data.docText || '';
+
+      if (!finalOutput || finalOutput.trim().length < 50) {
+        throw new Error('Generated documentation is too short or empty. Please try again.');
+      }
+
+      const finalPdfPath = data.pdfPath || data.pdfUrl || '';
+      const repoInfo = data.repo_info || {};
+
+      setSummary(
+        `Generated from ${repoInfo.repo_name || 'repository'} ` +
+        `(${repoInfo.total_files || 0} files, ${data.duration_seconds || 0}s)`
+      );
+      setOutput(finalOutput);
+
+      if (finalPdfPath) {
+        setPdfLink(finalPdfPath);
+        setPdfInfo(`PDF saved: ${finalPdfPath}`);
+      }
+
+      showToast('Documentation generated successfully!', 'info');
+
+      // Update usage
+      try {
+        const estimatedTokens = Math.ceil(finalOutput.length / 4);
+        await fetch(`${apiBase}/api/user/usage/increment`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ type: 'codeToDoc', amount: 1 }),
+        });
+        await fetch(`${apiBase}/api/user/usage/increment`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ type: 'tokens', amount: estimatedTokens }),
+        });
+      } catch (err) {
+        console.error('Failed to update usage:', err);
+      }
+    } catch (err) {
+      console.error('Repository documentation generation error:', err);
+      setOutput(
+        `# Error Generating Documentation\n\n**Error:** ${err?.message || 'Failed to generate documentation.'}\n\n` +
+        `Please ensure:\n- The repository is public\n- The backend server is running\n- LM Studio is connected\n- The repository contains valid code files`
+      );
+      showToast(err?.message || 'Failed to generate documentation.', 'error');
+    } finally {
+      clearTimers();
+      setIsGenerating(false);
+    }
+  }, [activeProjectId, apiBase, clearTimers, showToast]);
 
   return {
     state: {
       fileInfo,
-      title,
-      contentType,
-      rawContent,
-      status,
       output,
       pdfLink,
       pdfInfo,
       isUploading,
       isGenerating,
+      isIngesting,
       toast,
       summary,
       uploads,
-      generations,
-      progress,
       apiHealth,
+      repoInfo,
     },
     actions: {
-      setTitle,
-      setContentType,
-      setRawContent,
       handleUpload,
       handleGenerate,
+      handleRepoIngest,
+      handleRepoGenerate,
       showToast,
     },
   };

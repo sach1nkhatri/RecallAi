@@ -80,7 +80,7 @@ const CheckoutPage = () => {
                     onChange={(e) => setScreenshot(e.target.files[0])}
                 />
                 {screenshot && (
-                    <p className="upload-success">✅ File selected: {screenshot.name}</p>
+                    <p className="upload-success">File selected: {screenshot.name}</p>
                 )}
             </div>
 
@@ -98,7 +98,7 @@ const CheckoutPage = () => {
 
     const renderRejectedScreen = () => (
         <div className="reupload-screen">
-            <h3>❌ Previous Payment Rejected</h3>
+            <h3>Previous Payment Rejected</h3>
             <p>Please review your payment details and re-upload a correct screenshot.</p>
             {renderManualQRUpload()}
         </div>
@@ -106,7 +106,7 @@ const CheckoutPage = () => {
 
     const renderConfirmationScreen = () => (
         <div className="confirmation-screen">
-            <h3>✅ Payment Submitted!</h3>
+            <h3>Payment Submitted!</h3>
             <p>We've received your payment request.</p>
             <p>Method: <strong>{selectedMethod}</strong></p>
             <p>Plan: <strong>{planName}</strong></p>

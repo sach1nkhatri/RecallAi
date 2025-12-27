@@ -1,3 +1,19 @@
+.ctd-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.ctd-char-count {
+  font-size: 12px;
+  color: var(--ctd-text-light);
+  font-weight: 500;
+  padding: 4px 10px;
+  background: var(--ctd-bg);
+  border-radius: 12px;
+}
+
 .ctd-card label {
   display: block;
   margin-bottom: 8px;
@@ -31,7 +47,95 @@
   background: var(--ctd-border-light);
 }
 
+.ctd-content-type-selector {
+  margin-bottom: 20px;
+}
+
+.ctd-content-type-label {
+  display: block;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ctd-text);
+  margin-bottom: 12px;
+}
+
 .ctd-radio-group {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.ctd-radio-option {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
+  border: 2px solid var(--ctd-border);
+  border-radius: 10px;
+  background: white;
+  cursor: pointer;
+  transition: var(--ctd-transition-fast);
+  position: relative;
+}
+
+.ctd-radio-option:hover:not(.active) {
+  border-color: var(--ctd-primary-light);
+  background: var(--ctd-panel-hover);
+}
+
+.ctd-radio-option.active {
+  border-color: var(--ctd-primary);
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.05) 0%, rgba(139, 92, 246, 0.05) 100%);
+}
+
+.ctd-radio-option input[type="radio"] {
+  position: absolute;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.ctd-radio-custom {
+  width: 20px;
+  height: 20px;
+  border: 2px solid var(--ctd-border);
+  border-radius: 50%;
+  position: relative;
+  flex-shrink: 0;
+  transition: var(--ctd-transition-fast);
+}
+
+.ctd-radio-option.active .ctd-radio-custom {
+  border-color: var(--ctd-primary);
+  background: var(--ctd-primary);
+}
+
+.ctd-radio-option.active .ctd-radio-custom::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: white;
+}
+
+.ctd-radio-text {
+  font-weight: 600;
+  font-size: 14px;
+  color: var(--ctd-text);
+  flex: 1;
+}
+
+.ctd-radio-hint {
+  font-size: 12px;
+  color: var(--ctd-text-light);
+  font-style: italic;
+}
+
+/* Legacy radio group styles - keeping for backward compatibility */
+.ctd-radio-group.legacy {
   display: flex;
   align-items: center;
   gap: 20px;

@@ -8,7 +8,7 @@ const SUPPORTED_EXT = new Set([
   'pdf', 'doc', 'docx', 'xml'
 ]);
 
-const FileUploadCard = ({ onUpload, fileInfo, isUploading, onError, uploads = [], activeProject, progress }) => {
+const FileUploadCard = ({ onUpload, fileInfo, isUploading, onError, uploads = [], activeProject, onAutoGenerate, isGenerating, mode = 'upload', rawContent = '' }) => {
   const fileRef = useRef(null);
   const [selectedNames, setSelectedNames] = useState([]);
   const [isDragging, setIsDragging] = useState(false);
@@ -80,7 +80,6 @@ const FileUploadCard = ({ onUpload, fileInfo, isUploading, onError, uploads = []
 
   const tooMany = selectedNames.length > MAX_FILES;
   const disabled = isUploading || selectedNames.length === 0 || tooMany;
-  const showProgress = progress && progress.stage === 'uploading';
 
   return (
     <div className="ctd-card">
@@ -120,17 +119,6 @@ const FileUploadCard = ({ onUpload, fileInfo, isUploading, onError, uploads = []
         onChange={handleFileChange}
       />
 
-      {showProgress && (
-        <div className="ctd-upload-progress">
-          <div className="ctd-progress-container">
-            <div className="ctd-progress-bar">
-              <div className="ctd-progress-fill" style={{ width: `${progress.percentage}%` }}></div>
-            </div>
-            <div className="ctd-progress-text">{progress.stage}... {Math.round(progress.percentage)}%</div>
-          </div>
-        </div>
-      )}
-
       <div className="ctd-file-meta">
         {selectedNames.length > 0 && (
           <div className="ctd-file-count">
@@ -160,6 +148,37 @@ const FileUploadCard = ({ onUpload, fileInfo, isUploading, onError, uploads = []
 
       {fileInfo && (
         <div className="ctd-file-info">{fileInfo}</div>
+      )}
+
+      {rawContent && onAutoGenerate && (
+        <div className="ctd-auto-generate-section">
+          <div className="ctd-auto-generate-header">
+            <div className="ctd-auto-generate-icon">✓</div>
+            <div>
+              <div className="ctd-auto-generate-title">Content Ready</div>
+              <div className="ctd-auto-generate-subtitle">
+                {uploads.length} file{uploads.length !== 1 ? 's' : ''} processed successfully
+              </div>
+            </div>
+          </div>
+          <button 
+            className="ctd-auto-generate-btn"
+            onClick={onAutoGenerate}
+            disabled={isGenerating}
+          >
+            {isGenerating ? (
+              <>
+                <span className="spinner"></span>
+                Generating Documentation...
+              </>
+            ) : (
+              <>
+                <span>🚀</span>
+                Generate Documentation
+              </>
+            )}
+          </button>
+        </div>
       )}
 
       <div className="ctd-uploaded-list">

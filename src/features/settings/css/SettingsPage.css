@@ -1,0 +1,107 @@
+/**
+ * Settings Page Styles
+ */
+
+:root {
+  --settings-primary: #6366f1;
+  --settings-primary-dark: #4f46e5;
+  --settings-bg: #f8fafc;
+  --settings-panel: #ffffff;
+  --settings-border: #e5e7eb;
+  --settings-text: #1f2937;
+  --settings-text-light: #6b7280;
+  --settings-danger: #ef4444;
+  --settings-warning: #f59e0b;
+  --settings-success: #10b981;
+}
+
+.settings-page {
+  width: 100%;
+  min-height: 100vh;
+  padding: 0;
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', sans-serif;
+  background: var(--settings-bg);
+  color: var(--settings-text);
+  position: relative;
+  overflow-x: hidden;
+}
+
+.settings-header {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background: var(--settings-panel);
+  border-bottom: 1px solid var(--settings-border);
+  padding: 24px 32px;
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  backdrop-filter: blur(10px);
+  background: rgba(255, 255, 255, 0.95);
+  margin: 0;
+}
+
+.settings-header-content {
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.settings-header-left h1 {
+  margin: 0 0 8px;
+  font-size: 32px;
+  font-weight: 700;
+  background: linear-gradient(135deg, var(--settings-primary) 0%, #818cf8 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  letter-spacing: -0.5px;
+}
+
+.settings-step-label {
+  display: inline-block;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--settings-text-light);
+  margin-bottom: 4px;
+  padding: 4px 12px;
+  background: var(--settings-border);
+  border-radius: 9999px;
+}
+
+.settings-tagline {
+  margin: 8px 0 0;
+  color: var(--settings-text-light);
+  font-size: 15px;
+  line-height: 1.5;
+}
+
+.settings-container {
+  position: relative;
+  z-index: 1;
+  max-width: 1000px;
+  margin: 0 auto;
+  padding: 32px;
+  width: 100%;
+}
+
+.settings-content {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+@media (max-width: 768px) {
+  .settings-container {
+    padding: 16px;
+  }
+  
+  .settings-header {
+    padding: 16px 20px;
+  }
+  
+  .settings-header-left h1 {
+    font-size: 24px;
+  }
+}
+

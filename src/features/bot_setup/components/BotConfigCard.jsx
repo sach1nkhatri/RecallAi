@@ -69,7 +69,7 @@ const BotConfigCard = ({ bot, onSave, isNewBot = false }) => {
     <div className="bot-config-card">
       <div className="bot-config-header">
         <div className="bot-config-header-main">
-          <div className="bot-config-header-icon">✨</div>
+          <div className="bot-config-header-icon"></div>
           <div>
             <h3>{isNewBot ? 'Step 1: Create Your Bot' : 'Bot Settings'}</h3>
             <p className="bot-config-header-hint">
@@ -135,7 +135,7 @@ const BotConfigCard = ({ bot, onSave, isNewBot = false }) => {
             className="bot-config-prompt"
           />
           <div className="bot-config-templates">
-            <span className="bot-config-templates-label">💡 Quick presets:</span>
+            <span className="bot-config-templates-label">Quick presets:</span>
             {promptTemplates.map((template, idx) => (
               <button
                 key={idx}
@@ -151,7 +151,7 @@ const BotConfigCard = ({ bot, onSave, isNewBot = false }) => {
 
         <details className="bot-config-advanced-settings">
           <summary className="bot-config-advanced-summary">
-            <span>⚙️ Advanced Settings</span>
+            <span>Advanced Settings</span>
             <span className="bot-config-advanced-hint">(Optional - defaults work great!)</span>
           </summary>
           <div className="bot-config-params">
@@ -172,7 +172,7 @@ const BotConfigCard = ({ bot, onSave, isNewBot = false }) => {
                 onChange={(e) => setTemperature(parseFloat(e.target.value))}
               />
               <div className="bot-config-param-hint">
-                💡 Lower = precise answers, Higher = more creative responses
+                Lower = precise answers, Higher = more creative responses
               </div>
             </div>
 
@@ -193,7 +193,7 @@ const BotConfigCard = ({ bot, onSave, isNewBot = false }) => {
                 onChange={(e) => setTopK(parseInt(e.target.value))}
               />
               <div className="bot-config-param-hint">
-                💡 How many document sections to search when answering
+                How many document sections to search when answering
               </div>
             </div>
           </div>
