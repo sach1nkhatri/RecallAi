@@ -68,6 +68,9 @@ backend/
 
 Create a `.env` file in the `backend/` directory with the following variables:
 ```env
+updated 
+updated
+
 # LM Studio Configuration
 LM_STUDIO_BASE_URL=http://192.168.1.83:1234/v1
 LM_MODEL_NAME=gpt-oss-20b
