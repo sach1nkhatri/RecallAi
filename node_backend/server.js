@@ -8,6 +8,7 @@ const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
+const path = require('path');
 const connectDB = require('./src/config/database');
 
 // Import routes
@@ -16,6 +17,9 @@ const userRoutes = require('./src/routes/userRoutes');
 const reportRoutes = require('./src/routes/reportRoutes');
 const settingsRoutes = require('./src/routes/settingsRoutes');
 const generationStatusRoutes = require('./src/routes/generationStatusRoutes');
+const adminRoutes = require('./src/routes/adminRoutes');
+const helpFAQRoutes = require('./src/routes/helpFAQRoutes');
+const paymentRoutes = require('./src/routes/paymentRoutes');
 
 // Initialize Express app
 const app = express();
@@ -37,6 +41,9 @@ app.use(
 // Body parser middleware
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
+// Serve static files (payment uploads)
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // Rate limiting
 const limiter = rateLimit({
@@ -62,6 +69,9 @@ app.use('/api/users', userRoutes);
 app.use('/api/reports', reportRoutes);
 app.use('/api/settings', settingsRoutes);
 app.use('/api/generation-status', generationStatusRoutes);
+app.use('/api/admin', adminRoutes);
+app.use('/api/help-faq', helpFAQRoutes);
+app.use('/api/payments', paymentRoutes);
 
 // Error handling middleware
 app.use((err, req, res, next) => {
@@ -83,8 +93,14 @@ app.use((req, res) => {
 // Start server
 const PORT = process.env.PORT || 5002;
 
-app.listen(PORT, () => {
-  console.log(`Node.js backend server running on port ${PORT}`);
-  console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
-});
+// Only start server if not in test environment
+if (process.env.NODE_ENV !== 'test') {
+  app.listen(PORT, () => {
+    console.log(`Node.js backend server running on port ${PORT}`);
+    console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
+  });
+}
+
+// Export app for testing
+module.exports = app;
 

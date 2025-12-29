@@ -13,13 +13,25 @@ const getNodeApiBase = () => {
 
 /**
  * Get auth token from localStorage
+ * Checks both 'token' key and 'auth' object
  */
 const getAuthToken = () => {
   try {
+    // First, check direct token storage (primary)
+    const directToken = localStorage.getItem('token');
+    if (directToken) {
+      return directToken;
+    }
+
+    // Fallback: check auth object
     const auth = localStorage.getItem('auth');
     if (auth) {
       const authData = JSON.parse(auth);
-      return authData.token || null;
+      if (authData.token) {
+        // Also store it directly for faster access
+        localStorage.setItem('token', authData.token);
+        return authData.token;
+      }
     }
   } catch (error) {
     console.error('Error getting auth token:', error);
@@ -49,6 +61,24 @@ const nodeApiRequest = async (endpoint, options = {}) => {
   });
 
   if (!response.ok) {
+    // Handle 401 Unauthorized - token might be invalid
+    if (response.status === 401) {
+      // Clear invalid token
+      localStorage.removeItem('token');
+      const auth = localStorage.getItem('auth');
+      if (auth) {
+        try {
+          const authData = JSON.parse(auth);
+          if (authData.token) {
+            delete authData.token;
+            localStorage.setItem('auth', JSON.stringify(authData));
+          }
+        } catch (e) {
+          // Ignore parse errors
+        }
+      }
+    }
+    
     const errorData = await response.json().catch(() => ({
       error: `HTTP ${response.status}`,
     }));

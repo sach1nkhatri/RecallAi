@@ -11,7 +11,8 @@ class Settings:
     # LM Studio Configuration
     LM_STUDIO_BASE_URL: str = os.getenv("LM_STUDIO_BASE_URL", "http://192.168.1.83:1234/v1")
     LM_MODEL_NAME: str = os.getenv("LM_MODEL_NAME", "qwen3-14b")
-    LM_STUDIO_TIMEOUT: int = int(os.getenv("LM_STUDIO_TIMEOUT", "90"))
+    LM_STUDIO_EMBED_MODEL: str = os.getenv("LM_STUDIO_EMBED_MODEL", "qwen-2.5-1.5b-embedding-entropy-rl-1")
+    LM_STUDIO_TIMEOUT: int = int(os.getenv("LM_STUDIO_TIMEOUT", "120"))  # Increased to 120 seconds for large generations
     
     # File Upload Configuration
     UPLOAD_DIR: str = os.getenv("UPLOAD_DIR", "uploads")
@@ -46,6 +47,10 @@ class Settings:
     
     # Node Backend Configuration (for status reporting)
     NODE_BACKEND_URL: str = os.getenv("NODE_BACKEND_URL", "http://localhost:5002")
+    
+    # MongoDB Configuration
+    MONGODB_URI: str = os.getenv("MONGODB_URI", "mongodb://localhost:27017/recall_ai")
+    MONGODB_DB_NAME: str = os.getenv("MONGODB_DB_NAME", "recall_ai")
     
     # Base directories
     BASE_DIR: Path = Path(__file__).resolve().parent.parent.parent

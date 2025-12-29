@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { getAuthToken, getNodeApiBase } from '../utils/nodeApi';
 import '../css/ReportModal.css';
 
 const ReportModal = ({ isOpen, onClose }) => {
@@ -21,12 +22,12 @@ const ReportModal = ({ isOpen, onClose }) => {
     setSubmitStatus(null);
 
     try {
-      const token = localStorage.getItem('token');
+      const token = getAuthToken();
       if (!token) {
         throw new Error('Please login to submit a report');
       }
 
-      const apiBase = process.env.REACT_APP_NODE_API_BASE_URL || 'http://localhost:5002';
+      const apiBase = getNodeApiBase();
       const response = await fetch(`${apiBase}/api/reports`, {
         method: 'POST',
         headers: {

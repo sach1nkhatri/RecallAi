@@ -3,8 +3,6 @@
 import json
 import logging
 import os
-import uuid
-from datetime import datetime
 from pathlib import Path
 from typing import Optional
 
@@ -13,46 +11,16 @@ from werkzeug.utils import secure_filename
 
 from src.config.settings import settings
 from src.infrastructure.external.rag import RAGEngine
+from src.application.services.bot_service import BotService
 
 logger = logging.getLogger(__name__)
 
-# Storage for bots (in production, use a database)
-BOTS_STORAGE = Path(settings.BASE_DIR) / "data" / "bots"
-BOTS_STORAGE.mkdir(parents=True, exist_ok=True)
+# Initialize bot service
+bot_service = BotService()
 
 # RAG indices directory
 RAG_INDICES_DIR = Path(settings.BASE_DIR) / "data" / "rag_indices"
 RAG_INDICES_DIR.mkdir(parents=True, exist_ok=True)
-
-
-def load_bots():
-    """Load all bots from storage"""
-    bots_file = BOTS_STORAGE / "bots.json"
-    if bots_file.exists():
-        try:
-            with open(bots_file, "r") as f:
-                return json.load(f)
-        except Exception as e:
-            logger.error(f"Failed to load bots: {e}")
-            return []
-    return []
-
-
-def save_bots(bots):
-    """Save bots to storage"""
-    bots_file = BOTS_STORAGE / "bots.json"
-    try:
-        with open(bots_file, "w") as f:
-            json.dump(bots, f, indent=2)
-    except Exception as e:
-        logger.error(f"Failed to save bots: {e}")
-        raise
-
-
-def get_bot(bot_id: str) -> Optional[dict]:
-    """Get a bot by ID"""
-    bots = load_bots()
-    return next((bot for bot in bots if bot.get("id") == bot_id), None)
 
 
 def register_bot_routes(app):
@@ -62,7 +30,16 @@ def register_bot_routes(app):
     def list_bots():
         """List all bots"""
         try:
-            bots = load_bots()
+            # Get user_id from X-User-ID header (set by Node backend)
+            user_id = request.headers.get('X-User-ID')
+            if not user_id:
+                # Fallback: try to extract from Authorization header
+                auth_header = request.headers.get('Authorization', '')
+                if auth_header.startswith('Bearer '):
+                    # TODO: Extract user_id from JWT token if needed
+                    pass
+            
+            bots = bot_service.list_bots(user_id=user_id)
             return jsonify({"bots": bots}), 200
         except Exception as e:
             logger.exception("Failed to list bots")
@@ -74,21 +51,14 @@ def register_bot_routes(app):
         try:
             data = request.get_json() or {}
             
-            bot_id = str(uuid.uuid4())
-            bot = {
-                "id": bot_id,
-                "name": data.get("name", "Unnamed Bot"),
-                "description": data.get("description", ""),
-                "systemPrompt": data.get("systemPrompt", ""),
-                "temperature": data.get("temperature", 0.7),
-                "topK": data.get("topK", 5),
-                "documentCount": 0,
-                "createdAt": datetime.now().isoformat(),
-            }
+            # Extract user_id from auth token if available
+            user_id = None
+            auth_header = request.headers.get('Authorization', '')
+            if auth_header.startswith('Bearer '):
+                # TODO: Extract user_id from JWT token if needed
+                pass
             
-            bots = load_bots()
-            bots.append(bot)
-            save_bots(bots)
+            bot = bot_service.create_bot(data, user_id=user_id)
             
             return jsonify({"bot": bot}), 201
         except Exception as e:
@@ -99,7 +69,7 @@ def register_bot_routes(app):
     def get_bot_route(bot_id: str):
         """Get a specific bot"""
         try:
-            bot = get_bot(bot_id)
+            bot = bot_service.get_bot(bot_id)
             if not bot:
                 return jsonify({"error": "Bot not found"}), 404
             return jsonify({"bot": bot}), 200
@@ -112,23 +82,12 @@ def register_bot_routes(app):
         """Update a bot"""
         try:
             data = request.get_json() or {}
-            bots = load_bots()
+            bot = bot_service.update_bot(bot_id, data)
             
-            bot_index = next((i for i, b in enumerate(bots) if b.get("id") == bot_id), None)
-            if bot_index is None:
+            if not bot:
                 return jsonify({"error": "Bot not found"}), 404
             
-            # Update bot fields
-            bots[bot_index].update({
-                "name": data.get("name", bots[bot_index].get("name")),
-                "description": data.get("description", bots[bot_index].get("description")),
-                "systemPrompt": data.get("systemPrompt", bots[bot_index].get("systemPrompt")),
-                "temperature": data.get("temperature", bots[bot_index].get("temperature", 0.7)),
-                "topK": data.get("topK", bots[bot_index].get("topK", 5)),
-            })
-            
-            save_bots(bots)
-            return jsonify({"bot": bots[bot_index]}), 200
+            return jsonify({"bot": bot}), 200
         except Exception as e:
             logger.exception("Failed to update bot")
             return jsonify({"error": str(e)}), 500
@@ -137,15 +96,16 @@ def register_bot_routes(app):
     def delete_bot(bot_id: str):
         """Delete a bot"""
         try:
-            bots = load_bots()
-            bots = [b for b in bots if b.get("id") != bot_id]
-            save_bots(bots)
+            deleted = bot_service.delete_bot(bot_id)
+            
+            if not deleted:
+                return jsonify({"error": "Bot not found"}), 404
             
             # Delete RAG index if exists
             index_path = RAG_INDICES_DIR / f"{bot_id}.index"
             if index_path.exists():
                 index_path.unlink()
-            metadata_path = RAG_INDICES_DIR / f"{bot_id}.metadata.json"
+            metadata_path = RAG_INDICES_DIR / f"{bot_id}.index.meta.json"
             if metadata_path.exists():
                 metadata_path.unlink()
             
@@ -158,7 +118,7 @@ def register_bot_routes(app):
     def upload_documents(bot_id: str):
         """Upload documents for a bot and vectorize them"""
         try:
-            bot = get_bot(bot_id)
+            bot = bot_service.get_bot(bot_id)
             if not bot:
                 return jsonify({"error": "Bot not found"}), 404
             
@@ -213,11 +173,8 @@ def register_bot_routes(app):
                     })
             
             # Update bot document count
-            bots = load_bots()
-            bot_index = next((i for i, b in enumerate(bots) if b.get("id") == bot_id), None)
-            if bot_index is not None:
-                bots[bot_index]["documentCount"] = len([d for d in documents if d.get("status") == "vectorized"])
-                save_bots(bots)
+            vectorized_count = len([d for d in documents if d.get("status") == "vectorized"])
+            bot_service.update_document_count(bot_id, vectorized_count)
             
             return jsonify({
                 "success": True,
@@ -255,7 +212,7 @@ def register_bot_routes(app):
     def chat_with_bot(bot_id: str):
         """Chat with a bot using RAG"""
         try:
-            bot = get_bot(bot_id)
+            bot = bot_service.get_bot(bot_id)
             if not bot:
                 return jsonify({"error": "Bot not found"}), 404
             

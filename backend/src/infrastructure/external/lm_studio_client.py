@@ -377,7 +377,9 @@ class LMStudioClient(LLMClient):
             # Ensure minimum quality - if response is too short, it might be an error
             if len(result) < 100:
                 logger.warning(f"Response too short ({len(result)} chars), might be incomplete")
+                # Still return it, but log a warning - might be valid for very small inputs
             
+            logger.info(f"Successfully generated documentation: {len(result)} characters")
             return result
             
         except (KeyError, IndexError, TypeError) as exc:

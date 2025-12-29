@@ -137,19 +137,6 @@ const LoginForm = () => {
               Sign in
             </Button>
           </form>
-          
-          <div className="auth-divider">
-            <div className="auth-divider-text">Demo credentials</div>
-          </div>
-          
-          <div className="auth-demo">
-            <p className="auth-demo-text">
-              Email: <span className="auth-demo-credentials">demo@example.com</span>
-            </p>
-            <p className="auth-demo-text">
-              Password: <span className="auth-demo-credentials">password</span>
-            </p>
-          </div>
         </Card>
       </div>
     </div>

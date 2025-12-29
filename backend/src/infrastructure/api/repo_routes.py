@@ -16,6 +16,7 @@ from src.config.settings import settings
 from src.domain.exceptions import ValidationError
 from src.infrastructure.external import LMStudioClient, FPDFGenerator
 from src.infrastructure.external.status_reporter import StatusReporter
+from src.infrastructure.external.user_service import UserService
 
 logger = logging.getLogger(__name__)
 
@@ -31,6 +32,7 @@ def register_repo_routes(app: Flask):
     rag_index_service = RAGIndexService(settings.LM_STUDIO_BASE_URL)
     repo_doc_service = RepoDocService(llm_client, pdf_generator, rag_index_service)
     status_reporter = StatusReporter(settings.NODE_BACKEND_URL)
+    user_service = UserService(settings.NODE_BACKEND_URL)
     
     def status_callback(**kwargs):
         """Callback to report status updates to Node backend"""
@@ -156,6 +158,13 @@ def register_repo_routes(app: Flask):
             except Exception:
                 pass
             
+            # Check usage limit before generating
+            if token:
+                can_proceed, usage_info, error_msg = user_service.check_usage_limit(token, "codeToDoc")
+                if not can_proceed:
+                    logger.warning(f"Usage limit reached for codeToDoc: {error_msg}")
+                    return jsonify({"error": error_msg}), 403
+            
             # Create a request-specific status callback that captures the token
             def request_status_callback(**kwargs):
                 """Status callback with captured token from request"""
@@ -201,6 +210,11 @@ def register_repo_routes(app: Flask):
                     repo_url=repo_url,
                     title=title
                 )
+                
+                # Increment usage after successful generation
+                if token:
+                    user_service.increment_usage(token, "codeToDoc", 1)
+                    
             except Exception as e:
                 # Report error to Node backend
                 try:

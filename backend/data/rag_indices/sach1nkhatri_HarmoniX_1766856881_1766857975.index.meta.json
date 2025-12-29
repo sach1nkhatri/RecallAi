@@ -1,0 +1,302 @@
+[
+  {
+    "chunk_id": 0,
+    "text": "🎸 HarmoniX Academy Master the Neck, Master the Music A next-generation, interactive guitar learning platform built for musicians, educators, and students to visualize, hear, and master music theory directly on a virtual fretboard. Combines scales, modes, the CAGED system, audio playback, AI-guided prompts, and real-time pitch detection — all wrapped in a beautiful glassy UI. 🚀 Overview HarmoniX Academy transforms traditional guitar learning into a digital experience. Explore scales, visualize intervals, train your ear, and interact with theory like never before. Key highlights: 🎵 Interactive Fretboard — 6 strings × 24 frets with real-time note highlighting 🔊 Scale Player — Hear scales ascending/descending using Tone.js 🧠 Theory Assistant — Explore formulas, chord relationships, and intervals 🎸 CAGED System Visualization — See all 5 movable patterns dynamically 🪗 AI Tutor Mode — Follow guided prompts and challenges to learn theory interactively 🎚️ Metronome + Tuner — Practice in rhythm and tune your guitar live 📈 Progress Tracking — XP, streaks, and lessons saved via backend 💎 Glassy Modern UI — Smooth transitions, color-coded degrees, and vibrant themes 🧩 Tech Stack Layer Technologies 🎨 Frontend React.js, React Router, Tone.js, Tonal.js, TailwindCSS / Custom CSS, Framer Motion ⚙️ Backend Node.js, Express.js, MongoDB, Mongoose 🔊 Audio & Theory Web Audio API, Tone.js, @tonaljs/tonal 🔐 Auth & Data JWT, bcrypt, MongoDB Atlas 🧠 AI Prompt Engine Custom logic engine for guided lessons 🧭 State Management React Context / Hooks 📦 Deployment Vercel (Frontend), Render / Railway (Backend) 🗂️ Folder Structure src/ ├── App.js ├── App.css ├── features/ │ ├── auth/ │ │ ├── page/ │ │ │ ├── LoginPage.jsx │ │ │ ├── SignupPage.jsx │ ├── dashboard/ │ │ ├── page/ │ │ │ ├── DashboardPage.jsx │ ├── fretboard/ │ │ ├── component/ │ │ │ ├── Fretboard.jsx │ │ │ ├── TheorySidebar.jsx │ │ │ ├── ScalePlayer.jsx │ │ │ ├── CagedOverlay.jsx │ │ │ ├── PromptBanner.jsx │ │ ├── css/ │ │ │ ├── fretboard.css │ │ │ ├── sidebar.css │ │ ├── hooks/ │ │ │ ├── useScalePlayer.js │ │ │ ├── useCagedShapes.js │ │ │ ├── usePrompts.js │ │ └── data/ │ │ ├── scaleData.js │ │ ├── cagedData.js │ │ ├── intervalInfo.js │ ├── tuner/ │ │ ├── page/ │ │ │ ├── TunerPage.jsx │ │ ├── hooks/ │ │ │ ├── useTuner.js │ │ ├── css/ │ │ │ ├── tuner.css │ ├── metronome/ │ │ ├── component/ │ │ │ ├── Metronome.jsx │ │ ├── css/ │ │ │ ├── metronome.css │ ├── ai-tutor/ │ │ ├── component/ │ │ │ ├── PromptEngine.jsx │ │ │ ├── LessonCard.jsx │ │ ├── data/ │ │ │ ├── promptData.js │ │ ├── css/ │ │ │ ├── tutor.css ├── backend/ │ ├── server.js │ ├── routes/ │ ├── models/ │ ├── controllers/ │ ├── config/ 💻 Setup & Installation 🧱 Prerequisites Make sure you have: Node.js ≥ 18 MongoDB Atlas / local instance npm / yarn ⚙️ Clone and Install git clone https://github.com/yourusername/harmonix-academy.git cd harmonix-academy npm install cd backend && npm install 🔧 Environment Variables Create .env in /backend: MONGODB_URI=your_mongo_connection_string JWT_SECRET=your_secret PORT=5000 🚀 Run the app # Start backend cd backend npm run dev # Start frontend cd .. npm start App runs at 👉 http://localhost:3000 🎶 Core Features Breakdown 🎸 Fretboard Select root & scale Dynamic degree highlighting Click → Hear note (Tone.js) Hover → Interval tooltip Positions 1–5 toggle Optional CAGED overlays 🧠 Theory Sidebar Displays scale info, intervals, and chord relations Explains mood of each mode Offers quick access to related scales 🔊 Scale Player Sequential playback (ascending/descending) Adjustable tempo (BPM) Loop playback option 🎓 AI Tutor Mode Gamified learning system Challenges like “Find all G notes” or “Identify the 5th degree” Awards XP & lesson completion 🎧 Tuner Uses getUserMedia for live input Shows note name, frequency, and pitch deviation 🕒 Metronome Tap tempo or manual BPM Visual + sound click Customizable accent beat 🪶 CAGED Mode Overlay all 5 major/minor shapes Visual guide for pattern memorization Each position linked to practice exercises 🌈 UI Design Modern glassy UI Adaptive to light/dark theme (Amp Mode) Fretboard with vivid color-coded scale degrees Smooth transitions using Framer Motion 🧩 Future Roadmap ✅ v1 – Fretboard, Scales, Theory, Tuner",
+    "file_path": "README.md",
+    "chunk_index": 0
+  },
+  {
+    "chunk_id": 1,
+    "text": "🎧 Tuner Uses getUserMedia for live input Shows note name, frequency, and pitch deviation 🕒 Metronome Tap tempo or manual BPM Visual + sound click Customizable accent beat 🪶 CAGED Mode Overlay all 5 major/minor shapes Visual guide for pattern memorization Each position linked to practice exercises 🌈 UI Design Modern glassy UI Adaptive to light/dark theme (Amp Mode) Fretboard with vivid color-coded scale degrees Smooth transitions using Framer Motion 🧩 Future Roadmap ✅ v1 – Fretboard, Scales, Theory, Tuner 🔄 v2 – Lesson Engine + User Profiles 🎧 v3 – Ear Training Mode + Sound Recognition 🎸 v4 – Backing Track Player 🧠 v5 – AI-powered practice coach 📱 v6 – Mobile PWA version 🧑‍🎓 Target Users Beginner guitarists learning scales Intermediate players mastering the neck Music teachers who want visual tools Advanced users exploring modes & improvisation 🏷️ Brand Identity App Name: HarmoniX Academy Tagline: “Master the neck, master the music.” Theme: Neo-Glassy Tech / Modern Learning Studio Accent Colors: Orange (#f97316) & Indigo (#4f46e5) 🤝 Contributing Pull requests are welcome! If you’d like to contribute lessons or improve the theory engine: Fork the repo Create your branch (feature/new-lesson) Commit changes Open a PR 🎸 📜 License MIT License © 2025 — Built for musicians by musicians 🎶 ⚡ Acknowledgments Tonal.js for scale & interval magic Tone.js for sound synthesis React for the modular architecture You — the learner, dreamer, and guitarist 🧡 🖼️ Preview (Optional section) (Add screenshots here when ready) 🎸 Dashboard → Interactive Fretboard → Theory Overlay → Scale Player 🧩 “HarmoniX Academy” — where code meets creativity, music meets interactivity, and you become your own teacher. 🎶",
+    "file_path": "README.md",
+    "chunk_index": 1
+  },
+  {
+    "chunk_id": 2,
+    "text": "const mongoose = require('mongoose'); module.exports = async function connectDb() { const uri = process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/harmonix'; mongoose.set('strictQuery', true); await mongoose.connect(uri, { dbName: 'harmonix' }); };",
+    "file_path": "backend/config/db.js",
+    "chunk_index": 2
+  },
+  {
+    "chunk_id": 3,
+    "text": "const LessonProgress = require('../models/LessonProgress'); exports.getProgress = async (req, res) => { const userId = req.query.userId; const list = await LessonProgress.find({ userId }); res.json(list); }; exports.updateProgress = async (req, res) => { const { userId, lessonId, status, xpAwarded } = req.body; const doc = await LessonProgress.findOneAndUpdate( { userId, lessonId }, { status, xpAwarded }, { new: true, upsert: true } ); res.json(doc); };",
+    "file_path": "backend/controllers/lessonController.js",
+    "chunk_index": 3
+  },
+  {
+    "chunk_id": 4,
+    "text": "const User = require('../models/User'); exports.register = async (req, res) => { const { email, password } = req.body; if (!email || !password) return res.status(400).json({ message: 'email and password required' }); // demo only: store hash-less (do not use in production) try { const user = await User.create({ email, passwordHash: password }); res.status(201).json({ id: user._id, email: user.email }); } catch (e) { res.status(400).json({ message: e.message }); } }; exports.login = async (req, res) => { const { email, password } = req.body; const user = await User.findOne({ email }); if (!user || user.passwordHash !== password) return res.status(401).json({ message: 'invalid credentials' }); res.json({ id: user._id, email: user.email, xp: user.xp, streak: user.streak }); }; exports.me = async (req, res) => { res.json({ ok: true }); };",
+    "file_path": "backend/controllers/userController.js",
+    "chunk_index": 4
+  },
+  {
+    "chunk_id": 5,
+    "text": "const mongoose = require('mongoose'); const lessonProgressSchema = new mongoose.Schema({ userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true }, lessonId: { type: String, required: true }, status: { type: String, enum: ['not_started','in_progress','completed'], default: 'not_started' }, xpAwarded: { type: Number, default: 0 }, }, { timestamps: true }); module.exports = mongoose.model('LessonProgress', lessonProgressSchema);",
+    "file_path": "backend/models/LessonProgress.js",
+    "chunk_index": 5
+  },
+  {
+    "chunk_id": 6,
+    "text": "const mongoose = require('mongoose'); const userSchema = new mongoose.Schema({ email: { type: String, required: true, unique: true }, passwordHash: { type: String, required: true }, displayName: { type: String }, xp: { type: Number, default: 0 }, streak: { type: Number, default: 0 }, }, { timestamps: true }); module.exports = mongoose.model('User', userSchema);",
+    "file_path": "backend/models/User.js",
+    "chunk_index": 6
+  },
+  {
+    "chunk_id": 7,
+    "text": "{ \"name\": \"harmonix-backend\", \"version\": \"0.1.0\", \"private\": true, \"main\": \"server.js\", \"type\": \"commonjs\", \"scripts\": { \"start\": \"node server.js\", \"dev\": \"node server.js\" }, \"dependencies\": { \"cors\": \"^2.8.5\", \"dotenv\": \"^16.4.5\", \"express\": \"^4.19.2\", \"mongoose\": \"^8.7.0\" } }",
+    "file_path": "backend/package.json",
+    "chunk_index": 7
+  },
+  {
+    "chunk_id": 8,
+    "text": "const router = require('express').Router(); const ctrl = require('../controllers/lessonController'); router.get('/', ctrl.getProgress); router.post('/', ctrl.updateProgress); module.exports = router;",
+    "file_path": "backend/routes/progressRoutes.js",
+    "chunk_index": 8
+  },
+  {
+    "chunk_id": 9,
+    "text": "const router = require('express').Router(); const ctrl = require('../controllers/userController'); router.post('/register', ctrl.register); router.post('/login', ctrl.login); router.get('/me', ctrl.me); module.exports = router;",
+    "file_path": "backend/routes/userRoutes.js",
+    "chunk_index": 9
+  },
+  {
+    "chunk_id": 10,
+    "text": "const express = require('express'); const cors = require('cors'); const dotenv = require('dotenv'); const connectDb = require('./config/db'); dotenv.config(); const app = express(); app.use(cors()); app.use(express.json()); // routes app.use('/api/users', require('./routes/userRoutes')); app.use('/api/progress', require('./routes/progressRoutes')); app.get('/health', (req, res) => res.json({ ok: true })); const PORT = process.env.PORT || 4000; connectDb().then(() => { app.listen(PORT, () => console.log(`HarmoniX backend running on :${PORT}`)); }).catch(err => { console.error('DB connection failed', err); process.exit(1); });",
+    "file_path": "backend/server.js",
+    "chunk_index": 10
+  },
+  {
+    "chunk_id": 11,
+    "text": "{ \"name\": \"guitar_theory_simulator\", \"version\": \"0.1.0\", \"private\": true, \"dependencies\": { \"@testing-library/dom\": \"^10.4.1\", \"@testing-library/jest-dom\": \"^6.9.1\", \"@testing-library/react\": \"^16.3.0\", \"@testing-library/user-event\": \"^13.5.0\", \"@tonaljs/tonal\": \"^4.10.0\", \"framer-motion\": \"^12.23.24\", \"react\": \"^19.2.0\", \"react-dom\": \"^19.2.0\", \"react-router-dom\": \"^7.9.5\", \"react-scripts\": \"5.0.1\", \"web-vitals\": \"^2.1.4\" }, \"scripts\": { \"start\": \"react-scripts start\", \"build\": \"react-scripts build\", \"test\": \"react-scripts test\", \"eject\": \"react-scripts eject\" }, \"eslintConfig\": { \"extends\": [ \"react-app\", \"react-app/jest\" ] }, \"browserslist\": { \"production\": [ \">0.2%\", \"not dead\", \"not op_mini all\" ], \"development\": [ \"last 1 chrome version\", \"last 1 firefox version\", \"last 1 safari version\" ] } }",
+    "file_path": "package.json",
+    "chunk_index": 11
+  },
+  {
+    "chunk_id": 12,
+    "text": "<!DOCTYPE html> <html lang=\"en\"> <head> <meta charset=\"utf-8\" /> <link rel=\"icon\" href=\"%PUBLIC_URL%/favicon.ico\" /> <meta name=\"viewport\" content=\"width=device-width, initial-scale=1\" /> <meta name=\"theme-color\" content=\"#000000\" /> <meta name=\"description\" content=\"Web site created using create-react-app\" /> <link rel=\"apple-touch-icon\" href=\"%PUBLIC_URL%/logo192.png\" /> <!-- manifest.json provides metadata used when your web app is installed on a user's mobile device or desktop. See https://developers.google.com/web/fundamentals/web-app-manifest/ --> <link rel=\"manifest\" href=\"%PUBLIC_URL%/manifest.json\" /> <!-- Notice the use of %PUBLIC_URL% in the tags above. It will be replaced with the URL of the `public` folder during the build. Only files inside the `public` folder can be referenced from the HTML. Unlike \"/favicon.ico\" or \"favicon.ico\", \"%PUBLIC_URL%/favicon.ico\" will work correctly both with client-side routing and a non-root public URL. Learn how to configure a non-root public URL by running `npm run build`. --> <title>React App</title> </head> <body> <noscript>You need to enable JavaScript to run this app.</noscript> <div id=\"root\"></div> <!-- This HTML file is a template. If you open it directly in the browser, you will see an empty page. You can add webfonts, meta tags, or analytics to this file. The build step will place the bundled scripts into the <body> tag. To begin the development, run `npm start` or `yarn start`. To create a production bundle, use `npm run build` or `yarn build`. --> </body> </html>",
+    "file_path": "public/index.html",
+    "chunk_index": 12
+  },
+  {
+    "chunk_id": 13,
+    "text": "{ \"short_name\": \"React App\", \"name\": \"Create React App Sample\", \"icons\": [ { \"src\": \"favicon.ico\", \"sizes\": \"64x64 32x32 24x24 16x16\", \"type\": \"image/x-icon\" }, { \"src\": \"logo192.png\", \"type\": \"image/png\", \"sizes\": \"192x192\" }, { \"src\": \"logo512.png\", \"type\": \"image/png\", \"sizes\": \"512x512\" } ], \"start_url\": \".\", \"display\": \"standalone\", \"theme_color\": \"#000000\", \"background_color\": \"#ffffff\" }",
+    "file_path": "public/manifest.json",
+    "chunk_index": 13
+  },
+  {
+    "chunk_id": 14,
+    "text": "# https://www.robotstxt.org/robotstxt.html User-agent: * Disallow:",
+    "file_path": "public/robots.txt",
+    "chunk_index": 14
+  },
+  {
+    "chunk_id": 15,
+    "text": ":root { --neck-bg: #0f172a; } body.light .fb-container { background: #f8fafc; color: #020617; } .fb-note { transition: none; } .fb-note:hover { box-shadow: none; } /* HarmoniX global shell */ .hx-shell { min-height: 100vh; background: radial-gradient(1200px 600px at 20% -10%, rgba(56,189,248,.18), transparent), radial-gradient(1200px 600px at 80% -10%, rgba(99,102,241,.18), transparent), linear-gradient(180deg, #0b1220, #0a0f1c); } .hx-topbar { position: sticky; top: 0; z-index: 50; display: flex; align-items: center; justify-content: space-between; padding: .75rem 1rem; gap: 1rem; background: rgba(2,6,23,.55); border-bottom: 1px solid rgba(148,163,184,.08); backdrop-filter: blur(10px); } .hx-main { padding: 1rem; } .hx-brand { display:flex; align-items:center; gap:.6rem; color:#e2e8f0; } .hx-logo { width:28px; height:28px; border-radius:8px; display:grid; place-items:center; font-weight:800; background: linear-gradient(135deg, #f59e0b, #ea580c); color:#0b1220; } .hx-title .hx-name { font-weight: 700; line-height: 1; } .hx-title .hx-tagline { font-size:.7rem; opacity:.7; line-height:1; } .hx-nav { display:flex; gap:.8rem; } .hx-nav a { color:#cbd5e1; text-decoration:none; font-weight:600; font-size:.95rem; padding:.35rem .55rem; border-radius:.5rem; } .hx-nav a:hover { background: rgba(148,163,184,.15); color:#e2e8f0; } /* Footer */ .hx-footer { margin-top: 2rem; border-top: 1px solid rgba(148,163,184,.1); background: rgba(2,6,23,.55); color: #e2e8f0; } .hx-footer-grid { display: grid; grid-template-columns: 1.5fr 1fr 1fr 1fr 1fr; gap: 1.25rem; padding: 1.25rem 1rem; } .hx-footer-brand { display:flex; gap:.7rem; align-items:center; } .hx-foot-head { font-weight:700; margin-bottom:.5rem; } .hx-foot-list { list-style:none; padding:0; margin:0; display:grid; gap:.35rem; } .hx-foot-list a { color:#cbd5e1; text-decoration:none; } .hx-foot-list a:hover { color:#fff; } .hx-foot-bottom { padding: .8rem 1rem; border-top: 1px solid rgba(148,163,184,.08); font-size: .9rem; text-align: center; opacity: .9; } @media (max-width: 900px) { .hx-footer-grid { grid-template-columns: 1fr 1fr; } }",
+    "file_path": "src/App.css",
+    "chunk_index": 15
+  },
+  {
+    "chunk_id": 16,
+    "text": "// src/App.js import React from \"react\"; import { BrowserRouter as Router, Routes, Route, Navigate, Link } from \"react-router-dom\"; import \"./App.css\"; import DashboardPage from \"./features/dashboard/page/DashboardPage\"; import FretboardPage from \"./features/fretboard/page/FretboardPage\"; import TunerPage from \"./features/tuner/page/TunerPage\"; function App() { return ( <Router> <div className=\"hx-shell\"> <header className=\"hx-topbar\"> <div className=\"hx-brand\"> <span className=\"hx-logo\">H</span> <div className=\"hx-title\"> <div className=\"hx-name\">HarmoniX Academy</div> <div className=\"hx-tagline\">Master the neck, master the music.</div> </div> </div> <nav className=\"hx-nav\"> <Link to=\"/dashboard\">Dashboard</Link> <Link to=\"/fretboard\">Fretboard</Link> <Link to=\"/theory\">Theory</Link> <Link to=\"/practice\">Practice</Link> <Link to=\"/tuner\">Tuner</Link> <Link to=\"/profile\">Profile</Link> </nav> </header> <main className=\"hx-main\"> <Routes> <Route path=\"/\" element={<Navigate to=\"/dashboard\" />} /> <Route path=\"/dashboard\" element={<DashboardPage />} /> <Route path=\"/fretboard\" element={<FretboardPage />} /> <Route path=\"/tuner\" element={<TunerPage />} /> {/* alias theory and practice to dashboard for now */} <Route path=\"/theory\" element={<FretboardPage />} /> <Route path=\"/practice\" element={<DashboardPage />} /> {/* fallback: any unknown route → dashboard */} <Route path=\"*\" element={<Navigate to=\"/dashboard\" />} /> </Routes> </main> <footer className=\"hx-footer\"> <div className=\"hx-footer-grid\"> <div className=\"hx-footer-brand\"> <div className=\"hx-logo\">H</div> <div> <div className=\"hx-name\">HarmoniX Academy</div> <div className=\"hx-tagline\">Master the neck, master the music.</div> </div> </div> <div> <div className=\"hx-foot-head\">Products</div> <ul className=\"hx-foot-list\"> <li><Link to=\"/fretboard\">Interactive Fretboard</Link></li> <li><Link to=\"/tuner\">Guitar Tuner</Link></li> <li><Link to=\"/practice\">Metronome</Link></li> </ul> </div> <div> <div className=\"hx-foot-head\">Learn</div> <ul className=\"hx-foot-list\"> <li><Link to=\"/theory\">Music Theory</Link></li> <li><Link to=\"/fretboard\">CAGED System</Link></li> <li><Link to=\"/practice\">Ear Training</Link></li> </ul> </div> <div> <div className=\"hx-foot-head\">Community</div> <ul className=\"hx-foot-list\"> <li><a href=\"#\">Roadmap</a></li> <li><a href=\"#\">Changelog</a></li> <li><a href=\"#\">Support</a></li> </ul> </div> <div> <div className=\"hx-foot-head\">Assets</div> <ul className=\"hx-foot-list\"> <li><a href=\"#\">Logos</a></li> <li><a href=\"#\">Brand Guide</a></li> <li><a href=\"#\">Press Kit</a></li> </ul> </div> </div> <div className=\"hx-foot-bottom\"> © 2025 | HArminiX | Built by Sachin Khatri. All Rights Reserved. </div> </footer> </div> </Router> ); } export default App;",
+    "file_path": "src/App.js",
+    "chunk_index": 16
+  },
+  {
+    "chunk_id": 17,
+    "text": "import { render, screen } from '@testing-library/react'; import App from './App'; test('renders learn react link', () => { render(<App />); const linkElement = screen.getByText(/learn react/i); expect(linkElement).toBeInTheDocument(); });",
+    "file_path": "src/App.test.js",
+    "chunk_index": 17
+  },
+  {
+    "chunk_id": 18,
+    "text": "import React from \"react\"; export default function LessonCard({ title, description, xp = 50, onStart }) { return ( <div className=\"tutor-card\"> <div className=\"tutor-card-title\">{title}</div> <div className=\"tutor-card-desc\">{description}</div> <div className=\"tutor-card-row\"> <span className=\"tutor-xp\">+{xp} XP</span> <button className=\"tutor-btn\" onClick={onStart}>Start</button> </div> </div> ); }",
+    "file_path": "src/features/ai-tutor/component/LessonCard.jsx",
+    "chunk_index": 18
+  },
+  {
+    "chunk_id": 19,
+    "text": "import React, { useState } from \"react\"; import promptData from \"../data/promptData\"; export default function PromptEngine() { const [idx, setIdx] = useState(0); const prompt = promptData[idx]; return ( <div className=\"tutor-box\"> <div className=\"tutor-head\">Practice Prompt</div> <div className=\"tutor-body\">{prompt.text}</div> <div className=\"tutor-actions\"> <button className=\"tutor-btn\" onClick={()=>setIdx((i)=>(i+1)%promptData.length)}>Next</button> </div> </div> ); }",
+    "file_path": "src/features/ai-tutor/component/PromptEngine.jsx",
+    "chunk_index": 19
+  },
+  {
+    "chunk_id": 20,
+    "text": ".tutor-box { background: rgba(15,23,42,.25); border:1px solid rgba(148,163,184,.08); border-radius:.8rem; color:#e2e8f0; } .tutor-head { padding:.6rem .8rem; font-weight:700; border-bottom:1px solid rgba(148,163,184,.08); } .tutor-body { padding:.8rem; } .tutor-actions { padding:.6rem .8rem; border-top:1px solid rgba(148,163,184,.08); } .tutor-btn { background: rgba(59,130,246,.15); border:1px solid rgba(59,130,246,.35); color:#bae6fd; padding:.35rem .6rem; border-radius:.5rem; cursor:pointer; } .tutor-card { background: rgba(15,23,42,.25); border:1px solid rgba(148,163,184,.08); border-radius:.8rem; padding:.6rem; color:#e2e8f0; } .tutor-card-title { font-weight:700; } .tutor-card-desc { opacity:.85; font-size:.9rem; } .tutor-card-row { display:flex; justify-content:space-between; align-items:center; margin-top:.5rem; } .tutor-xp { color:#fde68a; }",
+    "file_path": "src/features/ai-tutor/css/tutor.css",
+    "chunk_index": 20
+  },
+  {
+    "chunk_id": 21,
+    "text": "const promptData = [ { id: \"g-notes\", text: \"Find all G notes on the fretboard.\" }, { id: \"mixo-pos5\", text: \"Play the Mixolydian scale starting from the 5th position.\" }, { id: \"pent-pos2\", text: \"Ascend then descend A minor pentatonic in position 2.\" }, { id: \"target-3rd\", text: \"Target the 3rd of each chord in a I–IV–V in C.\" }, ]; export default promptData;",
+    "file_path": "src/features/ai-tutor/data/promptData.js",
+    "chunk_index": 21
+  },
+  {
+    "chunk_id": 22,
+    "text": "export default class LoginPage { }",
+    "file_path": "src/features/auth/page/LoginPage.js",
+    "chunk_index": 22
+  },
+  {
+    "chunk_id": 23,
+    "text": "export default class SignupPage { }",
+    "file_path": "src/features/auth/page/SignupPage.js",
+    "chunk_index": 23
+  },
+  {
+    "chunk_id": 24,
+    "text": "// src/features/dashboard/component/Dashboard.jsx import React from \"react\"; import Fretboard from \"../../fretboard/component/Fretboard\"; import \"../css/dashboard.css\"; export default function Dashboard() { return ( <div className=\"dashboard-shell\"> <aside className=\"dash-sidebar\"> <h2>GuitarLab</h2> <p>Tools</p> </aside> <main className=\"dash-main\"> <h1>Dashboard</h1> <Fretboard /> </main> </div> ); }",
+    "file_path": "src/features/dashboard/component/Dashboard.js",
+    "chunk_index": 24
+  },
+  {
+    "chunk_id": 25,
+    "text": "/* HarmoniX dashboard layout */ .dashboard-shell { display: grid; grid-template-columns: 240px 1fr; gap: 1rem; } .dash-sidebar { background: rgba(15,23,42,.25); border: 1px solid rgba(148,163,184,.08); border-radius: 0.8rem; padding: 1rem; color: #e2e8f0; } .dash-links { list-style: none; padding: 0; margin: .5rem 0 0; } .dash-links li { padding: .35rem 0; opacity: .85; } .dash-main { display: flex; flex-direction: column; gap: 1rem; } .dash-hero { background: linear-gradient(135deg, rgba(30,58,138,.5), rgba(8,47,73,.35)); border: 1px solid rgba(148,163,184,.12); border-radius: 1rem; padding: 1rem; color: #e2e8f0; } .dash-hero-title { font-size: 1.25rem; font-weight: 700; } .dash-hero-sub { opacity: .8; } .dash-widgets { display: grid; grid-template-columns: 1fr auto; gap: 1rem; align-items: start; } .dash-card { background: rgba(15,23,42,.25); border: 1px solid rgba(148,163,184,.08); border-radius: 1rem; padding: .75rem; color: #e2e8f0; }",
+    "file_path": "src/features/dashboard/css/dashboard.css",
+    "chunk_index": 25
+  },
+  {
+    "chunk_id": 26,
+    "text": "// src/features/dashboard/page/DashboardPage.jsx import React from \"react\"; import Fretboard from \"../../fretboard/component/Fretboard\"; import TunerWidget from \"../../tuner/component/TunerWidget\"; import \"../css/dashboard.css\"; export default function DashboardPage() { return ( <div className=\"dashboard-shell\"> <aside className=\"dash-sidebar\"> <h2>HarmoniX</h2> <p className=\"muted\">Practice smarter. Learn faster.</p> </aside> <main className=\"dash-main\"> <section className=\"dash-hero\"> <div className=\"dash-hero-title\">Welcome to HarmoniX Academy</div> <div className=\"dash-hero-sub\">Master the neck, master the music.</div> </section> <section className=\"dash-widgets\"> <div className=\"dash-card\"> <h3>Interactive Fretboard</h3> <Fretboard /> </div> <div className=\"dash-card\" style={{maxWidth:\"280px\"}}> <h3>Quick Tuner</h3> <TunerWidget /> </div> </section> </main> </div> ); }",
+    "file_path": "src/features/dashboard/page/DashboardPage.js",
+    "chunk_index": 26
+  },
+  {
+    "chunk_id": 27,
+    "text": "import React, { useMemo, useState } from \"react\"; import useCagedShapes from \"../hooks/useCagedShapes\"; export default function CagedOverlay({ root }) { const [variant, setVariant] = useState(\"major\"); // \"major\" | \"minor\" const shapes = useCagedShapes(root, variant); const ranges = useMemo(() => { return shapes.map(s => s.fretRange); }, [shapes]); return ( <div className=\"caged-overlay\"> <div className=\"caged-toolbar\"> <span>CAGED</span> <select value={variant} onChange={(e)=>setVariant(e.target.value)}> <option value=\"major\">Major</option> <option value=\"minor\">Minor</option> </select> </div> <div className=\"caged-ranges\"> {ranges.map((r, i) => ( <div key={i} className=\"caged-chip\">{r[0]}–{r[1]}</div> ))} </div> </div> ); }",
+    "file_path": "src/features/fretboard/component/CagedOverlay.jsx",
+    "chunk_index": 27
+  },
+  {
+    "chunk_id": 28,
+    "text": "import React, { useMemo, useState, useRef } from \"react\"; import { Scale, Note, Interval, distance, Interval as TonalInterval } from \"@tonaljs/tonal\"; import \"../css/fretboard.css\"; import ScalePlayer from \"./ScalePlayer\"; import CagedOverlay from \"./CagedOverlay\"; import PromptBanner from \"./PromptBanner\"; const TUNING = [\"E4\", \"B3\", \"G3\", \"D3\", \"A2\", \"E2\"]; const FRETS = 24; const FRET_MARKERS = { 3: \"single\", 5: \"single\", 7: \"single\", 9: \"single\", 12: \"double\", 15: \"single\", 17: \"single\", 19: \"single\", 21: \"single\", 24: \"double\", }; // changed: minor -> tonalName: \"minor\" const SCALE_DATA = { major: { tonalName: \"major\", label: \"Major\", formula: [\"1\", \"2\", \"3\", \"4\", \"5\", \"6\", \"7\"], }, minor: { tonalName: \"minor\", // ⬅️ was \"natural minor\" label: \"Natural Minor\", formula: [\"1\", \"2\", \"b3\", \"4\", \"5\", \"b6\", \"b7\"], }, pentatonic: { tonalName: \"minor pentatonic\", label: \"Pentatonic Minor\", formula: [\"1\", \"b3\", \"4\", \"5\", \"b7\"], }, blues: { tonalName: \"blues\", label: \"Blues\", formula: [\"1\", \"b3\", \"4\", \"b5\", \"5\", \"b7\"], }, dorian: { tonalName: \"dorian\", label: \"Dorian\", formula: [\"1\", \"2\", \"b3\", \"4\", \"5\", \"6\", \"b7\"], }, mixolydian: { tonalName: \"mixolydian\", label: \"Mixolydian\", formula: [\"1\", \"2\", \"3\", \"4\", \"5\", \"6\", \"b7\"], }, }; const DEGREE_COLORS = [ \"var(--fb-root)\", \"var(--fb-degree-2)\", \"var(--fb-degree-3)\", \"var(--fb-degree-4)\", \"var(--fb-degree-5)\", \"var(--fb-degree-6)\", \"var(--fb-degree-7)\", ]; const ROOTS = [\"C\", \"C#\", \"D\", \"D#\", \"E\", \"F\", \"F#\", \"G\", \"G#\", \"A\", \"A#\", \"B\"]; const POSITIONS = [ { id: \"off\", label: \"No position\", range: null }, { id: \"p1\", label: \"Position 1\", range: [0, 4] }, { id: \"p2\", label: \"Position 2\", range: [3, 7] }, { id: \"p3\", label: \"Position 3\", range: [5, 9] }, { id: \"p4\", label: \"Position 4\", range: [7, 12] }, { id: \"p5\", label: \"Position 5\", range: [12, 17] }, ]; export default function Fretboard() { const [root, setRoot] = useState(\"C\"); const [scaleId, setScaleId] = useState(\"major\"); const [positionId, setPositionId] = useState(\"off\"); const [mode, setMode] = useState(\"scale\"); // \"scale\" | \"caged\" | \"chord\" const [tooltip, setTooltip] = useState(null); const audioCtxRef = useRef(null); const scaleInfo = SCALE_DATA[scaleId]; const scaleNotes = useMemo(() => { const s = Scale.get(`${root} ${scaleInfo.tonalName}`); return s.notes; }, [root, scaleId, scaleInfo]); const degreeMap = useMemo(() => { const map = {}; scaleNotes.forEach((pc, idx) => { map[pc] = idx; }); return map; }, [scaleNotes]); const board = useMemo(() => { return TUNING.map((openNote) => { const stringNotes = []; for (let fret = 0; fret <= FRETS; fret++) { const interval = Interval.fromSemitones(fret); const note = Note.transpose(openNote, interval); const pc = Note.pitchClass(note); stringNotes.push({ fret, pc, note }); } return stringNotes; }); }, []); function playNote(noteName) { const freq = Note.freq(noteName); if (!freq) return; if (!audioCtxRef.current) { audioCtxRef.current = new (window.AudioContext || window.webkitAudioContext)(); } const ctx = audioCtxRef.current; const osc = ctx.createOscillator(); const gain = ctx.createGain(); osc.frequency.value = freq; // slightly softer and smoother envelope to avoid click artifacts (animation fix) osc.type = \"sine\"; gain.gain.setValueAtTime(0, ctx.currentTime); gain.gain.linearRampToValueAtTime(0.22, ctx.currentTime + 0.01); gain.gain.linearRampToValueAtTime(0.0, ctx.currentTime + 0.4); osc.connect(gain); gain.connect(ctx.destination); osc.start(); osc.stop(ctx.currentTime + 0.42); } const posRange = POSITIONS.find((p) => p.id === positionId)?.range || null; return ( <div className=\"fb-container\"> <PromptBanner /> <div className=\"fb-top\"> <div className=\"fb-controls\"> <div className=\"fb-control\"> <label>Root</label> <select value={root} onChange={(e) => setRoot(e.target.value)}> {ROOTS.map((r) => ( <option key={r} value={r}> {r} </option> ))} </select> </div> <div className=\"fb-control\"> <label>Scale</label> <select value={scaleId} onChange={(e) => setScaleId(e.target.value)}> {Object.entries(SCALE_DATA).map(([id, s]) => ( <option key={id} value={id}> {s.label} </option> ))} </select> </div> <div className=\"fb-control\"> <label>Position</label> <select value={positionId} onChange={(e) => setPositionId(e.target.value)}> {POSITIONS.map((p) => ( <option key={p.id} value={p.id}> {p.label} </option> ))} </select> </div> <div className=\"fb-control\"> <label>Mode</label> <select value={mode} onChange={(e) => setMode(e.target.value)}> <option value=\"scale\">Scale Mode</option> <option value=\"chord\">Chord Mode</option> <option value=\"caged\">CAGED Mode</option> </select> </div> </div> <div className=\"fb-theory\"> <div> <h4> {root} {scaleInfo.label} </h4> <p className=\"fb-sub\">Formula: {scaleInfo.formula.join(\" – \")}</p> <p className=\"fb-sub\">Notes: {scaleNotes.join(\" · \")}</p> </div> <div className=\"fb-legend\"> {scaleNotes.map((note, idx) => ( <div key={note} className=\"fb-legend-item\"> <span className=\"fb-legend-dot\" style={{ background: DEGREE_COLORS[idx % DEGREE_COLORS.length] }} /> <span className=\"fb-legend-text\"> {note} ({scaleInfo.formula[idx] || `deg ${idx + 1}`}) </span> </div> ))} </div> <ScalePlayer root={root} notes={scaleNotes} onPlayNote={playNote} /> </div> </div> {tooltip && ( <div className=\"fb-tooltip\" style={{ top: tooltip.y, left: tooltip.x }}> <div className=\"fb-tooltip-note\">{tooltip.note}</div> <div className=\"fb-tooltip-sub\">{tooltip.interval}</div> </div> )} <div className=\"fb-fret-numbers\"> <div className=\"fb-fret-number fb-left-pad\"></div> {Array.from({ length: FRETS + 1 }).map((_, idx) => ( <div key={idx} className=\"fb-fret-number\"> {idx === 0 ? \"0\" : idx} </div> ))} </div> <div className=\"fb-board\"> {board.map((stringNotes, stringIdx) => ( <div key={stringIdx} className=\"fb-string-row\"> <div className=\"fb-string-label\">{TUNING[stringIdx].replace(/\\d/, \"\")}</div> {stringNotes.map(({ fret, pc, note }) => { const inScale = pc in degreeMap; const degreeIdx = degreeMap[pc]; const isRoot = pc ===",
+    "file_path": "src/features/fretboard/component/Fretboard.jsx",
+    "chunk_index": 28
+  },
+  {
+    "chunk_id": 29,
+    "text": "</div> </div> {tooltip && ( <div className=\"fb-tooltip\" style={{ top: tooltip.y, left: tooltip.x }}> <div className=\"fb-tooltip-note\">{tooltip.note}</div> <div className=\"fb-tooltip-sub\">{tooltip.interval}</div> </div> )} <div className=\"fb-fret-numbers\"> <div className=\"fb-fret-number fb-left-pad\"></div> {Array.from({ length: FRETS + 1 }).map((_, idx) => ( <div key={idx} className=\"fb-fret-number\"> {idx === 0 ? \"0\" : idx} </div> ))} </div> <div className=\"fb-board\"> {board.map((stringNotes, stringIdx) => ( <div key={stringIdx} className=\"fb-string-row\"> <div className=\"fb-string-label\">{TUNING[stringIdx].replace(/\\d/, \"\")}</div> {stringNotes.map(({ fret, pc, note }) => { const inScale = pc in degreeMap; const degreeIdx = degreeMap[pc]; const isRoot = pc === root; const marker = FRET_MARKERS[fret]; const inPosition = posRange ? fret >= posRange[0] && fret <= posRange[1] : false; let intervalText = \"\"; if (inScale) { const dist = distance(root, pc); // fallback to degree label; beautify common intervals intervalText = dist || scaleInfo.formula[degreeIdx] || \"\"; } return ( <div key={fret} className={`fb-fret ${marker ? \"has-marker\" : \"\"} ${inPosition ? \"fb-pos\" : \"\"}`} > <div className={ \"fb-note\" + (inScale ? \" in-scale\" : \"\") + (isRoot ? \" is-root\" : \"\") } style={ inScale ? { background: DEGREE_COLORS[degreeIdx % DEGREE_COLORS.length] } : {} } onClick={() => inScale && playNote(note)} onMouseEnter={(e) => setTooltip({ x: e.clientX + 8, y: e.clientY - 30, note: note, interval: intervalText, }) } onMouseLeave={() => setTooltip(null)} > <span className=\"fb-note-main\">{inScale ? pc : \"\"}</span> {inScale && ( <span className=\"fb-note-degree\"> {isRoot ? \"R\" : scaleInfo.formula[degreeIdx] || degreeIdx + 1} </span> )} </div> {marker && ( <div className={marker === \"double\" ? \"fb-marker double\" : \"fb-marker\"} ></div> )} </div> ); })} </div> ))} </div> {mode === \"caged\" && ( <CagedOverlay root={root} /> )} </div> ); }",
+    "file_path": "src/features/fretboard/component/Fretboard.jsx",
+    "chunk_index": 29
+  },
+  {
+    "chunk_id": 30,
+    "text": "import React from \"react\"; import usePrompts from \"../hooks/usePrompts\"; export default function PromptBanner() { const { prompt, next } = usePrompts(); return ( <div className=\"fb-prompt\" onClick={next} title=\"Click for next prompt\"> <span className=\"label\">AI Practice Prompt</span> <span className=\"text\">{prompt}</span> </div> ); }",
+    "file_path": "src/features/fretboard/component/PromptBanner.jsx",
+    "chunk_index": 30
+  },
+  {
+    "chunk_id": 31,
+    "text": "import React, { useEffect, useRef, useState } from \"react\"; export default function ScalePlayer({ root, notes, onPlayNote }) { const [bpm, setBpm] = useState(90); const [isLoop, setIsLoop] = useState(false); const [isPlaying, setIsPlaying] = useState(false); const timerRef = useRef(null); const idxRef = useRef(0); useEffect(() => { return () => stop(); // eslint-disable-next-line react-hooks/exhaustive-deps }, []); function step() { const note = notes[idxRef.current % notes.length]; onPlayNote(note + \"4\"); idxRef.current += 1; if (!isLoop && idxRef.current >= notes.length) { stop(); return; } scheduleNext(); } function scheduleNext() { const intervalMs = (60_000 / bpm); timerRef.current = setTimeout(step, intervalMs); } function playOnce() { if (isPlaying) return; setIsLoop(false); setIsPlaying(true); idxRef.current = 0; scheduleNext(); } function loop() { if (isPlaying) return; setIsLoop(true); setIsPlaying(true); idxRef.current = 0; scheduleNext(); } function stop() { setIsPlaying(false); if (timerRef.current) clearTimeout(timerRef.current); timerRef.current = null; } return ( <div className=\"fb-player\"> <div className=\"fb-player-controls\"> <button className=\"fb-btn\" onClick={playOnce} disabled={isPlaying}>▶ Play Asc</button> <button className=\"fb-btn\" onClick={loop} disabled={isPlaying}>🔁 Loop</button> <button className=\"fb-btn ghost\" onClick={stop} disabled={!isPlaying}>⏹ Stop</button> </div> <div className=\"fb-player-bpm\"> <label>BPM</label> <input type=\"range\" min=\"40\" max=\"180\" value={bpm} onChange={(e)=>setBpm(Number(e.target.value))} /> <span>{bpm}</span> </div> </div> ); }",
+    "file_path": "src/features/fretboard/component/ScalePlayer.jsx",
+    "chunk_index": 31
+  },
+  {
+    "chunk_id": 32,
+    "text": "import React from \"react\"; import intervalInfo from \"../data/intervalInfo\"; export default function TheorySidebar() { return ( <div className=\"sidebar\"> <h3>Theory Helper</h3> <p className=\"muted\">Quick references for intervals, diatonic harmony, and relative scales.</p> <div className=\"card\"> <h4>Intervals</h4> <ul className=\"list\"> {intervalInfo.map((iv) => ( <li key={iv.name}> <span>{iv.name}</span> <span className=\"pill\">{iv.semitones} st</span> </li> ))} </ul> </div> <div className=\"card\"> <h4>Major Scale Diatonic Chords</h4> <ul className=\"list\"> <li><span>I</span><span className=\"pill\">maj7</span></li> <li><span>ii</span><span className=\"pill\">m7</span></li> <li><span>iii</span><span className=\"pill\">m7</span></li> <li><span>IV</span><span className=\"pill\">maj7</span></li> <li><span>V</span><span className=\"pill\">7</span></li> <li><span>vi</span><span className=\"pill\">m7</span></li> <li><span>vii°</span><span className=\"pill\">m7b5</span></li> </ul> </div> <div className=\"card\"> <h4>Relative Scales</h4> <ul className=\"list\"> <li><span>Natural Minor</span><span className=\"pill\">6th degree of Major</span></li> <li><span>Dorian</span><span className=\"pill\">2nd degree</span></li> <li><span>Mixolydian</span><span className=\"pill\">5th degree</span></li> <li><span>Pentatonic Minor</span><span className=\"pill\">1 b3 4 5 b7</span></li> <li><span>Blues</span><span className=\"pill\">+ b5</span></li> </ul> </div> <div className=\"card\"> <h4>Tips</h4> <ul className=\"list\"> <li>Target 3rds/7ths on chord changes.</li> <li>Use CAGED to anchor positions.</li> <li>Practice with a metronome; start slow.</li> </ul> </div> </div> ); }",
+    "file_path": "src/features/fretboard/component/TheorySidebar.jsx",
+    "chunk_index": 32
+  },
+  {
+    "chunk_id": 33,
+    "text": ":root { --fb-bg: radial-gradient(circle at top, rgba(15,23,42,.3) 0%, rgba(2,6,23,1) 80%); --fb-border: rgba(148,163,184,.08); --fb-text: #e2e8f0; --fb-muted: #94a3b8; --fb-root: #f97316; --fb-degree-2: #38bdf8; --fb-degree-3: #a855f7; --fb-degree-4: #22c55e; --fb-degree-5: #eab308; --fb-degree-6: #f43f5e; --fb-degree-7: #0ea5e9; } /* container */ .fb-container { background: var(--fb-bg); border: 1px solid var(--fb-border); border-radius: 1rem; padding: 1rem; backdrop-filter: blur(14px); color: var(--fb-text); overflow-x: auto; display: flex; flex-direction: column; gap: 1rem; position: relative; } /* top section */ .fb-top { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 1rem; } .fb-controls { display: flex; flex-wrap: wrap; gap: 1rem; } .fb-control label { display: block; font-size: .6rem; text-transform: uppercase; letter-spacing: .05em; margin-bottom: .25rem; color: var(--fb-muted); } .fb-control select { background: rgba(15,23,42,.25); border: 1px solid rgba(148,163,184,.25); border-radius: .55rem; padding: .25rem .6rem; color: inherit; } /* theory section */ .fb-theory { background: rgba(15,23,42,.2); border: 1px solid rgba(148,163,184,.08); border-radius: .8rem; padding: .6rem .8rem; display: flex; flex-wrap: wrap; gap: 1.25rem; align-items: center; min-height: 70px; } .fb-theory h4 { margin: 0; font-size: .8rem; } .fb-sub { margin: 0; font-size: .62rem; color: var(--fb-muted); } .fb-legend { display: flex; flex-wrap: wrap; gap: .5rem; } .fb-legend-item { display: flex; align-items: center; gap: .25rem; font-size: .6rem; } .fb-legend-dot { width: .75rem; height: .75rem; border-radius: 50%; } .fb-player { display: flex; align-items: center; gap: .75rem; margin-left: auto; } .fb-player-controls { display: flex; gap: .5rem; } .fb-btn { background: rgba(255,255,255,.1); color: #e2e8f0; border: 1px solid rgba(148,163,184,.25); padding: .35rem .6rem; border-radius: .5rem; cursor: pointer; } .fb-btn.ghost { background: transparent; } .fb-btn:disabled { opacity: .6; cursor: not-allowed; } .fb-player-bpm { display: flex; align-items: center; gap: .4rem; font-size: .7rem; color: var(--fb-muted); } /* fret numbers */ .fb-fret-numbers { display: grid; grid-template-columns: 50px repeat(25, 50px); gap: 4px; user-select: none; } .fb-fret-number { text-align: center; font-size: .6rem; color: var(--fb-muted); } /* main board */ .fb-board { display: flex; flex-direction: column; gap: 5px; } /* string rows fixed size */ .fb-string-row { display: grid; grid-template-columns: 50px repeat(25, 50px); gap: 4px; align-items: center; height: 48px; min-height: 48px; max-height: 48px; } .fb-string-label { text-align: center; font-weight: 500; color: var(--fb-muted); line-height: 1; } /* frets locked */ .fb-fret { position: relative; background: linear-gradient(180deg, rgba(15,23,42,.1) 0%, rgba(15,23,42,.45) 100%); border: 1px solid rgba(148,163,184,.05); border-radius: .65rem; box-sizing: border-box; display: flex; justify-content: center; align-items: center; height: 46px; overflow: hidden; } .fb-fret.fb-pos { outline: 1px solid rgba(255,255,255,0.05); background: radial-gradient(circle, rgba(59,130,246,.08) 0%, rgba(15,23,42,0) 70%); } /* note - fixed and isolated layout */ .fb-note { position: relative; width: 38px; height: 34px; box-sizing: border-box; display: flex; justify-content: center; align-items: center; border-radius: .75rem; font-size: .65rem; font-weight: 600; color: #020617; overflow: hidden; cursor: pointer; user-select: none; /* remove aggressive compositing hints to avoid hover jitter */ } .fb-note.in-scale { background: rgba(255,255,255,.9); } .fb-note.is-root { outline: 2px solid rgba(255,255,255,.7); box-shadow: 0 0 8px rgba(249,115,22,.5); } /* fixed degree label */ .fb-note-degree { position: absolute; bottom: 2px; right: 4px; font-size: .5rem; background: rgba(255,255,255,.4); border-radius: 999px; padding: 1px 4px; pointer-events: none; line-height: 1; } .fb-note.is-root .fb-note-degree { background: rgba(2,6,23,.3); color: #fff; font-weight: 700; } /* markers */ .fb-marker { position: absolute; bottom: 4px; width: 9px; height: 9px; background: rgba(148,163,184,.35); border-radius: 50%; } .fb-marker.double { background: transparent; display: flex; gap: 5px; } .fb-marker.double::before, .fb-marker.double::after { content: \"\"; width: 9px; height: 9px; background: rgba(148,163,184,.35); border-radius: 50%; } /* tooltip - isolated layer */ .fb-tooltip { position: fixed; background: rgba(15,23,42,.95); border: 1px solid rgba(148,163,184,.25); padding: 4px 8px; border-radius: .45rem; font-size: .55rem; z-index: 9999; pointer-events: none; color: #e2e8f0; transform: translateZ(0); } .fb-tooltip-note { font-weight: 600; } .fb-tooltip-sub { color: #94a3b8; } /* AI prompt banner */ .fb-prompt { display:flex; gap:.6rem; align-items:center; background: rgba(234,179,8,.06); border: 1px solid rgba(234,179,8,.25); color:#fde68a; padding:.4rem .6rem; border-radius:.6rem; margin-bottom:.5rem; cursor:pointer; user-select:none; } .fb-prompt .label { font-size:.6rem; opacity:.8; text-transform:uppercase; } .fb-prompt .text { font-size:.75rem; } /* CAGED overlay toolbar */ .caged-overlay { margin-top:.5rem; display:flex; align-items:center; justify-content:space-between; } .caged-toolbar { display:flex; align-items:center; gap:.5rem; font-size:.8rem; color:#e2e8f0; } .caged-ranges { display:flex; gap:.35rem; flex-wrap:wrap; } .caged-chip { font-size:.65rem; color:#e2e8f0; background: rgba(59,130,246,.15); border:1px solid rgba(59,130,246,.35); border-radius:999px; padding:.15rem .45rem; } /* responsive */ @media (max-width: 900px) { .fb-fret-number { font-size: .55rem; } .fb-string-row, .fb-fret-numbers { grid-template-columns: 42px repeat(25, 42px); } .fb-note { width: 34px; height: 30px; } }",
+    "file_path": "src/features/fretboard/css/fretboard.css",
+    "chunk_index": 33
+  },
+  {
+    "chunk_id": 34,
+    "text": "/* Theory sidebar */ .fb-page { display:grid; grid-template-columns: 1fr 320px; gap: 1rem; } .fb-page-main { min-width: 0; } .fb-page-sidebar { min-width: 0; } .sidebar { background: rgba(15,23,42,.25); border: 1px solid rgba(148,163,184,.08); border-radius: .9rem; padding: .8rem; color: #e2e8f0; } .sidebar h3 { margin: 0 0 .25rem 0; } .sidebar .muted { color: #94a3b8; font-size: .8rem; margin: 0 0 .5rem 0; } .sidebar .card { background: rgba(2,6,23,.25); border: 1px solid rgba(148,163,184,.08); border-radius: .7rem; padding: .6rem; margin-bottom: .6rem; } .sidebar .list { list-style: none; margin: 0; padding: 0; display: grid; gap: .35rem; } .sidebar .list li { display: flex; align-items: center; justify-content: space-between; font-size: .85rem; } .sidebar .pill { font-size: .65rem; background: rgba(148,163,184,.15); color:#e2e8f0; border:1px solid rgba(148,163,184,.3); padding:.1rem .4rem; border-radius:999px; }",
+    "file_path": "src/features/fretboard/css/sidebar.css",
+    "chunk_index": 34
+  },
+  {
+    "chunk_id": 35,
+    "text": "const cagedData = { major: [ { name: \"C shape\", start: 0, end: 4 }, { name: \"A shape\", start: 3, end: 7 }, { name: \"G shape\", start: 5, end: 9 }, { name: \"E shape\", start: 7, end: 12 }, { name: \"D shape\", start: 12, end: 17 }, ], minor: [ { name: \"Cm shape\", start: 0, end: 4 }, { name: \"Am shape\", start: 3, end: 7 }, { name: \"Gm shape\", start: 5, end: 9 }, { name: \"Em shape\", start: 7, end: 12 }, { name: \"Dm shape\", start: 12, end: 17 }, ], }; export default cagedData;",
+    "file_path": "src/features/fretboard/data/cagedData.js",
+    "chunk_index": 35
+  },
+  {
+    "chunk_id": 36,
+    "text": "const intervalInfo = [ { name: \"Unison (R)\", semitones: 0 }, { name: \"m2\", semitones: 1 }, { name: \"M2 (2)\", semitones: 2 }, { name: \"m3\", semitones: 3 }, { name: \"M3 (3)\", semitones: 4 }, { name: \"P4 (4)\", semitones: 5 }, { name: \"TT (b5)\", semitones: 6 }, { name: \"P5 (5)\", semitones: 7 }, { name: \"m6\", semitones: 8 }, { name: \"M6 (6)\", semitones: 9 }, { name: \"m7\", semitones: 10 }, { name: \"M7 (7)\", semitones: 11 }, { name: \"Octave\", semitones: 12 }, ]; export default intervalInfo;",
+    "file_path": "src/features/fretboard/data/intervalInfo.js",
+    "chunk_index": 36
+  },
+  {
+    "chunk_id": 37,
+    "text": "import { useMemo } from \"react\"; import cagedData from \"../data/cagedData\"; export default function useCagedShapes(root, variant) { return useMemo(() => { const set = cagedData[variant] || []; // naive mapping: shift ranges based on root index for demo return set.map((shape, i) => ({ name: shape.name, fretRange: [shape.start, shape.end], })); }, [root, variant]); }",
+    "file_path": "src/features/fretboard/hooks/useCagedShapes.js",
+    "chunk_index": 37
+  },
+  {
+    "chunk_id": 38,
+    "text": "import { useCallback, useMemo, useState } from \"react\"; const DEFAULT_PROMPTS = [ \"Find all G notes on the fretboard.\", \"Play the Mixolydian scale starting from the 5th position.\", \"Ascend then descend A minor pentatonic in position 2.\", \"Target the 3rd of each chord in a I–IV–V in C.\", ]; export default function usePrompts(seedPrompts) { const prompts = useMemo(() => seedPrompts || DEFAULT_PROMPTS, [seedPrompts]); const [idx, setIdx] = useState(0); const next = useCallback(() => { setIdx((v) => (v + 1) % prompts.length); }, [prompts.length]); return { prompt: prompts[idx], next, }; }",
+    "file_path": "src/features/fretboard/hooks/usePrompts.js",
+    "chunk_index": 38
+  },
+  {
+    "chunk_id": 39,
+    "text": "export default function useScalePlayer() { // reserved for future Tone.js schedule integration return null; }",
+    "file_path": "src/features/fretboard/hooks/useScalePlayer.js",
+    "chunk_index": 39
+  },
+  {
+    "chunk_id": 40,
+    "text": "import React from \"react\"; import Fretboard from \"../component/Fretboard\"; import TheorySidebar from \"../component/TheorySidebar\"; import \"../css/sidebar.css\"; export default function FretboardPage() { return ( <div className=\"fb-page\"> <div className=\"fb-page-main\"> <Fretboard /> </div> <aside className=\"fb-page-sidebar\"> <TheorySidebar /> </aside> </div> ); }",
+    "file_path": "src/features/fretboard/page/FretboardPage.js",
+    "chunk_index": 40
+  },
+  {
+    "chunk_id": 41,
+    "text": "import React, { useEffect, useRef, useState } from \"react\"; import \"../css/metronome.css\"; export default function Metronome() { const [bpm, setBpm] = useState(100); const [isOn, setIsOn] = useState(false); const [tick, setTick] = useState(0); const timerRef = useRef(null); const audioRef = useRef(null); useEffect(() => { return () => stop(); // eslint-disable-next-line react-hooks/exhaustive-deps }, []); function click(high = false) { if (!audioRef.current) { audioRef.current = new (window.AudioContext || window.webkitAudioContext)(); } const ctx = audioRef.current; const osc = ctx.createOscillator(); const gain = ctx.createGain(); osc.type = \"square\"; osc.frequency.value = high ? 1200 : 900; gain.gain.setValueAtTime(0, ctx.currentTime); gain.gain.linearRampToValueAtTime(0.2, ctx.currentTime + 0.005); gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.08); osc.connect(gain); gain.connect(ctx.destination); osc.start(); osc.stop(ctx.currentTime + 0.09); } function schedule() { const isHigh = tick % 4 === 0; setTick((t) => (t + 1) % 4); click(isHigh); const intervalMs = 60000 / bpm; timerRef.current = setTimeout(schedule, intervalMs); } function start() { if (isOn) return; setIsOn(true); setTick(0); schedule(); } function stop() { setIsOn(false); if (timerRef.current) clearTimeout(timerRef.current); timerRef.current = null; } return ( <div className=\"metro\"> <div className=\"metro-row\"> <button className=\"metro-btn\" onClick={isOn ? stop : start}>{isOn ? \"Stop\" : \"Start\"}</button> <div className={`metro-led ${tick===0?'on':''}`}></div> <div className={`metro-led ${tick===1?'on':''}`}></div> <div className={`metro-led ${tick===2?'on':''}`}></div> <div className={`metro-led ${tick===3?'on':''}`}></div> </div> <div className=\"metro-row\"> <label>BPM</label> <input type=\"range\" min=\"40\" max=\"200\" value={bpm} onChange={(e)=>setBpm(Number(e.target.value))} /> <span>{bpm}</span> </div> </div> ); }",
+    "file_path": "src/features/metronome/component/Metronome.jsx",
+    "chunk_index": 41
+  },
+  {
+    "chunk_id": 42,
+    "text": ".metro { background: rgba(15,23,42,.25); border:1px solid rgba(148,163,184,.08); border-radius:.8rem; padding:.6rem; color:#e2e8f0; } .metro-row { display:flex; align-items:center; gap:.5rem; margin-bottom:.5rem; } .metro-btn { background: rgba(34,197,94,.15); border:1px solid rgba(34,197,94,.35); color:#bbf7d0; padding:.35rem .6rem; border-radius:.5rem; cursor:pointer; } .metro-led { width:10px; height:10px; border-radius:50%; background: rgba(148,163,184,.25); } .metro-led.on { background: #f59e0b; box-shadow: 0 0 8px rgba(245,158,11,.8); }",
+    "file_path": "src/features/metronome/css/metronome.css",
+    "chunk_index": 42
+  },
+  {
+    "chunk_id": 43,
+    "text": "import React, { useEffect, useRef, useState } from \"react\"; const GUITAR_STRINGS = [ { name: \"E4\", freq: 329.63 }, { name: \"B3\", freq: 246.94 }, { name: \"G3\", freq: 196.00 }, { name: \"D3\", freq: 146.83 }, { name: \"A2\", freq: 110.00 }, { name: \"E2\", freq: 82.41 }, ]; export default function TunerWidget() { const [isOn, setIsOn] = useState(false); const [freq, setFreq] = useState(null); const [note, setNote] = useState(\"--\"); const [target, setTarget] = useState({ name: \"--\", cents: 0 }); const analyserRef = useRef(null); const streamRef = useRef(null); const rafRef = useRef(null); useEffect(() => { if (!isOn) { stopAudio(); return; } startAudio().catch(console.error); return () => { stopAudio(); }; // eslint-disable-next-line react-hooks/exhaustive-deps }, [isOn]); async function startAudio() { const stream = await navigator.mediaDevices.getUserMedia({ audio: true }); const ctx = new (window.AudioContext || window.webkitAudioContext)(); const src = ctx.createMediaStreamSource(stream); const analyser = ctx.createAnalyser(); analyser.fftSize = 2048; src.connect(analyser); analyserRef.current = { analyser, ctx }; streamRef.current = stream; tick(); } function stopAudio() { if (rafRef.current) cancelAnimationFrame(rafRef.current); rafRef.current = null; analyserRef.current = null; if (streamRef.current) { streamRef.current.getTracks().forEach(t => t.stop()); streamRef.current = null; } } function autoCorrelate(buf, sampleRate) { let SIZE = buf.length; let rms = 0; for (let i = 0; i < SIZE; i++) rms += buf[i] * buf[i]; rms = Math.sqrt(rms / SIZE); if (rms < 0.01) return -1; let r1 = 0, r2 = SIZE - 1, th = 0.2; for (let i = 0; i < SIZE / 2; i++) if (Math.abs(buf[i]) < th) { r1 = i; break; } for (let i = 1; i < SIZE / 2; i++) if (Math.abs(buf[SIZE - i]) < th) { r2 = SIZE - i; break; } buf = buf.slice(r1, r2); SIZE = buf.length; const c = new Array(SIZE).fill(0); for (let i = 0; i < SIZE; i++) for (let j = 0; j < SIZE - i; j++) c[i] += buf[j] * buf[j + i]; let d = 0; while (c[d] > c[d + 1]) d++; let maxval = -1, maxpos = -1; for (let i = d; i < SIZE; i++) { if (c[i] > maxval) { maxval = c[i]; maxpos = i; } } const T0 = maxpos; return sampleRate / T0; } function freqToNote(f) { const A4 = 440; const n = Math.round(12 * Math.log2(f / A4)) + 69; const names = [\"C\",\"C#\",\"D\",\"D#\",\"E\",\"F\",\"F#\",\"G\",\"G#\",\"A\",\"A#\",\"B\"]; const name = names[n % 12]; const oct = Math.floor(n / 12) - 1; return `${name}${oct}`; } function nearestGuitarString(f) { let best = GUITAR_STRINGS[0]; let minErr = Math.abs(f - best.freq); for (let s of GUITAR_STRINGS) { const err = Math.abs(f - s.freq); if (err < minErr) { minErr = err; best = s; } } // cents = 1200 * log2(f/ftarget) const cents = Math.round(1200 * Math.log2(f / best.freq)); return { name: best.name, cents }; } function tick() { rafRef.current = requestAnimationFrame(tick); if (!analyserRef.current) return; const { analyser, ctx } = analyserRef.current; const buf = new Float32Array(analyser.fftSize); analyser.getFloatTimeDomainData(buf); const f = autoCorrelate(buf, ctx.sampleRate); if (f > 0) { setFreq(f.toFixed(1)); setNote(freqToNote(f)); setTarget(nearestGuitarString(f)); } } return ( <div style={{background:\"#0f172a\",color:\"#e2e8f0\",padding:\"0.6rem 0.8rem\",borderRadius:\"0.75rem\"}}> <div style={{display:\"flex\",justifyContent:\"space-between\",alignItems:\"center\",gap:8}}> <div style={{fontSize:\"0.6rem\",textTransform:\"uppercase\",opacity:.7}}>Guitar Tuner</div> <button onClick={()=>setIsOn(v=>!v)} style={{fontSize:12,background:isOn?\"#16a34a\":\"#334155\",color:\"#e2e8f0\",border:\"1px solid rgba(148,163,184,.3)\",borderRadius:8,padding:\"2px 8px\",cursor:\"pointer\"}} > {isOn ? \"On\" : \"Off\"} </button> </div> <div style={{display:\"flex\",alignItems:\"baseline\",gap:10}}> <div style={{fontSize:\"1.4rem\",fontWeight:700,minWidth:64}}>{note}</div> <div style={{fontSize:\"0.8rem\",opacity:.9}}>{freq ? `${freq} Hz` : (isOn ? \"listening...\" : \"off\")}</div> </div> <div style={{display:\"flex\",alignItems:\"center\",gap:8,marginTop:6}}> <span style={{fontSize:12,opacity:.8}}>Target</span> <span style={{fontWeight:700}}>{target.name}</span> <span style={{fontSize:12,opacity:.8}}>Offset</span> <span style={{fontWeight:700,color: target.cents===0 ? \"#a7f3d0\" : (target.cents>0?\"#fca5a5\":\"#93c5fd\")}}>{target.cents>0?`+${target.cents}`:target.cents}¢</span> </div> <div style={{display:\"flex\",gap:6,marginTop:8,flexWrap:\"wrap\"}}> {GUITAR_STRINGS.slice().reverse().map(s=>( <div key={s.name} style={{fontSize:12,opacity:.9,background:\"rgba(148,163,184,.15)\",border:\"1px solid rgba(148,163,184,.3)\",padding:\"2px 6px\",borderRadius:999}}>{s.name}</div> ))} </div> </div> ); }",
+    "file_path": "src/features/tuner/component/TunerWidget.jsx",
+    "chunk_index": 43
+  },
+  {
+    "chunk_id": 44,
+    "text": ".tuner-page { color: #e2e8f0; }",
+    "file_path": "src/features/tuner/css/tuner.css",
+    "chunk_index": 44
+  },
+  {
+    "chunk_id": 45,
+    "text": "import React from \"react\"; import TunerWidget from \"../component/TunerWidget\"; import \"../css/tuner.css\"; export default function TunerPage() { return ( <div className=\"tuner-page\"> <h2>Tuner</h2> <TunerWidget /> </div> ); }",
+    "file_path": "src/features/tuner/page/TunerPage.js",
+    "chunk_index": 45
+  },
+  {
+    "chunk_id": 46,
+    "text": "body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif; -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; } code { font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New', monospace; }",
+    "file_path": "src/index.css",
+    "chunk_index": 46
+  },
+  {
+    "chunk_id": 47,
+    "text": "import React from 'react'; import ReactDOM from 'react-dom/client'; import './index.css'; import App from './App'; import reportWebVitals from './reportWebVitals'; const root = ReactDOM.createRoot(document.getElementById('root')); root.render( <React.StrictMode> <App /> </React.StrictMode> ); // If you want to start measuring performance in your app, pass a function // to log results (for example: reportWebVitals(console.log)) // or send to an analytics endpoint. Learn more: https://bit.ly/CRA-vitals reportWebVitals();",
+    "file_path": "src/index.js",
+    "chunk_index": 47
+  },
+  {
+    "chunk_id": 48,
+    "text": "const reportWebVitals = onPerfEntry => { if (onPerfEntry && onPerfEntry instanceof Function) { import('web-vitals').then(({ getCLS, getFID, getFCP, getLCP, getTTFB }) => { getCLS(onPerfEntry); getFID(onPerfEntry); getFCP(onPerfEntry); getLCP(onPerfEntry); getTTFB(onPerfEntry); }); } }; export default reportWebVitals;",
+    "file_path": "src/reportWebVitals.js",
+    "chunk_index": 48
+  },
+  {
+    "chunk_id": 49,
+    "text": "// jest-dom adds custom jest matchers for asserting on DOM nodes. // allows you to do things like: // expect(element).toHaveTextContent(/react/i) // learn more: https://github.com/testing-library/jest-dom import '@testing-library/jest-dom';",
+    "file_path": "src/setupTests.js",
+    "chunk_index": 49
+  }
+]

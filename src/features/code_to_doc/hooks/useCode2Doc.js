@@ -1,6 +1,6 @@
 import { useCallback, useMemo, useRef, useState, useEffect } from 'react';
 import useGenerationStatus from './useGenerationStatus';
-import { nodeApiRequest } from '../../../core/utils/nodeApi';
+import { nodeApiRequest, getAuthToken } from '../../../core/utils/nodeApi';
 
 const getApiBase = () => {
   if (typeof window === 'undefined') return 'http://localhost:5001';
@@ -33,7 +33,7 @@ const useCode2Doc = () => {
   const [toast, setToast] = useState({ message: '', type: 'info' });
   const timersRef = useRef([]);
   const [summary, setSummary] = useState('');
-  const [lastUploadMeta, setLastUploadMeta] = useState({ fileCount: null, contentType: null });
+  const [lastUploadMeta, setLastUploadMeta] = useState({ fileCount: null, contentType: null, rawContent: null });
   const [uploads, setUploads] = useState([]);
   const [apiHealth, setApiHealth] = useState({ status: 'unknown', lastCheck: null });
   const [repoInfo, setRepoInfo] = useState(null);
@@ -91,9 +91,17 @@ const useCode2Doc = () => {
 
       setIsUploading(true);
 
+      // Get auth token for upload
+      const token = getAuthToken();
+      const headers = {};
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+
       try {
         const res = await fetch(`${apiBase}/api/upload`, {
           method: 'POST',
+          headers: headers,
           body: formData,
         });
 
@@ -105,6 +113,7 @@ const useCode2Doc = () => {
         setLastUploadMeta({
           fileCount: data.file_count || null,
           contentType: data.content_type || null,
+          rawContent: data.content || null, // Store the actual file content
         });
         setSummary('');
 
@@ -165,6 +174,12 @@ const useCode2Doc = () => {
       return;
     }
 
+    // Ensure we have the content from upload
+    if (!lastUploadMeta.rawContent) {
+      showToast('File content not available. Please upload files again.', 'error');
+      return;
+    }
+
     clearTimers();
     setIsGenerating(true);
     setOutput('Generated documentation will appear here.');
@@ -198,8 +213,9 @@ const useCode2Doc = () => {
 
     try {
       const payload = {
+        rawContent: lastUploadMeta.rawContent, // Send the actual file content
+        contentType: lastUploadMeta.contentType || 'code',
         file_count: lastUploadMeta.fileCount,
-        content_type: lastUploadMeta.contentType || 'code',
       };
       
       // Update status: generating (optional)
@@ -215,7 +231,7 @@ const useCode2Doc = () => {
       }
 
       // Get auth token for status reporting
-      const token = localStorage.getItem('token');
+      const token = getAuthToken();
       const headers = {
         'Content-Type': 'application/json',
       };
@@ -223,11 +239,18 @@ const useCode2Doc = () => {
         headers['Authorization'] = `Bearer ${token}`;
       }
 
+      // Add timeout to prevent hanging (120 seconds = 2 minutes)
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 120000); // 120 seconds
+
       const res = await fetch(`${apiBase}/api/generate`, {
         method: 'POST',
         headers: headers,
         body: JSON.stringify(payload),
+        signal: controller.signal,
       });
+
+      clearTimeout(timeoutId);
       
       if (!res.ok) {
         const errorData = await res.json().catch(() => ({ error: `HTTP ${res.status}` }));
@@ -246,8 +269,15 @@ const useCode2Doc = () => {
       typeSummary = data.content_type || lastUploadMeta.contentType || 'code';
     } catch (err) {
       console.error('Documentation generation error:', err);
-      finalOutput = `# Error Generating Documentation\n\n**Error:** ${err?.message || 'Failed to generate documentation. Please check your connection and try again.'}\n\nPlease ensure:\n- Your files were uploaded successfully\n- The backend server is running\n- LM Studio is connected and running\n- Your content is valid and readable`;
-      toastMessage = err?.message || 'Failed to generate documentation. Please check your connection and try again.';
+      
+      // Handle timeout/abort errors
+      if (err.name === 'AbortError' || err.message?.includes('timeout')) {
+        toastMessage = 'Generation timed out. The request took too long. Please try with smaller files or check LM Studio connection.';
+      } else {
+        toastMessage = err?.message || 'Failed to generate documentation. Please check your connection and try again.';
+      }
+      
+      finalOutput = `# Error Generating Documentation\n\n**Error:** ${toastMessage}\n\nPlease ensure:\n- Your files were uploaded successfully\n- The backend server is running\n- LM Studio is connected and running\n- Your content is valid and readable\n- The model is loaded in LM Studio`;
       toastKind = 'error';
     } finally {
       clearTimers();
@@ -291,37 +321,7 @@ const useCode2Doc = () => {
     }
     showToast(toastMessage, toastKind);
 
-    // Note: History saving disabled until auth is implemented
-    // Increment usage after successful generation
-    try {
-      // Estimate tokens (rough: 1 token ≈ 4 characters)
-      const estimatedTokens = Math.ceil(finalOutput.length / 4);
-      
-      // Check token limit
-      const usageResponse = await fetch(`${apiBase}/api/user/usage`);
-      if (usageResponse.ok) {
-        const usage = await usageResponse.json();
-        if ((usage.tokens.used + estimatedTokens) > usage.tokens.limit) {
-          showToast(`Token limit would be exceeded. Free plan allows ${usage.tokens.limit.toLocaleString()} tokens.`, 'error');
-          return;
-        }
-      }
-
-      // Increment code-to-doc and token usage
-      await fetch(`${apiBase}/api/user/usage/increment`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ type: 'codeToDoc', amount: 1 }),
-      });
-      
-      await fetch(`${apiBase}/api/user/usage/increment`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ type: 'tokens', amount: estimatedTokens }),
-      });
-    } catch (err) {
-      console.error('Failed to update usage:', err);
-    }
+    // Usage is now checked and incremented by the Python backend
   }, [apiBase, clearTimers, lastUploadMeta, showToast, updateStatus, uploads.length]);
 
   const handleRepoIngest = useCallback(async (repoUrl) => {
@@ -370,20 +370,7 @@ const useCode2Doc = () => {
       return;
     }
 
-    // Check usage limits
-    try {
-      const usageResponse = await fetch(`${apiBase}/api/user/usage`);
-      if (usageResponse.ok) {
-        const usage = await usageResponse.json();
-        if (usage.codeToDoc.used >= usage.codeToDoc.limit) {
-          showToast(`Code to Doc limit reached. Free plan allows ${usage.codeToDoc.limit} uses.`, 'error');
-          return;
-        }
-      }
-    } catch (err) {
-      console.error('Failed to check usage:', err);
-    }
-
+    // Usage limits are checked on the backend
     clearTimers();
     setIsGenerating(true);
     setOutput('Generating documentation from repository...');
@@ -415,7 +402,7 @@ const useCode2Doc = () => {
     let generationError = null;
 
     // Get auth token for status reporting
-    const token = localStorage.getItem('token');
+    const token = getAuthToken();
     const headers = {
       'Content-Type': 'application/json',
     };
@@ -461,22 +448,7 @@ const useCode2Doc = () => {
 
       showToast('Documentation generated successfully!', 'info');
 
-      // Update usage
-      try {
-        const estimatedTokens = Math.ceil(finalOutput.length / 4);
-        await fetch(`${apiBase}/api/user/usage/increment`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ type: 'codeToDoc', amount: 1 }),
-        });
-        await fetch(`${apiBase}/api/user/usage/increment`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ type: 'tokens', amount: estimatedTokens }),
-        });
-      } catch (err) {
-        console.error('Failed to update usage:', err);
-      }
+      // Usage is now incremented by the Python backend after successful generation
     } catch (err) {
       console.error('Repository documentation generation error:', err);
       generationError = err;

@@ -1,0 +1,3 @@
+# This file ensures the users directory is tracked by git
+# Actual user data files are ignored
+

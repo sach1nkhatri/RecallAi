@@ -17,6 +17,10 @@
     "start": "react-scripts start",
     "build": "react-scripts build",
     "test": "react-scripts test",
+    "test:coverage": "react-scripts test --coverage --watchAll=false",
+    "test:all": "npm run test:backend:python && npm run test:backend:node && npm test -- --watchAll=false",
+    "test:backend:python": "cd backend && pytest tests/ -v",
+    "test:backend:node": "cd node_backend && npm test",
     "eject": "react-scripts eject"
   },
   "eslintConfig": {

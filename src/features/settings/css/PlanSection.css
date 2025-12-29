@@ -90,3 +90,61 @@
   transform: translateY(-2px);
 }
 
+.payment-status-section {
+  margin-top: 1.5rem;
+  padding: 1rem;
+  background: #f9fafb;
+  border-radius: 8px;
+  border: 1px solid #e5e7eb;
+}
+
+.payment-status-section h4 {
+  margin: 0 0 0.75rem 0;
+  color: #1f2937;
+  font-size: 1rem;
+}
+
+.payment-status-badge {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 0.75rem;
+  border-radius: 6px;
+  font-size: 0.9rem;
+}
+
+.payment-status-badge.status-pending {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.payment-status-badge.status-approved {
+  background: #d1fae5;
+  color: #065f46;
+}
+
+.payment-status-badge.status-rejected {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.payment-status-badge.status-expired {
+  background: #e5e7eb;
+  color: #374151;
+}
+
+.validity-date {
+  font-size: 0.85rem;
+  opacity: 0.8;
+}
+
+.payment-status-section .admin-notes {
+  margin-top: 0.75rem;
+  padding: 0.75rem;
+  background: white;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  color: #6b7280;
+  border-left: 3px solid #ef4444;
+}
+

@@ -1,0 +1,26 @@
+{
+  "id": "default",
+  "name": "",
+  "email": "",
+  "plan": "free",
+  "createdAt": "2025-12-28T00:02:05.101805",
+  "usage": {
+    "bots": {
+      "current": 0,
+      "limit": 1
+    },
+    "chats": {
+      "today": 0,
+      "limit": 10,
+      "lastReset": "2025-12-28"
+    },
+    "codeToDoc": {
+      "used": 1,
+      "limit": 2
+    },
+    "tokens": {
+      "used": 5526,
+      "limit": 5000
+    }
+  }
+}

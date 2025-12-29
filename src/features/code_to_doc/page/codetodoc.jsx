@@ -4,7 +4,7 @@ import useGenerationStatus from '../hooks/useGenerationStatus';
 import FileUploadCard from '../components/FileUploadCard';
 import GitHubRepoCard from '../components/GitHubRepoCard';
 import OutputPanel from '../components/OutputPanel';
-import GenerationProgress from '../components/GenerationProgress';
+import GenerationStatusBadge from '../components/GenerationStatusBadge';
 import Toast from '../components/Toast';
 import '../css/CodeToDocPage.css';
 
@@ -89,9 +89,9 @@ const CodeToDocPage = () => {
       </header>
 
       <div className="ctd-container">
-        {/* Generation Progress - Show if there's a generation status */}
+        {/* Small generation status badge - fixed position */}
         {generationStatus && (
-          <GenerationProgress
+          <GenerationStatusBadge
             status={generationStatus}
             onCancel={generationStatus.status !== 'completed' && generationStatus.status !== 'failed' ? cancelGeneration : undefined}
           />

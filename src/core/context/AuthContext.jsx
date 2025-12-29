@@ -52,39 +52,84 @@ export const AuthProvider = ({ children }) => {
   // Check if user is authenticated on mount
   useEffect(() => {
     const checkAuth = async () => {
+      // Check for token in localStorage (primary source)
       const token = localStorage.getItem('token');
-      if (token && storedAuth.isAuthenticated) {
-        try {
-          // Verify token is still valid
-          const response = await fetch(`${getNodeApiBase()}/api/auth/me`, {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          });
+      
+      // If no token, check if auth state has token
+      if (!token) {
+        const authData = localStorage.getItem('auth');
+        if (authData) {
+          try {
+            const parsed = JSON.parse(authData);
+            if (parsed.token) {
+              // Token exists in auth object, verify it
+              await verifyToken(parsed.token);
+              return;
+            }
+          } catch (e) {
+            console.error('Error parsing auth data:', e);
+          }
+        }
+        // No token found anywhere, ensure logged out state
+        if (storedAuth.isAuthenticated) {
+          dispatch({ type: 'LOGOUT' });
+        }
+        return;
+      }
 
-          if (response.ok) {
-            const data = await response.json();
-            if (data.success) {
-              dispatch({
-                type: 'LOGIN_SUCCESS',
-                payload: {
-                  id: data.user.id,
-                  name: data.user.name,
-                  email: data.user.email,
-                  plan: data.user.plan,
-                },
-              });
+      // Token exists, verify it
+      await verifyToken(token);
+    };
+
+    const verifyToken = async (tokenToVerify) => {
+      try {
+        // Verify token is still valid
+        const response = await fetch(`${getNodeApiBase()}/api/auth/me`, {
+          headers: {
+            Authorization: `Bearer ${tokenToVerify}`,
+          },
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          if (data.success && data.user) {
+            // Token is valid, restore auth state
+            dispatch({
+              type: 'LOGIN_SUCCESS',
+              payload: {
+                id: data.user.id || data.user._id,
+                name: data.user.name,
+                email: data.user.email,
+                plan: data.user.plan || 'free',
+              },
+            });
+            // Ensure token is stored in both places
+            if (!localStorage.getItem('token')) {
+              localStorage.setItem('token', tokenToVerify);
             }
           } else {
-            // Token invalid, logout
-            dispatch({ type: 'LOGOUT' });
-            localStorage.removeItem('auth');
-            localStorage.removeItem('token');
+            // Invalid response, logout
+            clearAuth();
           }
-        } catch (error) {
-          console.error('Auth check failed:', error);
+        } else {
+          // Token invalid, logout
+          clearAuth();
+        }
+      } catch (error) {
+        console.error('Auth check failed:', error);
+        // On error, don't clear auth if we have a valid stored state
+        // Only clear if token verification explicitly failed
+        if (error.message && error.message.includes('401')) {
+          clearAuth();
         }
       }
+    };
+
+    const clearAuth = () => {
+      dispatch({ type: 'LOGOUT' });
+      localStorage.removeItem('auth');
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
     };
 
     checkAuth();

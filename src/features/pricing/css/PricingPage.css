@@ -1,0 +1,35 @@
+.pricing-page {
+  min-height: 100vh;
+  background: #f9fafb;
+  padding: 2rem 0;
+}
+
+.pricing-page-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 1rem;
+}
+
+/* Ensure pricing section looks good standalone */
+.pricing-page .pricing-section {
+  padding: 3rem 0;
+  background: transparent;
+}
+
+.pricing-page .pricing-title {
+  text-align: center;
+  margin-bottom: 2rem;
+  font-size: 2.5rem;
+  color: #1f2937;
+}
+
+@media (max-width: 768px) {
+  .pricing-page {
+    padding: 1rem 0;
+  }
+
+  .pricing-page .pricing-title {
+    font-size: 2rem;
+  }
+}
+

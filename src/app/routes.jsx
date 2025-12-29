@@ -12,11 +12,15 @@ import LoginPage from '../features/auth/pages/LoginPage';
 import SignupPage from '../features/auth/pages/SignupPage';
 import ForgotPasswordPage from '../features/auth/pages/ForgotPasswordPage';
 import Checkout from '../features/payment_gateway/component/CheckoutPage';
+import PricingPage from '../features/pricing/pages/PricingPage';
 import CodeToDocPage from '../features/code_to_doc/page/codetodoc';
 import DashboardHome from '../features/dashboard/pages/DashboardHome';
 import BotSetupPage from '../features/bot_setup/page/BotSetupPage';
 import HelpAndFAQPage from '../features/help/pages/HelpAndFAQPage';
 import SettingsPage from '../features/settings/page/SettingsPage';
+import AdminLoginPage from '../features/admin_dashboard/pages/AdminLoginPage';
+import AdminDashboard from '../features/admin_dashboard/pages/AdminDashboard';
+import AdminProtectedRoute from '../core/middleware/AdminProtectedRoute';
 
 // Protected Route Component
 const ProtectedRoute = ({ children }) => {
@@ -78,13 +82,25 @@ const AppRoutes = () => {
                 }
             />
 
-            {/* Open Routes - Accessible by anyone */}
+            {/* Pricing Page - Public */}
+            <Route
+                path="/pricing"
+                element={
+                    <PublicRoute>
+                        <MainLayout user={user} onLogout={logout}>
+                            <PricingPage />
+                        </MainLayout>
+                    </PublicRoute>
+                }
+            />
+
+            {/* Checkout Route - Requires authentication */}
             <Route
                 path="/checkout"
                 element={
-                    <OpenRoute>
+                    <ProtectedRoute>
                         <Checkout />
-                    </OpenRoute>
+                    </ProtectedRoute>
                 }
             />
 
@@ -137,6 +153,20 @@ const AppRoutes = () => {
                             <SettingsPage />
                         </DashboardLayout>
                     </ProtectedRoute>
+                }
+            />
+
+            {/* Admin Routes */}
+            <Route
+                path="/admin"
+                element={<AdminLoginPage />}
+            />
+            <Route
+                path="/admin/dashboard"
+                element={
+                    <AdminProtectedRoute>
+                        <AdminDashboard />
+                    </AdminProtectedRoute>
                 }
             />
 

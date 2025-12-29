@@ -15,9 +15,30 @@ const getUsage = async (req, res) => {
     user.resetDailyUsage();
     await user.save();
 
-    // Count actual bots (this would come from the Python backend)
-    // For now, we'll use the stored count
-    const botCount = user.usage.bots.current;
+    // Fetch actual bot count from Python backend
+    let botCount = user.usage.bots.current; // Default to stored count
+    try {
+      const pythonApiUrl = process.env.PYTHON_API_URL || 'http://localhost:5001';
+      const response = await fetch(`${pythonApiUrl}/api/bots`, {
+        headers: {
+          'Authorization': req.headers.authorization || '',
+          'X-User-ID': req.user._id.toString(),
+        },
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        // Handle both array response and object with bots array
+        const bots = Array.isArray(data) ? data : (data.bots || []);
+        botCount = Array.isArray(bots) ? bots.length : 0;
+        // Update stored count
+        user.usage.bots.current = botCount;
+        await user.save();
+      }
+    } catch (error) {
+      console.error('Failed to fetch bot count from Python backend:', error);
+      // Use stored count if fetch fails
+    }
 
     res.status(200).json({
       success: true,

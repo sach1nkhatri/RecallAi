@@ -9,6 +9,8 @@ import requests
 from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
 
+from src.config.settings import settings
+
 logger = logging.getLogger(__name__)
 
 
@@ -17,9 +19,7 @@ class LMStudioEmbedder:
     
     def __init__(self, base_url: str):
         self.base_url = base_url.rstrip("/")
-        # Default to nomic embedding model if qwen embedding has issues
-        # User can override with LM_STUDIO_EMBED_MODEL env var
-        self.model = os.getenv("LM_STUDIO_EMBED_MODEL", "text-embedding-nomic-embed-text-v1.5")
+        self.model = None  # Will be auto-detected
         
         # Create session with retry strategy
         self.session = requests.Session()
@@ -32,6 +32,9 @@ class LMStudioEmbedder:
         adapter = HTTPAdapter(max_retries=retry_strategy)
         self.session.mount("http://", adapter)
         self.session.mount("https://", adapter)
+        
+        # Auto-detect embedding model
+        self._detect_embedding_model()
 
     def _check_connection(self) -> bool:
         """Check if LM Studio is reachable using /v1/models endpoint."""
@@ -41,6 +44,54 @@ class LMStudioEmbedder:
         except Exception as e:
             logger.warning(f"LM Studio connection check failed: {e}")
             return False
+
+    def _detect_embedding_model(self) -> None:
+        """Auto-detect available embedding model from LM Studio."""
+        # First check if user specified a model via env var
+        env_model = os.getenv("LM_STUDIO_EMBED_MODEL")
+        if env_model:
+            self.model = env_model
+            logger.info(f"Using embedding model from env: {self.model}")
+            return
+        
+        # Use default from settings if available
+        if hasattr(settings, 'LM_STUDIO_EMBED_MODEL') and settings.LM_STUDIO_EMBED_MODEL:
+            self.model = settings.LM_STUDIO_EMBED_MODEL
+            logger.info(f"Using embedding model from settings: {self.model}")
+            return
+        
+        # Try to auto-detect from LM Studio
+        try:
+            resp = self.session.get(f"{self.base_url}/models", timeout=5)
+            if resp.status_code == 200:
+                models_data = resp.json()
+                models = models_data.get("data", [])
+                
+                # Look for embedding models (they typically have "embed" in the name or id)
+                embedding_models = [
+                    model for model in models
+                    if "embed" in model.get("id", "").lower() or 
+                       "embedding" in model.get("id", "").lower()
+                ]
+                
+                if embedding_models:
+                    # Use the first available embedding model
+                    self.model = embedding_models[0].get("id")
+                    logger.info(f"Auto-detected embedding model: {self.model}")
+                elif models:
+                    # If no embedding models found, try using the first available model
+                    # LM Studio might have embedding capability even if not explicitly named
+                    self.model = models[0].get("id")
+                    logger.info(f"No explicit embedding models found, using first available model: {self.model}")
+                else:
+                    logger.info("No models found in LM Studio, will try without specifying model (LM Studio will auto-select)")
+                    self.model = None
+            else:
+                logger.warning(f"Failed to fetch models from LM Studio: HTTP {resp.status_code}")
+                self.model = None
+        except Exception as e:
+            logger.warning(f"Failed to auto-detect embedding model: {e}. Will try without specifying model.")
+            self.model = None
 
     def embed_texts(self, texts: List[str]) -> List[List[float]]:
         """Embed texts with retry logic and better error handling."""
@@ -60,10 +111,13 @@ class LMStudioEmbedder:
             if not text.strip():
                 continue
             
+            # Build payload - only include model if we have one
             payload = {
-                "model": self.model,
                 "input": text,
             }
+            # Only add model if we detected one (LM Studio can auto-select if not specified)
+            if self.model:
+                payload["model"] = self.model
             
             max_retries = 3
             last_error = None
@@ -113,9 +167,10 @@ class LMStudioEmbedder:
                         
                 except requests.HTTPError as e:
                     error_msg = f"HTTP {resp.status_code}" if 'resp' in locals() else "HTTP error"
+                    model_info = f"Model '{self.model}' " if self.model else ""
                     raise RuntimeError(
                         f"Embedding request failed: {error_msg}. "
-                        f"Model '{self.model}' may not be loaded in LM Studio. "
+                        f"{model_info}Please ensure an embedding model is loaded in LM Studio. "
                         f"Response: {getattr(resp, 'text', str(e))}"
                     ) from e
                     

@@ -17,9 +17,11 @@ from src.application.services.file_service import FileService
 from src.application.services.document_service import DocumentService
 from src.infrastructure.external import LMStudioClient, FPDFGenerator
 from src.infrastructure.external.status_reporter import StatusReporter
+from src.infrastructure.external.user_service import UserService
 from src.infrastructure.api.bot_routes import register_bot_routes
 from src.infrastructure.api.user_routes import register_user_routes
 from src.infrastructure.api.repo_routes import register_repo_routes
+from src.infrastructure.storage.database import get_client
 
 logging.basicConfig(
     level=logging.INFO,
@@ -41,12 +43,20 @@ def create_app() -> Flask:
     # Ensure directories exist
     settings.ensure_directories()
     
+    # Initialize MongoDB connection
+    try:
+        get_client()  # This will test the connection
+        logger.info("MongoDB connection initialized")
+    except Exception as e:
+        logger.warning(f"MongoDB connection failed: {e}. Bot storage may not work correctly.")
+    
     # Initialize services
     llm_client = LMStudioClient()
     pdf_generator = FPDFGenerator()
     document_service = DocumentService(llm_client, pdf_generator)
     file_service = FileService()
     status_reporter = StatusReporter(settings.NODE_BACKEND_URL)
+    user_service = UserService(settings.NODE_BACKEND_URL)
     
     # Create Flask app
     app = Flask(__name__, static_folder=str(settings.FRONTEND_DIR), static_url_path="")
@@ -158,6 +168,13 @@ def create_app() -> Flask:
             except Exception:
                 pass
             
+            # Check usage limit before generating
+            if token:
+                can_proceed, usage_info, error_msg = user_service.check_usage_limit(token, "codeToDoc")
+                if not can_proceed:
+                    logger.warning(f"Usage limit reached for codeToDoc: {error_msg}")
+                    return jsonify({"error": error_msg}), 403
+            
             # Report initial status
             status_reporter.report_progress(
                 status="pending",
@@ -187,7 +204,15 @@ def create_app() -> Flask:
             )
             
             # Generate document
+            logger.info(f"Starting document generation | content_length={len(raw_content)} | type={content_type} | files={file_count}")
             result = document_service.generate_document(generation)
+            
+            # Validate result
+            if not result.markdown_content or len(result.markdown_content.strip()) < 50:
+                logger.error(f"Generated documentation is too short: {len(result.markdown_content) if result.markdown_content else 0} chars")
+                raise RuntimeError("Generated documentation is incomplete or empty. Please try again.")
+            
+            logger.info(f"Document generation successful | output_length={len(result.markdown_content)} | pdf={bool(result.pdf_path)}")
             
             # Report completion
             status_reporter.report_completion(
@@ -196,6 +221,10 @@ def create_app() -> Flask:
                 pdf_info={"filename": result.pdf_path.name} if result.pdf_path else None,
                 token=token
             )
+            
+            # Increment usage after successful generation
+            if token:
+                user_service.increment_usage(token, "codeToDoc", 1)
             
             return jsonify({
                 "output": result.markdown_content,

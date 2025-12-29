@@ -94,6 +94,7 @@ const PricingPlans = () => {
                             navigate('/checkout', {
                                 state: {
                                     planName: 'Professional Plan',
+                                    planType: 'pro',
                                     planPrice: pricing[activePlan].basic,
                                     planDuration: getDuration(),
                                 },
@@ -128,6 +129,7 @@ const PricingPlans = () => {
                             navigate('/checkout', {
                                 state: {
                                     planName: 'Enterprise Plan',
+                                    planType: 'enterprise',
                                     planPrice: pricing[activePlan].pro,
                                     planDuration: getDuration(),
                                 },

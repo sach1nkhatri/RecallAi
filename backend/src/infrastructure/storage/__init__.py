@@ -1,5 +1,7 @@
-"""Storage infrastructure - File storage implementations"""
+"""Storage infrastructure - Database and storage implementations"""
 
-# Placeholder for future storage implementations
-__all__ = []
+from .database import get_client, get_database, close_connection
+from .bot_model import BotModel
+
+__all__ = ["get_client", "get_database", "close_connection", "BotModel"]
 

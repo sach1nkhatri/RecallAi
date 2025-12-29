@@ -1,8 +1,46 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import { getNodeApiBase, getAuthToken } from '../../../core/utils/nodeApi';
 import '../css/PlanSection.css';
 
 const PlanSection = ({ currentPlan, onUpgrade }) => {
+  const [paymentStatus, setPaymentStatus] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchPaymentStatus = async () => {
+      const token = getAuthToken();
+      if (!token) {
+        setLoading(false);
+        return;
+      }
+
+      try {
+        const response = await fetch(`${getNodeApiBase()}/api/payments/my-payments`, {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+          },
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          if (data.success && data.payments.length > 0) {
+            // Get latest pending or approved payment
+            const latest = data.payments.find(p => 
+              p.status === 'pending' || p.status === 'approved'
+            ) || data.payments[0];
+            setPaymentStatus(latest);
+          }
+        }
+      } catch (err) {
+        console.error('Failed to fetch payment status:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchPaymentStatus();
+  }, []);
   const planFeatures = {
     free: {
       name: 'Free Plan',
@@ -71,11 +109,35 @@ const PlanSection = ({ currentPlan, onUpgrade }) => {
           </div>
         </div>
 
+        {paymentStatus && (
+          <div className="payment-status-section">
+            <h4>Payment Status</h4>
+            <div className={`payment-status-badge status-${paymentStatus.status}`}>
+              <span>
+                {paymentStatus.status === 'pending' && '⏳ Pending Review'}
+                {paymentStatus.status === 'approved' && '✅ Approved'}
+                {paymentStatus.status === 'rejected' && '❌ Rejected'}
+                {paymentStatus.status === 'expired' && '⏰ Expired'}
+              </span>
+              {paymentStatus.validUntil && (
+                <span className="validity-date">
+                  Valid until: {new Date(paymentStatus.validUntil).toLocaleDateString()}
+                </span>
+              )}
+            </div>
+            {paymentStatus.status === 'rejected' && paymentStatus.adminNotes && (
+              <div className="admin-notes">
+                <strong>Note:</strong> {paymentStatus.adminNotes}
+              </div>
+            )}
+          </div>
+        )}
+
         {currentPlan === 'free' && (
           <div className="plan-upgrade">
             <p>Upgrade to unlock more features and higher limits</p>
-            <Link to="/checkout" className="plan-upgrade-btn">
-              Upgrade Plan
+            <Link to="/pricing" className="plan-upgrade-btn">
+              View Plans
             </Link>
           </div>
         )}
