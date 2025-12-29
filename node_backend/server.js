@@ -20,6 +20,7 @@ const generationStatusRoutes = require('./src/routes/generationStatusRoutes');
 const adminRoutes = require('./src/routes/adminRoutes');
 const helpFAQRoutes = require('./src/routes/helpFAQRoutes');
 const paymentRoutes = require('./src/routes/paymentRoutes');
+const botRoutes = require('./src/routes/botRoutes');
 
 // Initialize Express app
 const app = express();
@@ -72,6 +73,7 @@ app.use('/api/generation-status', generationStatusRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/help-faq', helpFAQRoutes);
 app.use('/api/payments', paymentRoutes);
+app.use('/api/bots', botRoutes);
 
 // Error handling middleware
 app.use((err, req, res, next) => {

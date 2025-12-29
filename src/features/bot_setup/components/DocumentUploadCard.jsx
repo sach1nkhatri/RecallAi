@@ -1,4 +1,5 @@
 import React, { useState, useRef } from 'react';
+import { getNodeApiBase, getAuthToken } from '../../../core/utils/nodeApi';
 import '../css/DocumentUploadCard.css';
 
 const DocumentUploadCard = ({ botId, onUploadComplete, onError }) => {
@@ -7,14 +8,7 @@ const DocumentUploadCard = ({ botId, onUploadComplete, onError }) => {
   const [uploadedDocs, setUploadedDocs] = useState([]);
   const fileInputRef = useRef(null);
 
-  const getApiBase = () => {
-    if (typeof window === 'undefined') return 'http://localhost:5001';
-    const envApi = process.env.REACT_APP_API_BASE_URL;
-    if (envApi) return envApi;
-    return window.location.port === '3000' || !window.location.port
-      ? 'http://localhost:5001'
-      : window.location.origin;
-  };
+  const getApiBase = getNodeApiBase;
 
   const handleFileSelect = async (files) => {
     if (!files || files.length === 0) return;
@@ -35,8 +29,12 @@ const DocumentUploadCard = ({ botId, onUploadComplete, onError }) => {
 
       setProgress({ stage: 'Uploading files...', percentage: 30 });
 
+      const token = getAuthToken();
       const response = await fetch(`${getApiBase()}/api/bots/${botId}/documents`, {
         method: 'POST',
+        headers: {
+          'Authorization': token ? `Bearer ${token}` : '',
+        },
         body: formData,
       });
 
@@ -55,10 +53,18 @@ const DocumentUploadCard = ({ botId, onUploadComplete, onError }) => {
       setProgress({ stage: 'Complete!', percentage: 100 });
 
       // Fetch updated document list
-      const docsResponse = await fetch(`${getApiBase()}/api/bots/${botId}/documents`);
+      const docsResponse = await fetch(`${getApiBase()}/api/bots/${botId}/documents`, {
+        headers: {
+          'Authorization': token ? `Bearer ${token}` : '',
+        },
+      });
       if (docsResponse.ok) {
         const docsData = await docsResponse.json();
-        setUploadedDocs(docsData.documents || []);
+        // Filter out documents with error status - only show successfully vectorized ones
+        const successfulDocs = (docsData.documents || []).filter(
+          doc => doc.status === 'vectorized'
+        );
+        setUploadedDocs(successfulDocs);
       }
 
       onUploadComplete();
@@ -90,10 +96,19 @@ const DocumentUploadCard = ({ botId, onUploadComplete, onError }) => {
   const loadDocuments = async () => {
     if (!botId) return;
     try {
-      const response = await fetch(`${getApiBase()}/api/bots/${botId}/documents`);
+      const token = getAuthToken();
+      const response = await fetch(`${getApiBase()}/api/bots/${botId}/documents`, {
+        headers: {
+          'Authorization': token ? `Bearer ${token}` : '',
+        },
+      });
       if (response.ok) {
         const data = await response.json();
-        setUploadedDocs(data.documents || []);
+        // Filter out documents with error status - only show successfully vectorized ones
+        const successfulDocs = (data.documents || []).filter(
+          doc => doc.status === 'vectorized'
+        );
+        setUploadedDocs(successfulDocs);
       }
     } catch (error) {
       console.error('Failed to load documents:', error);
@@ -130,7 +145,7 @@ const DocumentUploadCard = ({ botId, onUploadComplete, onError }) => {
           ref={fileInputRef}
           type="file"
           multiple
-          accept=".pdf,.txt,.md,.doc,.docx"
+          accept=".pdf,.txt,.md,.doc,.docx,.json"
           onChange={(e) => handleFileSelect(e.target.files)}
           style={{ display: 'none' }}
           disabled={isUploading}
@@ -153,7 +168,7 @@ const DocumentUploadCard = ({ botId, onUploadComplete, onError }) => {
               Click or drag files to upload
             </p>
             <p className="doc-upload-hint">
-              Supported: PDF, TXT, MD, DOC, DOCX
+              Supported: PDF, TXT, MD, DOC, DOCX, JSON
             </p>
           </>
         )}

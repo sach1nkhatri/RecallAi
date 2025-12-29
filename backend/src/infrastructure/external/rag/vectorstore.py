@@ -78,22 +78,47 @@ def load_metadata(path: str) -> List[dict]:
 def search(
     index: "faiss.IndexFlatL2",
     query_vector: List[float],
-    top_k: int = 5
-) -> Tuple[List[int], List[float]]:
+    top_k: int = 5,
+    similarity_threshold: float = 0.7
+) -> Tuple[List[int], List[float], List[float]]:
     """
-    Search for similar vectors in the index.
+    Search for similar vectors in the index with similarity filtering.
     
     Args:
         index: FAISS index
         query_vector: Query embedding vector
         top_k: Number of results to return
+        similarity_threshold: Minimum similarity score (0-1, higher = more similar)
+                              L2 distance is converted to similarity: 1 / (1 + distance)
         
     Returns:
-        Tuple of (indices, distances)
+        Tuple of (indices, distances, similarities)
     """
     if faiss is None or np is None:
         raise ImportError("faiss and numpy are required for search")
     
-    D, I = index.search(np.array([query_vector]).astype("float32"), top_k)
-    return I[0].tolist(), D[0].tolist()
+    # Search for more candidates to filter by similarity
+    search_k = min(top_k * 3, index.ntotal) if hasattr(index, 'ntotal') else top_k * 3
+    D, I = index.search(np.array([query_vector]).astype("float32"), search_k)
+    
+    indices = []
+    distances = []
+    similarities = []
+    
+    for idx, dist in zip(I[0], D[0]):
+        # Convert L2 distance to similarity score (0-1)
+        # Using 1 / (1 + distance) to normalize
+        similarity = 1.0 / (1.0 + dist)
+        
+        # Filter by similarity threshold
+        if similarity >= similarity_threshold:
+            indices.append(int(idx))
+            distances.append(float(dist))
+            similarities.append(float(similarity))
+            
+            # Stop once we have enough results
+            if len(indices) >= top_k:
+                break
+    
+    return indices, distances, similarities
 

@@ -155,8 +155,8 @@ class RAGIndexService:
                 # Embed query
                 query_vec = self.embedder.embed_texts([query])[0]
                 
-                # Search index
-                idxs, _ = search(index, query_vec, top_k=top_k)
+                # Search index (with similarity threshold)
+                idxs, _, _ = search(index, query_vec, top_k=top_k, similarity_threshold=0.6)
                 
                 # Add unique chunks
                 for idx in idxs:

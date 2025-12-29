@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { getNodeApiBase, getAuthToken } from '../../../core/utils/nodeApi';
 import '../css/BotPreviewCard.css';
 
 const BotPreviewCard = ({ bot, onError }) => {
@@ -14,14 +15,7 @@ const BotPreviewCard = ({ bot, onError }) => {
   const [isLoading, setIsLoading] = useState(false);
   const messagesEndRef = useRef(null);
 
-  const getApiBase = () => {
-    if (typeof window === 'undefined') return 'http://localhost:5001';
-    const envApi = process.env.REACT_APP_API_BASE_URL;
-    if (envApi) return envApi;
-    return window.location.port === '3000' || !window.location.port
-      ? 'http://localhost:5001'
-      : window.location.origin;
-  };
+  const getApiBase = getNodeApiBase;
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -37,12 +31,20 @@ const BotPreviewCard = ({ bot, onError }) => {
 
     // Check chat limit
     try {
-      const usageResponse = await fetch(`${getApiBase()}/api/user/usage`);
+      const token = getAuthToken();
+      const usageResponse = await fetch(`${getApiBase()}/api/users/usage`, {
+        headers: {
+          'Authorization': token ? `Bearer ${token}` : '',
+        },
+      });
       if (usageResponse.ok) {
-        const usage = await usageResponse.json();
-        if (usage.chats.today >= usage.chats.limit) {
-          onError(`Daily chat limit reached. Free plan allows ${usage.chats.limit} chats per day. Upgrade for more.`);
-          return;
+        const usageData = await usageResponse.json();
+        if (usageData.success && usageData.usage) {
+          const usage = usageData.usage;
+          if (usage.chats.today >= usage.chats.limit) {
+            onError(`Daily chat limit reached. Free plan allows ${usage.chats.limit} chats per day. Upgrade for more.`);
+            return;
+          }
         }
       }
     } catch (err) {
@@ -55,10 +57,12 @@ const BotPreviewCard = ({ bot, onError }) => {
     setIsLoading(true);
 
     try {
+      const token = getAuthToken();
       const response = await fetch(`${getApiBase()}/api/bots/${bot.id}/chat`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': token ? `Bearer ${token}` : '',
         },
         body: JSON.stringify({
           message: userMessage,
@@ -111,9 +115,13 @@ const BotPreviewCard = ({ bot, onError }) => {
 
       // Increment chat usage after successful response
       try {
-        await fetch(`${getApiBase()}/api/user/usage/increment`, {
+        const token = getAuthToken();
+        await fetch(`${getApiBase()}/api/users/usage/increment`, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': token ? `Bearer ${token}` : '',
+          },
           body: JSON.stringify({ type: 'chats', amount: 1 }),
         });
       } catch (err) {
@@ -167,7 +175,10 @@ const BotPreviewCard = ({ bot, onError }) => {
         {isLoading && (
           <div className="bot-preview-message bot-preview-message-assistant">
             <div className="bot-preview-message-content">
-              <span className="bot-preview-typing">Thinking...</span>
+              <span className="bot-preview-typing-dots">
+                <span className="bot-preview-dot"></span>
+                <span className="bot-preview-dot"></span>
+              </span>
             </div>
           </div>
         )}

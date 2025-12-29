@@ -21,6 +21,7 @@ bot_service = BotService()
 # RAG indices directory
 RAG_INDICES_DIR = Path(settings.BASE_DIR) / "data" / "rag_indices"
 RAG_INDICES_DIR.mkdir(parents=True, exist_ok=True)
+RAG_INDICES_DIR.mkdir(parents=True, exist_ok=True)
 
 
 def register_bot_routes(app):
@@ -51,12 +52,8 @@ def register_bot_routes(app):
         try:
             data = request.get_json() or {}
             
-            # Extract user_id from auth token if available
-            user_id = None
-            auth_header = request.headers.get('Authorization', '')
-            if auth_header.startswith('Bearer '):
-                # TODO: Extract user_id from JWT token if needed
-                pass
+            # Get user_id from X-User-ID header (set by Node backend)
+            user_id = request.headers.get('X-User-ID')
             
             bot = bot_service.create_bot(data, user_id=user_id)
             
@@ -147,9 +144,19 @@ def register_bot_routes(app):
                 index_dir=str(RAG_INDICES_DIR)
             )
             
-            # Vectorize documents
+            # Vectorize documents - find existing index for this bot
+            # Look for index files matching bot_id pattern (could be bot_id.index or bot_id_timestamp.index)
+            existing_index = None
             index_path = RAG_INDICES_DIR / f"{bot_id}.index"
-            existing_index = str(index_path) if index_path.exists() else None
+            if index_path.exists():
+                existing_index = str(index_path)
+            else:
+                # Find the most recent index file for this bot
+                pattern = f"{bot_id}_*.index"
+                matching_files = list(RAG_INDICES_DIR.glob(pattern))
+                if matching_files:
+                    # Sort by modification time, get most recent
+                    existing_index = str(max(matching_files, key=lambda p: p.stat().st_mtime))
             
             documents = []
             for file_info in saved_files:
@@ -166,6 +173,14 @@ def register_bot_routes(app):
                     })
                 except Exception as e:
                     logger.error(f"Failed to vectorize {file_info['filename']}: {e}")
+                    # Delete the failed file from disk
+                    try:
+                        file_path = Path(file_info["path"])
+                        if file_path.exists():
+                            file_path.unlink()
+                            logger.info(f"Deleted failed file: {file_info['filename']}")
+                    except Exception as delete_error:
+                        logger.warning(f"Failed to delete file {file_info['filename']}: {delete_error}")
                     documents.append({
                         "filename": file_info["filename"],
                         "status": "error",
@@ -187,21 +202,46 @@ def register_bot_routes(app):
     
     @app.route("/api/bots/<bot_id>/documents", methods=["GET"])
     def list_documents(bot_id: str):
-        """List documents for a bot"""
+        """List documents for a bot - only returns successfully vectorized documents"""
         try:
             bot_upload_dir = settings.UPLOAD_PATH / "bots" / bot_id
             if not bot_upload_dir.exists():
                 return jsonify({"documents": []}), 200
             
+            # Check if index exists and load metadata to see which files are vectorized
+            # Find the index file for this bot (could be bot_id.index or bot_id_timestamp.index)
+            index_path = RAG_INDICES_DIR / f"{bot_id}.index"
+            if not index_path.exists():
+                # Find the most recent index file for this bot
+                pattern = f"{bot_id}_*.index"
+                matching_files = list(RAG_INDICES_DIR.glob(pattern))
+                if matching_files:
+                    index_path = max(matching_files, key=lambda p: p.stat().st_mtime)
+            
+            vectorized_files = set()
+            
+            if index_path.exists():
+                try:
+                    from src.infrastructure.external.rag.vectorstore import load_metadata
+                    metadata = load_metadata(str(index_path))
+                    # Extract unique filenames from metadata
+                    for meta in metadata:
+                        if "filename" in meta:
+                            vectorized_files.add(meta["filename"])
+                except Exception as e:
+                    logger.warning(f"Failed to load metadata for bot {bot_id}: {e}")
+            
+            # Only return files that exist in the upload directory AND are vectorized
             documents = []
             for file_path in bot_upload_dir.iterdir():
                 if file_path.is_file():
-                    index_path = RAG_INDICES_DIR / f"{bot_id}.index"
-                    status = "vectorized" if index_path.exists() else "pending"
-                    documents.append({
-                        "filename": file_path.name,
-                        "status": status,
-                    })
+                    filename = file_path.name
+                    # Only include files that are in the vectorized set
+                    if filename in vectorized_files:
+                        documents.append({
+                            "filename": filename,
+                            "status": "vectorized",
+                        })
             
             return jsonify({"documents": documents}), 200
         except Exception as e:
@@ -221,11 +261,19 @@ def register_bot_routes(app):
             if not message:
                 return jsonify({"error": "Message is required"}), 400
             
-            # Check if RAG index exists
+            # Check if RAG index exists - find the index file for this bot
             index_path = RAG_INDICES_DIR / f"{bot_id}.index"
             if not index_path.exists():
+                # Find the most recent index file for this bot
+                pattern = f"{bot_id}_*.index"
+                matching_files = list(RAG_INDICES_DIR.glob(pattern))
+                if matching_files:
+                    index_path = max(matching_files, key=lambda p: p.stat().st_mtime)
+            
+            if not index_path.exists():
+                logger.warning(f"RAG index not found for bot {bot_id}. Index path: {index_path}")
                 return jsonify({
-                    "error": "No documents uploaded for this bot. Please upload documents first."
+                    "error": "No documents uploaded for this bot. Please upload and vectorize documents first."
                 }), 400
             
             # Initialize RAG engine
@@ -253,7 +301,40 @@ def register_bot_routes(app):
                     try:
                         for chunk in stream_generator:
                             if chunk:
-                                yield f"data: {json.dumps({'content': chunk})}\n\n"
+                                # Decode bytes to string if needed
+                                if isinstance(chunk, bytes):
+                                    chunk = chunk.decode('utf-8')
+                                
+                                # Parse LM Studio SSE format: data: {"choices": [{"delta": {"content": "..."}}]}
+                                try:
+                                    if chunk.strip().startswith("data: "):
+                                        json_str = chunk.strip()[6:]  # Remove "data: "
+                                        if json_str and json_str != "[DONE]":
+                                            try:
+                                                data = json.loads(json_str)
+                                                # Extract content from LM Studio response format
+                                                content = data.get("choices", [{}])[0].get("delta", {}).get("content", "")
+                                                if content:
+                                                    yield f"data: {json.dumps({'content': content})}\n\n"
+                                            except json.JSONDecodeError:
+                                                # If not valid JSON, pass through as-is
+                                                yield chunk if chunk.endswith('\n') else chunk + '\n'
+                                        elif json_str == "[DONE]":
+                                            yield "data: [DONE]\n\n"
+                                    else:
+                                        # Not in SSE format, try to parse as JSON
+                                        try:
+                                            data = json.loads(chunk)
+                                            content = data.get("choices", [{}])[0].get("delta", {}).get("content", "")
+                                            if content:
+                                                yield f"data: {json.dumps({'content': content})}\n\n"
+                                        except json.JSONDecodeError:
+                                            # If parsing fails, wrap as content
+                                            yield f"data: {json.dumps({'content': str(chunk)})}\n\n"
+                                except Exception as parse_error:
+                                    logger.warning(f"Error parsing chunk: {parse_error}, chunk: {chunk[:100]}")
+                                    # Fallback: wrap as content
+                                    yield f"data: {json.dumps({'content': str(chunk)})}\n\n"
                         yield "data: [DONE]\n\n"
                     except Exception as e:
                         logger.error(f"Streaming error: {e}")

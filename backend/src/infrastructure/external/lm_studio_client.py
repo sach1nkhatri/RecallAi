@@ -308,7 +308,9 @@ class LMStudioClient(LLMClient):
             "presence_penalty": 0.1,
         }
         
-        url = f"{settings.LM_STUDIO_BASE_URL}/chat/completions"
+        # Remove trailing /v1 if present, then add /chat/completions
+        base = settings.LM_STUDIO_BASE_URL.rstrip('/').rstrip('/v1')
+        url = f"{base}/v1/chat/completions"
         
         logger.info(f"Using chat model: {settings.LM_MODEL_NAME} for endpoint: {url}")
         

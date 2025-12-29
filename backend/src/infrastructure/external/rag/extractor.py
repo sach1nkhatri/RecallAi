@@ -9,7 +9,7 @@ except ImportError:
     PdfReader = None  # type: ignore
 
 
-SUPPORTED_TEXT_EXTENSIONS = {".txt", ".md", ".rtf", ".csv"}
+SUPPORTED_TEXT_EXTENSIONS = {".txt", ".md", ".rtf", ".csv", ".json"}
 
 
 def extract_text(file_path: str) -> str:
@@ -39,7 +39,7 @@ def extract_text(file_path: str) -> str:
     else:
         raise ValueError(
             f"Unsupported file type '{ext or 'unknown'}'. "
-            "Upload PDF or UTF-8 text/Markdown/CSV files."
+            "Upload PDF, JSON, or UTF-8 text/Markdown/CSV files."
         )
 
     normalized = (text or "").strip()
