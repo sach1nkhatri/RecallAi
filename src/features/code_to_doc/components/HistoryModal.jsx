@@ -1,4 +1,5 @@
 import React, { useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import GenerationHistory from './GenerationHistory';
 import '../css/HistoryModal.css';
 import '../css/GenerationHistory.css';
@@ -14,16 +15,19 @@ const HistoryModal = ({ isOpen, onClose, onSelectDocument }) => {
 
     if (isOpen) {
       document.addEventListener('keydown', handleEscape);
+      // Prevent body scroll when modal is open
+      document.body.style.overflow = 'hidden';
     }
 
     return () => {
       document.removeEventListener('keydown', handleEscape);
+      document.body.style.overflow = '';
     };
   }, [isOpen, onClose]);
 
   if (!isOpen) return null;
 
-  return (
+  const modalContent = (
     <div className="history-modal-overlay" onClick={onClose}>
       <div className="history-modal-content" onClick={(e) => e.stopPropagation()}>
         <div className="history-modal-header">
@@ -59,6 +63,9 @@ const HistoryModal = ({ isOpen, onClose, onSelectDocument }) => {
       </div>
     </div>
   );
+
+  // Render modal using portal at document body level to ensure it's above everything
+  return createPortal(modalContent, document.body);
 };
 
 export default HistoryModal;

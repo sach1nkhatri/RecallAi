@@ -4,46 +4,58 @@
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(0, 0, 0, 0.5);
-  backdrop-filter: blur(4px);
-  z-index: 1000;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  z-index: 9999;
   display: flex;
   align-items: center;
   justify-content: center;
   padding: 20px;
-  animation: fadeIn 0.2s ease-out;
+  animation: fadeInOverlay 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  overflow-y: auto;
+  isolation: isolate;
+  scroll-behavior: smooth;
 }
 
-@keyframes fadeIn {
+@keyframes fadeInOverlay {
   from {
     opacity: 0;
+    backdrop-filter: blur(0px);
+    -webkit-backdrop-filter: blur(0px);
   }
   to {
     opacity: 1;
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
   }
 }
 
 .history-modal-content {
   background: white;
-  border-radius: 16px;
-  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  border-radius: 20px;
+  box-shadow: 
+    0 25px 50px -12px rgba(0, 0, 0, 0.25),
+    0 0 0 1px rgba(0, 0, 0, 0.05);
   width: 100%;
-  max-width: 900px;
-  max-height: 90vh;
+  max-width: 950px;
+  max-height: 92vh;
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  animation: slideUp 0.3s ease-out;
+  animation: slideUpScale 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  margin: auto;
+  position: relative;
 }
 
-@keyframes slideUp {
+@keyframes slideUpScale {
   from {
     opacity: 0;
-    transform: translateY(20px);
+    transform: translateY(30px) scale(0.95);
   }
   to {
     opacity: 1;
-    transform: translateY(0);
+    transform: translateY(0) scale(1);
   }
 }
 
@@ -51,10 +63,14 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 24px 28px;
-  border-bottom: 2px solid #f3f4f6;
-  background: linear-gradient(135deg, #f9fafb 0%, #ffffff 100%);
+  padding: 28px 32px;
+  border-bottom: 1px solid #e5e7eb;
+  background: linear-gradient(135deg, #ffffff 0%, #f9fafb 100%);
   flex-shrink: 0;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
 }
 
 .history-modal-title {
@@ -75,25 +91,26 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 40px;
-  height: 40px;
-  border-radius: 10px;
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
   border: none;
   background: #f3f4f6;
   color: #6b7280;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
   flex-shrink: 0;
 }
 
 .history-modal-close:hover {
   background: #e5e7eb;
   color: #1f2937;
-  transform: rotate(90deg);
+  transform: rotate(90deg) scale(1.05);
 }
 
 .history-modal-close:active {
   transform: rotate(90deg) scale(0.95);
+  background: #d1d5db;
 }
 
 .history-modal-body {
@@ -175,8 +192,27 @@
   }
 }
 
-/* Prevent body scroll when modal is open */
-body.modal-open {
-  overflow: hidden;
+/* Additional overlay states */
+.history-modal-overlay::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(
+    135deg,
+    rgba(59, 130, 246, 0.05) 0%,
+    rgba(147, 51, 234, 0.05) 100%
+  );
+  pointer-events: none;
+  opacity: 0;
+  animation: gradientFadeIn 0.3s ease-out 0.1s forwards;
+}
+
+@keyframes gradientFadeIn {
+  to {
+    opacity: 1;
+  }
 }
 
