@@ -2,7 +2,19 @@
 
 from dotenv import load_dotenv
 import os
+import logging
 from pathlib import Path
+
+# Configure logging BEFORE importing app modules
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    datefmt='%Y-%m-%d %H:%M:%S'
+)
+
+# Set specific loggers to DEBUG for more verbose output
+logging.getLogger('src.application.services').setLevel(logging.DEBUG)
+logging.getLogger('src.infrastructure.external').setLevel(logging.DEBUG)
 
 # Load .env file - check both backend/ and project root
 backend_dir = Path(__file__).parent

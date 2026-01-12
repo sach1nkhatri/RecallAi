@@ -129,17 +129,39 @@ The RAG (Retrieval Augmented Generation) components are located in `src/infrastr
 - **extractor.py**: Text extraction from PDFs and text files
 - **vectorstore.py**: FAISS vector store utilities
 
-### Optional Dependencies
+### RAG Dependencies
 
-RAG functionality requires additional dependencies (commented in `requirements.txt`):
+RAG functionality requires additional dependencies:
 - `PyPDF2`: For PDF text extraction
-- `faiss-cpu`: For vector similarity search
+- `faiss-cpu` or `faiss-gpu`: For vector similarity search
 - `numpy`: For numerical operations
+- `psutil`: For system resource monitoring
 
-Install with:
+**Cross-Platform Installation:**
+
+The system automatically detects your platform and uses the appropriate FAISS backend:
+
+- **Mac**: Always uses `faiss-cpu` (GPU acceleration not available)
+- **Windows/Linux with NVIDIA GPU**: Uses `faiss-gpu` for 5-10x faster processing
+- **Windows/Linux without GPU**: Falls back to `faiss-cpu`
+
+**Quick Setup:**
 ```bash
-pip install PyPDF2 faiss-cpu numpy
+# Auto-detect and install correct version
+python setup_faiss.py
+
+# Or manually:
+# Mac:
+pip install faiss-cpu numpy psutil PyPDF2
+
+# Windows/Linux with GPU:
+pip install faiss-gpu numpy psutil PyPDF2
+
+# Windows/Linux without GPU:
+pip install faiss-cpu numpy psutil PyPDF2
 ```
+
+**Note:** The same codebase works on all platforms. FAISS indices are platform-independent and can be shared between Mac and Windows.
 
 ## Migration from Old Structure
 

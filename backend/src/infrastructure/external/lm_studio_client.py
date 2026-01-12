@@ -318,10 +318,55 @@ class LMStudioClient(LLMClient):
         request_timeout = timeout if timeout is not None else settings.LM_STUDIO_TIMEOUT
         
         try:
+            # Log the request details for debugging
+            logger.debug(f"LM Studio request: url={url}, model={settings.LM_MODEL_NAME}, payload_size={len(str(payload))}")
             response = requests.post(url, json=payload, timeout=request_timeout)
             response.raise_for_status()
         except requests.HTTPError as exc:
-            if exc.response.status_code == 404:
+            # Handle 400 Bad Request specifically
+            if exc.response.status_code == 400:
+                try:
+                    error_data = exc.response.json() if exc.response.content else {}
+                    error_msg = error_data.get("error", {}).get("message", str(exc))
+                    error_type = error_data.get("error", {}).get("type", "unknown")
+                    logger.error(f"LM Studio 400 Bad Request: {error_msg} (type: {error_type})")
+                    logger.error(f"Request payload: model={settings.LM_MODEL_NAME}, url={url}, payload_keys={list(payload.keys())}")
+                    
+                    # Provide helpful error message
+                    if "model" in str(error_msg).lower() or "not found" in str(error_msg).lower():
+                        raise RuntimeError(
+                            f"Model '{settings.LM_MODEL_NAME}' is not loaded or not available in LM Studio. "
+                            f"Please check:\n"
+                            f"1. The model name in your .env file matches the model loaded in LM Studio\n"
+                            f"2. The model is loaded in LM Studio's 'Server' tab (not just the Chat tab)\n"
+                            f"3. The server is running and accessible at {settings.LM_STUDIO_BASE_URL}\n"
+                            f"Error details: {error_msg}"
+                        ) from exc
+                    else:
+                        raise RuntimeError(
+                            f"LM Studio returned a Bad Request (400) error. "
+                            f"This usually means:\n"
+                            f"1. The model name '{settings.LM_MODEL_NAME}' doesn't match what's loaded in LM Studio\n"
+                            f"2. The request format is invalid\n"
+                            f"3. The payload is too large\n\n"
+                            f"Please check:\n"
+                            f"- Model name in .env: {settings.LM_MODEL_NAME}\n"
+                            f"- LM Studio Server tab shows the model is loaded\n"
+                            f"- Try reloading the model in LM Studio\n"
+                            f"Error: {error_msg}"
+                        ) from exc
+                except (ValueError, KeyError):
+                    # If we can't parse the error response, provide generic message
+                    logger.error(f"LM Studio 400 Bad Request: {exc.response.text}")
+                    raise RuntimeError(
+                        f"LM Studio returned a Bad Request (400) error. "
+                        f"Please check:\n"
+                        f"1. Model '{settings.LM_MODEL_NAME}' is loaded in LM Studio's Server tab\n"
+                        f"2. The model name in .env matches the loaded model\n"
+                        f"3. LM Studio server is running at {settings.LM_STUDIO_BASE_URL}\n"
+                        f"Response: {exc.response.text[:200]}"
+                    ) from exc
+            elif exc.response.status_code == 404:
                 error_data = exc.response.json() if exc.response.content else {}
                 error_msg = error_data.get("error", {}).get("message", str(exc))
                 logger.error(f"LM Studio 404: {error_msg}. Model '{settings.LM_MODEL_NAME}' may not be loaded for chat completions.")
@@ -330,7 +375,9 @@ class LMStudioClient(LLMClient):
                     f"Please ensure the model is loaded in LM Studio's Developer tab. "
                     f"Error: {error_msg}"
                 ) from exc
-            raise
+            else:
+                logger.exception(f"LM Studio HTTP error {exc.response.status_code}: {exc}")
+                raise RuntimeError(f"Failed to generate documentation: {exc.response.status_code} {str(exc)}") from exc
         except requests.Timeout:
             logger.error(f"LM Studio request timed out after {request_timeout} seconds")
             raise RuntimeError(
@@ -341,16 +388,6 @@ class LMStudioClient(LLMClient):
             raise RuntimeError(
                 f"Cannot connect to LM Studio at {settings.LM_STUDIO_BASE_URL}. Please check the server."
             ) from None
-        except requests.HTTPError as exc:
-            if exc.response.status_code == 404:
-                logger.error(f"LM Studio endpoint not found (404). Model '{settings.LM_MODEL_NAME}' may not be loaded.")
-                raise RuntimeError(
-                    f"Chat model '{settings.LM_MODEL_NAME}' is not loaded in LM Studio. "
-                    f"Please load the model in LM Studio's Developer tab. "
-                    f"Available models: qwen3-14b, gemma-3-1b-it-qat, etc."
-                ) from exc
-            logger.exception(f"LM Studio HTTP error: {exc}")
-            raise RuntimeError(f"Failed to generate documentation: {str(exc)}") from exc
         except requests.RequestException as exc:
             logger.exception(f"LM Studio request failed: {exc}")
             raise RuntimeError(f"Failed to generate documentation: {str(exc)}") from exc

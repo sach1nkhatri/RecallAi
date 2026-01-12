@@ -143,6 +143,10 @@ const GitHubRepoCard = ({
           The system will automatically filter files, build a vector index, and generate
           chapter-by-chapter documentation.
         </p>
+        <p className="ctd-muted" style={{ fontSize: '12px', marginTop: '8px' }}>
+          <strong>File Limits:</strong> Up to 100 files analyzed per repository/zip archive. 
+          Common directories (node_modules, .git, dist, build, etc.) are automatically excluded.
+        </p>
       </div>
     </div>
   );

@@ -21,7 +21,7 @@ const getApiBase = () => {
 
 const useCode2Doc = () => {
   const apiBase = useMemo(getApiBase, []);
-  const { updateStatus, status: generationStatus } = useGenerationStatus();
+  const { updateStatus, status: generationStatus, startPolling } = useGenerationStatus();
   
   const [fileInfo, setFileInfo] = useState('');
   const [output, setOutput] = useState('Generated documentation will appear here.');
@@ -33,7 +33,7 @@ const useCode2Doc = () => {
   const [toast, setToast] = useState({ message: '', type: 'info' });
   const timersRef = useRef([]);
   const [summary, setSummary] = useState('');
-  const [lastUploadMeta, setLastUploadMeta] = useState({ fileCount: null, contentType: null, rawContent: null });
+  const [lastUploadMeta, setLastUploadMeta] = useState({ fileCount: null, contentType: null, rawContent: null, isZip: false, repoFiles: null });
   const [uploads, setUploads] = useState([]);
   const [apiHealth, setApiHealth] = useState({ status: 'unknown', lastCheck: null });
   const [repoInfo, setRepoInfo] = useState(null);
@@ -113,7 +113,9 @@ const useCode2Doc = () => {
         setLastUploadMeta({
           fileCount: data.file_count || null,
           contentType: data.content_type || null,
-          rawContent: data.content || null, // Store the actual file content
+          rawContent: data.content || null,
+          isZip: data.is_zip || false,
+          repoFiles: data.repo_files || null,
         });
         setSummary('');
 
@@ -121,12 +123,20 @@ const useCode2Doc = () => {
           ? `${data.file_count} file(s): ${data.filename}`
           : data.filename || 'files loaded';
 
-        setFileInfo(`Loaded ${label} (${data.content_type})`);
-
-        if (data.skipped && data.skipped.length) {
-          showToast(`Skipped unsupported: ${data.skipped.join(', ')}`, 'error');
+        if (data.is_zip) {
+          setFileInfo(`Loaded zip archive: ${label} (${data.file_count} files extracted)`);
+          if (data.warnings && data.warnings.length > 0) {
+            showToast(`Zip extracted: ${data.file_count} files. ${data.warnings.length} warning(s).`, 'info');
+          } else {
+            showToast(`Successfully extracted zip: ${data.file_count} files. Ready to generate.`, 'info');
+          }
         } else {
-          showToast(`Successfully loaded ${data.file_count || 1} file(s). Ready to generate.`, 'info');
+          setFileInfo(`Loaded ${label} (${data.content_type})`);
+          if (data.skipped && data.skipped.length) {
+            showToast(`Skipped unsupported: ${data.skipped.join(', ')}`, 'error');
+          } else {
+            showToast(`Successfully loaded ${data.file_count || 1} file(s). Ready to generate.`, 'info');
+          }
         }
 
         const now = new Date().toISOString();
@@ -174,7 +184,14 @@ const useCode2Doc = () => {
       return;
     }
 
-    // Ensure we have the content from upload
+    // Handle zip file uploads - use RAG pipeline like GitHub repos
+    if (lastUploadMeta.isZip && lastUploadMeta.repoFiles) {
+      // Use the same flow as GitHub repos for zip files
+      const zipRepoId = `zip_upload_${Date.now()}`;
+      return handleRepoGenerate(`zip://${zipRepoId}`, zipRepoId, lastUploadMeta.repoFiles);
+    }
+
+    // Ensure we have the content from upload (for regular files)
     if (!lastUploadMeta.rawContent) {
       showToast('File content not available. Please upload files again.', 'error');
       return;
@@ -188,7 +205,9 @@ const useCode2Doc = () => {
     setSummary('');
 
     // Initialize generation status (optional - won't break if auth fails)
+    // IMPORTANT: This starts polling so frontend can receive updates from Python backend
     try {
+      console.log('🚀 Starting generation, initializing status tracking...');
       const statusResult = await updateStatus({
         type: 'file_upload',
         status: 'pending',
@@ -197,11 +216,41 @@ const useCode2Doc = () => {
         fileCount: uploads.length,
       });
       if (!statusResult) {
-        console.log('Generation status tracking skipped (authentication required)');
+        console.log('⚠️ Generation status tracking skipped (authentication required)');
+        // Still try to start polling with localStorage fallback
+        const fallbackStatus = {
+          type: 'file_upload',
+          status: 'pending',
+          progress: 0,
+          currentStep: 'Starting generation...',
+          fileCount: uploads.length,
+          _id: `local-${Date.now()}`,
+          startedAt: new Date().toISOString(),
+        };
+        localStorage.setItem('generationStatus', JSON.stringify(fallbackStatus));
+        startPolling(); // Start polling even if backend update failed
+      } else {
+        console.log('✅ Status tracking initialized, polling started');
       }
     } catch (err) {
       // Don't block generation if status tracking fails
-      console.warn('Generation status tracking unavailable:', err.message);
+      console.warn('⚠️ Generation status tracking unavailable:', err.message);
+      // Still try to start polling with localStorage fallback
+      try {
+        const fallbackStatus = {
+          type: 'file_upload',
+          status: 'pending',
+          progress: 0,
+          currentStep: 'Starting generation...',
+          fileCount: uploads.length,
+          _id: `local-${Date.now()}`,
+          startedAt: new Date().toISOString(),
+        };
+        localStorage.setItem('generationStatus', JSON.stringify(fallbackStatus));
+        startPolling(); // Force start polling even if backend update failed
+      } catch (e) {
+        console.warn('Failed to start polling fallback:', e);
+      }
     }
 
     let finalOutput = '';
@@ -216,6 +265,7 @@ const useCode2Doc = () => {
         rawContent: lastUploadMeta.rawContent, // Send the actual file content
         contentType: lastUploadMeta.contentType || 'code',
         file_count: lastUploadMeta.fileCount,
+        is_zip: false, // Regular file upload
       };
       
       // Update status: generating (optional)
@@ -364,8 +414,9 @@ const useCode2Doc = () => {
     }
   }, [apiBase, showToast]);
 
-  const handleRepoGenerate = useCallback(async (repoUrl, repoId) => {
-    if (!repoId) {
+  const handleRepoGenerate = useCallback(async (repoUrl, repoId, repoFiles = null) => {
+    // If repoFiles provided, it's a zip upload - skip ingestion
+    if (!repoFiles && !repoId) {
       showToast('Please ingest the repository first.', 'error');
       return;
     }
@@ -373,7 +424,7 @@ const useCode2Doc = () => {
     // Usage limits are checked on the backend
     clearTimers();
     setIsGenerating(true);
-    setOutput('Generating documentation from repository...');
+    setOutput(repoFiles ? 'Generating documentation from zip archive...' : 'Generating documentation from repository...');
     setPdfLink('');
     setPdfInfo('');
     setSummary('');
@@ -381,16 +432,19 @@ const useCode2Doc = () => {
     // Initialize generation status
     try {
       await updateStatus({
-        type: 'github_repo',
+        type: repoFiles ? 'zip_upload' : 'github_repo',
         status: 'pending',
         progress: 0,
-        currentStep: 'Starting repository documentation generation...',
+        currentStep: repoFiles ? 'Starting zip archive documentation generation...' : 'Starting repository documentation generation...',
         repoUrl: repoUrl,
         repoId: repoId,
-        repoInfo: repoInfo ? {
+        repoInfo: repoFiles ? {
+          totalFiles: repoFiles.length,
+          includedFiles: repoFiles.length,
+        } : (repoInfo ? {
           totalFiles: repoInfo.total_files,
           includedFiles: repoInfo.total_files,
-        } : undefined,
+        } : undefined),
       });
     } catch (err) {
       console.error('Failed to initialize status:', err);
@@ -411,13 +465,24 @@ const useCode2Doc = () => {
     }
 
     try {
-      const res = await fetch(`${apiBase}/api/repo/generate`, {
+      // For zip files, use /api/generate with repo_files
+      // For GitHub repos, use /api/repo/generate
+      const endpoint = repoFiles ? `${apiBase}/api/generate` : `${apiBase}/api/repo/generate`;
+      const payload = repoFiles ? {
+        rawContent: '', // Not needed for zip
+        contentType: 'code',
+        file_count: repoFiles.length,
+        is_zip: true,
+        repo_files: repoFiles,
+      } : {
+        repo_url: repoUrl,
+        repo_id: repoId,
+      };
+      
+      const res = await fetch(endpoint, {
         method: 'POST',
         headers: headers,
-        body: JSON.stringify({
-          repo_url: repoUrl,
-          repo_id: repoId,
-        }),
+        body: JSON.stringify(payload),
       });
 
       if (!res.ok) {
@@ -485,6 +550,16 @@ const useCode2Doc = () => {
     }
   }, [apiBase, clearTimers, showToast, updateStatus, repoInfo]);
 
+  // Determine if files are ready for generation
+  const isReadyForGeneration = useMemo(() => {
+    // For zip files: need isZip flag, repoFiles, and fileCount
+    if (lastUploadMeta.isZip) {
+      return !!(lastUploadMeta.repoFiles && lastUploadMeta.fileCount && lastUploadMeta.fileCount > 0 && uploads.length > 0);
+    }
+    // For regular files: need rawContent and fileCount
+    return !!(lastUploadMeta.rawContent && lastUploadMeta.fileCount && lastUploadMeta.fileCount > 0 && uploads.length > 0);
+  }, [lastUploadMeta, uploads.length]);
+
   return {
     state: {
       fileInfo,
@@ -499,6 +574,8 @@ const useCode2Doc = () => {
       uploads,
       apiHealth,
       repoInfo,
+      rawContent: lastUploadMeta.rawContent || '',
+      isReadyForGeneration,
     },
     actions: {
       handleUpload,

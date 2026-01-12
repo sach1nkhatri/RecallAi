@@ -4,7 +4,7 @@ import useGenerationStatus from '../hooks/useGenerationStatus';
 import FileUploadCard from '../components/FileUploadCard';
 import GitHubRepoCard from '../components/GitHubRepoCard';
 import OutputPanel from '../components/OutputPanel';
-import GenerationStatusBadge from '../components/GenerationStatusBadge';
+import HistoryModal from '../components/HistoryModal';
 import Toast from '../components/Toast';
 import '../css/CodeToDocPage.css';
 
@@ -28,6 +28,8 @@ const CodeToDocPage = () => {
       uploads,
       apiHealth,
       repoInfo,
+      rawContent,
+      isReadyForGeneration,
     },
     actions: {
       handleUpload,
@@ -39,6 +41,8 @@ const CodeToDocPage = () => {
   } = useCode2Doc();
 
   const [activeMode, setActiveMode] = React.useState('upload'); // 'upload' or 'github'
+  const [selectedHistoryDoc, setSelectedHistoryDoc] = React.useState(null);
+  const [showHistoryModal, setShowHistoryModal] = React.useState(false);
 
   // Auto-detect mode based on state
   React.useEffect(() => {
@@ -48,6 +52,28 @@ const CodeToDocPage = () => {
       setActiveMode('github');
     }
   }, [uploads.length, repoInfo]);
+
+  // Handle history document selection
+  const handleHistorySelect = (doc) => {
+    if (doc) {
+      setSelectedHistoryDoc(doc);
+      setShowHistoryModal(false);
+    } else {
+      setSelectedHistoryDoc(null);
+    }
+  };
+
+  // Handle modal open/close with body scroll lock
+  React.useEffect(() => {
+    if (showHistoryModal) {
+      document.body.classList.add('modal-open');
+    } else {
+      document.body.classList.remove('modal-open');
+    }
+    return () => {
+      document.body.classList.remove('modal-open');
+    };
+  }, [showHistoryModal]);
 
   const handleModeSwitch = (mode) => {
     setActiveMode(mode);
@@ -65,6 +91,24 @@ const CodeToDocPage = () => {
     if (status === 'offline') return 'API Offline';
     return 'API Unavailable';
   };
+  
+  const getSystemInfo = () => {
+    try {
+      if (!apiHealth?.data) return null;
+      const data = apiHealth.data;
+      // Safely access nested properties
+      if (data.platform && data.faiss) {
+        return {
+          platform: data.platform,
+          faiss: data.faiss,
+        };
+      }
+      return null;
+    } catch (error) {
+      console.warn('Error getting system info:', error);
+      return null;
+    }
+  };
 
   return (
     <div className="ctd-page">
@@ -79,27 +123,49 @@ const CodeToDocPage = () => {
               Generate professional documentation from your code. Upload files or connect a GitHub repository.
             </p>
           </div>
+          <div className="ctd-header-actions">
+            <button
+              className="ctd-history-toggle"
+              onClick={() => setShowHistoryModal(true)}
+              title="View Generation History"
+            >
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                <polyline points="14 2 14 8 20 8"></polyline>
+                <line x1="16" y1="13" x2="8" y2="13"></line>
+                <line x1="16" y1="17" x2="8" y2="17"></line>
+              </svg>
+              <span>History</span>
+            </button>
+          </div>
           <div className="ctd-header-right">
             <div className={`ctd-api-health ${getHealthClass()}`}>
               <span className="ctd-api-health-dot"></span>
               <span>{getHealthLabel()}</span>
             </div>
+            {getSystemInfo() && (
+              <div className="ctd-system-info">
+                <span className="ctd-system-platform">
+                  {getSystemInfo().platform?.os || 'Unknown'} | 
+                  {getSystemInfo().faiss?.backend === 'GPU' ? ' 🚀 GPU' : ' 💻 CPU'}
+                </span>
+              </div>
+            )}
           </div>
         </div>
       </header>
 
       <div className="ctd-container">
-        {/* Small generation status badge - fixed position */}
-        {generationStatus && (
-          <GenerationStatusBadge
-            status={generationStatus}
-            onCancel={generationStatus.status !== 'completed' && generationStatus.status !== 'failed' ? cancelGeneration : undefined}
-          />
-        )}
-        
+        {/* History Modal */}
+        <HistoryModal 
+          isOpen={showHistoryModal}
+          onClose={() => setShowHistoryModal(false)}
+          onSelectDocument={handleHistorySelect}
+        />
+
         {/* Show completed generation results if available */}
-        {generationStatus && generationStatus.status === 'completed' && generationStatus.markdown && (
-          <div style={{ marginBottom: '20px' }}>
+        {generationStatus && generationStatus.status === 'completed' && generationStatus.markdown && !selectedHistoryDoc && (
+          <div className="ctd-result-section">
             <OutputPanel 
               output={generationStatus.markdown} 
               pdfLink={generationStatus.pdfUrl} 
@@ -109,7 +175,32 @@ const CodeToDocPage = () => {
           </div>
         )}
 
-        <div className="ctd-workspace">
+        {/* Show selected history document */}
+        {selectedHistoryDoc && (
+          <div className="ctd-result-section">
+            <div className="ctd-result-header">
+              <h3 className="ctd-result-title">Viewing Previous Documentation</h3>
+              <button
+                className="ctd-result-close-btn"
+                onClick={() => handleHistorySelect(null)}
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <line x1="18" y1="6" x2="6" y2="18"></line>
+                  <line x1="6" y1="6" x2="18" y2="18"></line>
+                </svg>
+                Close
+              </button>
+            </div>
+            <OutputPanel 
+              output={selectedHistoryDoc.markdown} 
+              pdfLink={selectedHistoryDoc.pdfUrl} 
+              pdfInfo={selectedHistoryDoc.pdfInfo?.filename || ''} 
+              summary={`Generated on ${new Date(selectedHistoryDoc.createdAt).toLocaleString()}`} 
+            />
+          </div>
+        )}
+
+        <div className={`ctd-workspace ${(selectedHistoryDoc || (generationStatus && generationStatus.status === 'completed' && generationStatus.markdown)) ? 'full-width' : ''}`}>
           <div className="ctd-left">
             <div className="ctd-mode-selector">
               <div className="ctd-mode-tabs">
@@ -151,6 +242,8 @@ const CodeToDocPage = () => {
                   onAutoGenerate={handleGenerate}
                   isGenerating={isGenerating}
                   mode="upload"
+                  rawContent={rawContent}
+                  isReadyForGeneration={isReadyForGeneration}
                 />
               </section>
             ) : (
@@ -170,17 +263,31 @@ const CodeToDocPage = () => {
             )}
           </div>
 
-          <div className="ctd-right">
-            <section className="ctd-panel ctd-output-panel">
-              <div className="ctd-section-header">
-                <div className="ctd-section-title">Output Preview</div>
-                {output && output !== 'Generated documentation will appear here.' && (
-                  <span className="ctd-badge ctd-badge-success">Ready</span>
-                )}
-              </div>
-              <OutputPanel output={output} pdfLink={pdfLink} pdfInfo={pdfInfo} summary={summary} />
-            </section>
-          </div>
+          {/* Only show right sidebar if no full-width result is displayed */}
+          {!selectedHistoryDoc && !(generationStatus && generationStatus.status === 'completed' && generationStatus.markdown) && (
+            <div className="ctd-right">
+              <section className="ctd-panel ctd-output-panel">
+                <div className="ctd-section-header">
+                  <div className="ctd-section-title">
+                    {generationStatus && ['pending', 'ingesting', 'scanning', 'indexing', 'generating', 'merging'].includes(generationStatus.status) 
+                      ? 'Generation Status' 
+                      : 'Output Preview'}
+                  </div>
+                  {output && output !== 'Generated documentation will appear here.' && !generationStatus && (
+                    <span className="ctd-badge ctd-badge-success">Ready</span>
+                  )}
+                </div>
+                <OutputPanel 
+                  output={output} 
+                  pdfLink={pdfLink} 
+                  pdfInfo={pdfInfo} 
+                  summary={summary}
+                  generationStatus={generationStatus}
+                  onCancelGeneration={generationStatus && generationStatus.status !== 'completed' && generationStatus.status !== 'failed' ? cancelGeneration : undefined}
+                />
+              </section>
+            </div>
+          )}
         </div>
       </div>
     </div>

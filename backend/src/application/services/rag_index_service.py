@@ -137,11 +137,16 @@ class RAGIndexService:
         if top_k is None:
             top_k = settings.RAG_TOP_K
         
+        logger.info(f"Querying index: {index_path} with {len(queries)} queries, top_k={top_k}")
+        logger.debug(f"Queries: {queries}")
+        
         if not os.path.exists(index_path):
+            logger.error(f"Index not found: {index_path}")
             raise FileNotFoundError(f"Index not found: {index_path}")
         
         index = load_index(index_path)
         metadata = load_metadata(index_path)
+        logger.info(f"Loaded index with {len(metadata)} chunks")
         
         if not metadata:
             raise ValueError(f"No metadata found for index {index_path}")
@@ -150,23 +155,65 @@ class RAGIndexService:
         seen_chunk_ids = set()
         selected_chunks = []
         
-        for query in queries:
+        for query_idx, query in enumerate(queries, 1):
             try:
+                logger.debug(f"Processing query {query_idx}/{len(queries)}: '{query[:50]}...'")
                 # Embed query
                 query_vec = self.embedder.embed_texts([query])[0]
+                logger.debug(f"Query embedded, vector length: {len(query_vec)}")
                 
-                # Search index (with similarity threshold)
-                idxs, _, _ = search(index, query_vec, top_k=top_k, similarity_threshold=0.6)
+                # Search index with very low threshold (0.1) to get more results
+                # If still no results, try with no threshold (0.0) as fallback
+                idxs, distances, similarities = search(index, query_vec, top_k=top_k, similarity_threshold=0.1)
+                logger.info(f"Query '{query[:50]}...' found {len(idxs)} results (threshold: 0.1)")
                 
-                # Add unique chunks
+                # Fallback: if no results with 0.1, try with no threshold
+                if len(idxs) == 0:
+                    logger.warning(f"No results with threshold 0.1, trying without threshold...")
+                    idxs, distances, similarities = search(index, query_vec, top_k=top_k, similarity_threshold=0.0)
+                    logger.info(f"Query '{query[:50]}...' found {len(idxs)} results (no threshold)")
+                
+                if distances:
+                    logger.debug(f"Similarity distances: {distances[:5]}")
+                    logger.debug(f"Similarity scores: {similarities[:5]}")
+                
+                # Add unique chunks (only if they have text content)
+                added_count = 0
                 for idx in idxs:
-                    if 0 <= idx < len(metadata) and idx not in seen_chunk_ids:
-                        seen_chunk_ids.add(idx)
-                        selected_chunks.append(metadata[idx])
+                    if 0 <= idx < len(metadata):
+                        chunk_meta = metadata[idx]
+                        # Validate chunk has text content
+                        chunk_text = chunk_meta.get("text", "").strip()
+                        if not chunk_text:
+                            logger.warning(f"Chunk {idx} has no text content, skipping")
+                            continue
+                        if idx not in seen_chunk_ids:
+                            seen_chunk_ids.add(idx)
+                            selected_chunks.append(chunk_meta)
+                            added_count += 1
+                logger.debug(f"Added {added_count} new chunks from this query")
             except Exception as e:
-                logger.warning(f"Failed to query '{query}': {e}")
+                logger.error(f"Failed to query '{query}': {e}", exc_info=True)
                 continue
         
         logger.info(f"Retrieved {len(selected_chunks)} unique chunks from {len(queries)} queries")
+        
+        # Final fallback: if still no chunks, get first N chunks from index directly
+        if len(selected_chunks) == 0:
+            logger.error(f"No chunks found for queries: {queries}")
+            logger.warning("Using final fallback: getting first chunks from index directly...")
+            # Get first top_k chunks from metadata (filter out empty chunks)
+            fallback_chunks = []
+            for chunk in metadata[:min(top_k * 2, len(metadata))]:
+                if chunk.get("text", "").strip():
+                    fallback_chunks.append(chunk)
+                if len(fallback_chunks) >= top_k:
+                    break
+            logger.info(f"Fallback retrieved {len(fallback_chunks)} chunks directly from index")
+            if fallback_chunks:
+                selected_chunks = fallback_chunks
+            else:
+                logger.error("CRITICAL: Index metadata is empty! Cannot retrieve any chunks.")
+        
         return selected_chunks
 

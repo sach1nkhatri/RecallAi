@@ -29,7 +29,7 @@ class Settings:
     # GitHub Repository Configuration
     GITHUB_TOKEN: Optional[str] = os.getenv("GITHUB_TOKEN")  # Optional, for rate limits
     GITHUB_API_BASE: str = "https://api.github.com"
-    GITHUB_MAX_REPO_FILES: int = int(os.getenv("GITHUB_MAX_REPO_FILES", "60"))
+    GITHUB_MAX_REPO_FILES: int = int(os.getenv("GITHUB_MAX_REPO_FILES", "100"))  # Increased from 60 to 100
     GITHUB_MAX_TOTAL_CHARS: int = int(os.getenv("GITHUB_MAX_TOTAL_CHARS", "200000"))
     GITHUB_MAX_SINGLE_FILE_SIZE: int = int(os.getenv("GITHUB_MAX_SINGLE_FILE_SIZE", "200000"))  # 200KB
     GITHUB_TIMEOUT: int = int(os.getenv("GITHUB_TIMEOUT", "60"))

@@ -49,6 +49,7 @@ class RepoDocService:
             Markdown content for the chapter
         """
         logger.info(f"Generating chapter {chapter_number}/{total_chapters}: {chapter.title}")
+        logger.info(f"Retrieval queries for '{chapter.title}': {chapter.retrieval_queries}")
         
         # Retrieve relevant chunks
         chunks = self.rag_index_service.query_index(
@@ -57,9 +58,30 @@ class RepoDocService:
             top_k=settings.RAG_TOP_K
         )
         
+        logger.info(f"Retrieved {len(chunks)} chunks for chapter '{chapter.title}'")
+        if chunks:
+            logger.debug(f"Sample chunk files: {[c.get('file_path', 'unknown')[:50] for c in chunks[:3]]}")
+        
         if not chunks:
-            logger.warning(f"No chunks found for chapter: {chapter.title}")
-            return f"## {chapter.title}\n\n*No relevant content found for this chapter.*\n"
+            logger.warning(f"No chunks found for chapter: {chapter.title} with queries: {chapter.retrieval_queries}")
+            logger.warning("Attempting fallback: getting random chunks from index...")
+            
+            # Fallback: Get random chunks from the index if queries fail
+            try:
+                import random
+                from src.infrastructure.external.rag.vectorstore import load_metadata
+                metadata = load_metadata(index_path)
+                if metadata and len(metadata) > 0:
+                    # Get random chunks (up to top_k)
+                    random_chunks = random.sample(metadata, min(settings.RAG_TOP_K, len(metadata)))
+                    logger.info(f"Fallback: Using {len(random_chunks)} random chunks for chapter '{chapter.title}'")
+                    chunks = random_chunks
+            except Exception as e:
+                logger.error(f"Fallback failed: {e}")
+            
+            if not chunks:
+                logger.error("No chunks available even with fallback!")
+                return f"## {chapter.title}\n\n*No relevant content found for this chapter.*\n"
         
         # Build context from chunks
         context_parts = []

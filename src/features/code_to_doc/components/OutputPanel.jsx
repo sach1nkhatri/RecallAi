@@ -1,4 +1,5 @@
 import React, { useMemo } from 'react';
+import GenerationLogs from './GenerationLogs';
 import '../css/OutputPanel.css';
 
 const enhancedMarkdownToHtml = (text) => {
@@ -216,60 +217,95 @@ const extractDocumentMetadata = (text) => {
   return { title };
 };
 
-const OutputPanel = ({ output, pdfLink, pdfInfo, summary }) => {
+const OutputPanel = ({ output, pdfLink, pdfInfo, summary, generationStatus, onCancelGeneration }) => {
   const renderedHtml = useMemo(() => enhancedMarkdownToHtml(output), [output]);
   const metadata = useMemo(() => extractDocumentMetadata(output), [output]);
   const hasContent = output && output !== 'Generated documentation will appear here.';
+  
+  // Check if we're currently generating
+  const isGenerating = generationStatus && ['pending', 'ingesting', 'scanning', 'indexing', 'generating', 'merging'].includes(generationStatus.status);
+  const showLogs = isGenerating || (generationStatus && generationStatus.status === 'failed');
 
   return (
     <div className="ctd-output-panel">
-      {hasContent && (
-        <div className="ctd-doc-header">
-          <div className="ctd-doc-meta">
-            {metadata?.title && (
-              <div className="ctd-doc-title-meta">{metadata.title}</div>
-            )}
-            <div className="ctd-doc-date">
-              Generated on {new Date().toLocaleDateString('en-US', { 
-                year: 'numeric', 
-                month: 'long', 
-                day: 'numeric',
-                hour: '2-digit',
-                minute: '2-digit'
-              })}
+      {/* Show generation logs when generating */}
+      {showLogs && (
+        <GenerationLogs 
+          status={generationStatus} 
+          onCancel={onCancelGeneration}
+        />
+      )}
+
+      {/* Show content when available and not generating */}
+      {!showLogs && hasContent && (
+        <>
+          <div className="ctd-doc-header">
+            <div className="ctd-doc-meta">
+              {metadata?.title && (
+                <div className="ctd-doc-title-meta">{metadata.title}</div>
+              )}
+              {summary ? (
+                <div className="ctd-doc-date">{summary}</div>
+              ) : (
+                <div className="ctd-doc-date">
+                  Generated on {new Date().toLocaleDateString('en-US', { 
+                    year: 'numeric', 
+                    month: 'long', 
+                    day: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                  })}
+                </div>
+              )}
             </div>
+          </div>
+          
+          <div className="ctd-doc-wrap">
+            <div className="doc-preview">
+              <div
+                className="doc-content"
+                dangerouslySetInnerHTML={{ __html: renderedHtml }}
+              />
+            </div>
+          </div>
+          
+          <div className="ctd-actions">
+            {pdfLink && (
+              <a className="ctd-download-btn" href={pdfLink} download target="_blank" rel="noopener noreferrer">
+                <span className="ctd-download-icon">📄</span>
+                Download PDF
+              </a>
+            )}
+            {summary && (
+              <div className="ctd-summary-info">
+                <strong>Summary:</strong> {summary}
+              </div>
+            )}
+            {pdfInfo && (
+              <div className="ctd-pdf-info">
+                <span className="ctd-pdf-icon">✓</span>
+                PDF Generated: {pdfInfo}
+              </div>
+            )}
+          </div>
+        </>
+      )}
+
+      {/* Show empty state when no content and not generating */}
+      {!showLogs && !hasContent && (
+        <div className="ctd-empty-output">
+          <div className="ctd-empty-content">
+            <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+              <polyline points="14 2 14 8 20 8"></polyline>
+              <line x1="16" y1="13" x2="8" y2="13"></line>
+              <line x1="16" y1="17" x2="8" y2="17"></line>
+            </svg>
+            <h3>No Documentation Yet</h3>
+            <p>Upload files or connect a GitHub repository to generate documentation.</p>
           </div>
         </div>
       )}
-      
-      <div className="ctd-doc-wrap">
-        <div className="doc-preview">
-          <div
-            className="doc-content"
-            dangerouslySetInnerHTML={{ __html: renderedHtml }}
-          />
-        </div>
-      </div>
-      
-      <div className="ctd-actions">
-        {pdfLink && (
-          <a className="ctd-download-btn" href={pdfLink} download>
-            <span className="ctd-download-icon">📄</span>
-            Download PDF
-          </a>
-        )}
-        {summary && (
-          <div className="ctd-summary-info">
-            <strong>Source:</strong> {summary}
-          </div>
-        )}
-        {pdfInfo && (
-          <div className="ctd-pdf-info">
-            <span className="ctd-pdf-icon">✓</span>
-            {pdfInfo}
-          </div>
-        )}
-      </div>
     </div>
   );
 };

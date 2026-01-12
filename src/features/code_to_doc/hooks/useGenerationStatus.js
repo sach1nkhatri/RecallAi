@@ -31,9 +31,11 @@ const useGenerationStatus = () => {
       const data = await nodeApiRequest('/api/generation-status/current');
       if (data.success) {
         if (data.status) {
+          console.log('📥 Received status update:', data.status.status, `(${data.status.progress}%)`, data.status.currentStep);
           setStatus(data.status);
           // Stop polling if completed or failed
           if (['completed', 'failed'].includes(data.status.status)) {
+            console.log('✅ Generation finished, stopping polling');
             stopPolling();
           }
           return data.status;
@@ -45,6 +47,7 @@ const useGenerationStatus = () => {
               const parsed = JSON.parse(savedStatus);
               // If localStorage has active status, keep it (might be syncing)
               if (parsed && ['pending', 'ingesting', 'scanning', 'indexing', 'generating', 'merging'].includes(parsed.status)) {
+                console.log('💾 Using localStorage status:', parsed.status);
                 setStatus(parsed);
                 return parsed;
               }
@@ -52,20 +55,25 @@ const useGenerationStatus = () => {
               // Ignore parse errors
             }
           }
-          setStatus(null);
-          stopPolling();
+          // Only clear status if we're sure there's no active generation
+          // Don't clear if we're in the middle of polling (might be temporary backend issue)
+          if (!pollIntervalRef.current) {
+            setStatus(null);
+            stopPolling();
+          }
           return null;
         }
       }
     } catch (error) {
       // If authentication error, try localStorage fallback
       if (error.message && (error.message.includes('401') || error.message.includes('Not authorized') || error.message.includes('token'))) {
-        console.warn('Authentication required for generation status tracking, using localStorage');
+        console.warn('⚠️ Authentication required for generation status tracking, using localStorage');
         const savedStatus = localStorage.getItem('generationStatus');
         if (savedStatus) {
           try {
             const parsed = JSON.parse(savedStatus);
             if (parsed && ['pending', 'ingesting', 'scanning', 'indexing', 'generating', 'merging'].includes(parsed.status)) {
+              console.log('💾 Using localStorage status (auth fallback):', parsed.status);
               setStatus(parsed);
               return parsed;
             }
@@ -73,11 +81,14 @@ const useGenerationStatus = () => {
             // Ignore parse errors
           }
         }
-        setStatus(null);
-        stopPolling();
+        // Don't clear status on auth error if we're actively polling
+        if (!pollIntervalRef.current) {
+          setStatus(null);
+          stopPolling();
+        }
         return null;
       }
-      console.error('Failed to fetch generation status:', error);
+      console.error('❌ Failed to fetch generation status:', error.message || error);
       // Don't stop polling on other errors, might be temporary
     }
     return null;
@@ -86,9 +97,11 @@ const useGenerationStatus = () => {
   // Then define startPolling (depends on fetchStatus and stopPolling)
   const startPolling = useCallback(() => {
     if (pollIntervalRef.current) {
+      console.log('ℹ️ Already polling, skipping start');
       return; // Already polling
     }
 
+    console.log('▶️ Starting status polling (interval:', POLL_INTERVAL, 'ms)');
     setIsPolling(true);
     pollStartTimeRef.current = Date.now();
 
@@ -99,6 +112,7 @@ const useGenerationStatus = () => {
     pollIntervalRef.current = setInterval(() => {
       const elapsed = Date.now() - pollStartTimeRef.current;
       if (elapsed > MAX_POLL_TIME) {
+        console.log('⏱️ Max poll time reached, stopping');
         stopPolling();
         return;
       }
@@ -176,23 +190,25 @@ const useGenerationStatus = () => {
 
   const updateStatus = useCallback(async (statusData) => {
     try {
-      console.log('📤 Updating generation status:', statusData.status || statusData.type);
+      console.log('📤 Updating generation status:', statusData.status || statusData.type, `(${statusData.progress || 0}%)`);
       const data = await nodeApiRequest('/api/generation-status', {
         method: 'POST',
         body: JSON.stringify(statusData),
       });
       if (data.success && data.status) {
-        console.log('✅ Status updated successfully:', data.status.status, 'Progress:', data.status.progress);
+        console.log('✅ Status updated successfully:', data.status.status, 'Progress:', data.status.progress, data.status.currentStep);
         setStatus(data.status);
-        // Start polling if not already
+        // Start polling if not already - IMPORTANT: Always start polling when status is active
         if (!pollIntervalRef.current && ['pending', 'ingesting', 'scanning', 'indexing', 'generating', 'merging'].includes(data.status.status)) {
           console.log('▶️ Starting polling after status update');
           startPolling();
         }
         return data.status;
+      } else {
+        console.warn('⚠️ Status update response missing status data:', data);
       }
     } catch (error) {
-      console.error('❌ Failed to update generation status:', error);
+      console.error('❌ Failed to update generation status:', error.message || error);
       // If authentication error, save to localStorage as fallback
       if (error.message && (error.message.includes('401') || error.message.includes('Not authorized') || error.message.includes('token'))) {
         console.warn('⚠️ Authentication required, saving to localStorage as fallback');
@@ -206,11 +222,14 @@ const useGenerationStatus = () => {
         localStorage.setItem('generationStatus', JSON.stringify(fallbackStatus));
         // Start polling for localStorage status
         if (!pollIntervalRef.current && ['pending', 'ingesting', 'scanning', 'indexing', 'generating', 'merging'].includes(statusData.status)) {
+          console.log('▶️ Starting polling for localStorage status');
           startPolling();
         }
         return fallbackStatus;
       }
-      throw error;
+      // Don't throw error - allow generation to continue even if status tracking fails
+      console.warn('⚠️ Status tracking failed, but generation will continue');
+      return null;
     }
   }, [startPolling]);
 

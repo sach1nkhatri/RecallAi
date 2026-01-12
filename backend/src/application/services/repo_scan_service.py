@@ -200,31 +200,32 @@ OUTPUT ONLY the JSON structure, no markdown formatting or explanations."""
         # If no chapters found, create default structure
         if not chapters:
             logger.warning("No chapters parsed, using default structure")
+            # Use more generic queries that are more likely to match code
             chapters = [
                 Chapter(
                     title="Overview",
                     description="Repository overview and introduction",
-                    retrieval_queries=["repository structure", "main entry point", "README"]
+                    retrieval_queries=["main", "entry", "start", "init", "setup", "config", "readme"]
                 ),
                 Chapter(
                     title="Architecture",
                     description="System architecture and design",
-                    retrieval_queries=["architecture", "design patterns", "system structure"]
+                    retrieval_queries=["class", "function", "def", "export", "import", "module", "component"]
                 ),
                 Chapter(
                     title="Core Components",
                     description="Main components and modules",
-                    retrieval_queries=["main components", "core modules", "key classes"]
+                    retrieval_queries=["class", "function", "method", "service", "handler", "controller"]
                 ),
                 Chapter(
                     title="API Reference",
                     description="API endpoints and interfaces",
-                    retrieval_queries=["API routes", "endpoints", "interfaces"]
+                    retrieval_queries=["route", "endpoint", "api", "request", "response", "http", "get", "post"]
                 ),
                 Chapter(
                     title="Usage Examples",
                     description="Usage examples and tutorials",
-                    retrieval_queries=["usage examples", "how to use", "tutorial"]
+                    retrieval_queries=["example", "usage", "test", "demo", "sample", "how"]
                 )
             ]
         

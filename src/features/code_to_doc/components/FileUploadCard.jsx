@@ -5,25 +5,46 @@ const MAX_FILES = 5;
 const SUPPORTED_EXT = new Set([
   'py', 'js', 'jsx', 'ts', 'tsx', 'java', 'kt', 'dart', 'go', 'rs', 'cpp', 'c', 'h', 'cs',
   'html', 'css', 'md', 'txt', 'json', 'yaml', 'yml',
-  'pdf', 'doc', 'docx', 'xml'
+  'pdf', 'doc', 'docx', 'xml', 'zip'  // Added zip support
 ]);
 
-const FileUploadCard = ({ onUpload, fileInfo, isUploading, onError, uploads = [], onAutoGenerate, isGenerating, mode = 'upload', rawContent = '' }) => {
+const FileUploadCard = ({ onUpload, fileInfo, isUploading, onError, uploads = [], onAutoGenerate, isGenerating, mode = 'upload', rawContent = '', isReadyForGeneration = false }) => {
   const fileRef = useRef(null);
   const [selectedNames, setSelectedNames] = useState([]);
   const [isDragging, setIsDragging] = useState(false);
+  const [hasZipSelected, setHasZipSelected] = useState(false);
 
   const filterSupported = (files) => {
     const supported = [];
     const unsupported = [];
+    const zipFiles = [];
+    
     files.forEach((file) => {
       const ext = file.name.includes('.') ? file.name.split('.').pop().toLowerCase() : '';
-      if (SUPPORTED_EXT.has(ext)) {
+      if (ext === 'zip') {
+        zipFiles.push(file);
+      } else if (SUPPORTED_EXT.has(ext)) {
         supported.push(file);
       } else {
         unsupported.push(file.name);
       }
     });
+    
+    // If zip file is present, only allow zip (no mixing)
+    if (zipFiles.length > 0) {
+      setHasZipSelected(true);
+      if (supported.length > 0) {
+        onError?.('Cannot mix zip files with regular files. Upload zip separately or regular files separately.');
+        return [];
+      }
+      if (zipFiles.length > 1) {
+        onError?.('Only one zip file can be uploaded at a time.');
+        return [];
+      }
+      return zipFiles; // Return zip file
+    }
+    
+    setHasZipSelected(false);
     if (unsupported.length) {
       onError?.(`Unsupported files skipped: ${unsupported.join(', ')}`);
     }
@@ -35,19 +56,27 @@ const FileUploadCard = ({ onUpload, fileInfo, isUploading, onError, uploads = []
     if (!files) return;
     const list = filterSupported(Array.from(files));
     if (list.length === 0) return;
-    if (list.length > MAX_FILES) {
+    
+    // For zip files, allow single file (bypass MAX_FILES check)
+    const isZip = list.length === 1 && list[0].name.toLowerCase().endsWith('.zip');
+    if (!isZip && list.length > MAX_FILES) {
       onError?.(`Maximum ${MAX_FILES} files allowed. You selected ${list.length}.`);
       return;
     }
+    
     onUpload(list);
     setSelectedNames([]);
+    setHasZipSelected(false);
     if (fileRef.current) fileRef.current.value = '';
   };
 
   const handleFileChange = (e) => {
     const list = filterSupported(Array.from(e.target.files || []));
     setSelectedNames(list.map((f) => f.name));
-    if (list.length > MAX_FILES) {
+    
+    // For zip files, allow single file (bypass MAX_FILES check)
+    const isZip = list.length === 1 && list[0].name.toLowerCase().endsWith('.zip');
+    if (!isZip && list.length > MAX_FILES) {
       onError?.(`Maximum ${MAX_FILES} files allowed. You selected ${list.length}.`);
     }
   };
@@ -66,10 +95,14 @@ const FileUploadCard = ({ onUpload, fileInfo, isUploading, onError, uploads = []
     setIsDragging(false);
     const files = Array.from(e.dataTransfer.files);
     const list = filterSupported(files);
-    if (list.length > 0 && list.length <= MAX_FILES) {
+    
+    // For zip files, allow single file (bypass MAX_FILES check)
+    const isZip = list.length === 1 && list[0].name.toLowerCase().endsWith('.zip');
+    if (list.length > 0 && (isZip || list.length <= MAX_FILES)) {
       onUpload(list);
       setSelectedNames([]);
-    } else if (list.length > MAX_FILES) {
+      setHasZipSelected(false);
+    } else if (!isZip && list.length > MAX_FILES) {
       onError?.(`Maximum ${MAX_FILES} files allowed. You selected ${list.length}.`);
     }
   };
@@ -78,7 +111,9 @@ const FileUploadCard = ({ onUpload, fileInfo, isUploading, onError, uploads = []
     fileRef.current?.click();
   };
 
-  const tooMany = selectedNames.length > MAX_FILES;
+  // Check if selected files exceed limit (allow zip files)
+  const isZip = selectedNames.length === 1 && selectedNames[0]?.toLowerCase().endsWith('.zip');
+  const tooMany = !isZip && selectedNames.length > MAX_FILES;
   const disabled = isUploading || selectedNames.length === 0 || tooMany;
 
   return (
@@ -103,7 +138,14 @@ const FileUploadCard = ({ onUpload, fileInfo, isUploading, onError, uploads = []
           {isDragging ? 'Drop files here' : 'Click or drag files to upload'}
         </div>
         <div className="ctd-file-upload-hint">
-          Supported: Code files, documents, text files (max {MAX_FILES} files)
+          Supported: Code files, documents, text files, or zip archives
+          <br />
+          <span style={{ fontSize: '12px', color: '#6b7280' }}>
+            {hasZipSelected 
+              ? 'Zip archive selected (1 file, up to 100 files analyzed inside)'
+              : `Regular files: max ${MAX_FILES} files | Zip archives: 1 file (up to 100 files analyzed)`
+            }
+          </span>
         </div>
       </div>
 
@@ -111,8 +153,8 @@ const FileUploadCard = ({ onUpload, fileInfo, isUploading, onError, uploads = []
         type="file"
         ref={fileRef}
         id="fileInput"
-        accept=".py,.js,.jsx,.ts,.tsx,.java,.kt,.dart,.go,.rs,.cpp,.c,.h,.cs,.html,.css,.md,.txt,.json,.yaml,.yml,.pdf,.doc,.docx,.xml"
-        multiple
+        accept=".py,.js,.jsx,.ts,.tsx,.java,.kt,.dart,.go,.rs,.cpp,.c,.h,.cs,.html,.css,.md,.txt,.json,.yaml,.yml,.pdf,.doc,.docx,.xml,.zip,application/zip"
+        multiple={!hasZipSelected}
         onChange={handleFileChange}
       />
 
@@ -147,14 +189,16 @@ const FileUploadCard = ({ onUpload, fileInfo, isUploading, onError, uploads = []
         <div className="ctd-file-info">{fileInfo}</div>
       )}
 
-      {rawContent && onAutoGenerate && (
+      {isReadyForGeneration && onAutoGenerate && (
         <div className="ctd-auto-generate-section">
           <div className="ctd-auto-generate-header">
             <div className="ctd-auto-generate-icon">✓</div>
             <div>
               <div className="ctd-auto-generate-title">Content Ready</div>
               <div className="ctd-auto-generate-subtitle">
-                {uploads.length} file{uploads.length !== 1 ? 's' : ''} processed successfully
+                {uploads.some(u => u.name.toLowerCase().endsWith('.zip'))
+                  ? 'Zip archive processed successfully'
+                  : `${uploads.length} file${uploads.length !== 1 ? 's' : ''} processed successfully`}
               </div>
             </div>
           </div>

@@ -361,13 +361,38 @@
 }
 
 .ctd-empty-output {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 400px;
+  padding: 40px 20px;
+}
+
+.ctd-empty-content {
   text-align: center;
   color: var(--ctd-text-muted);
-  font-style: italic;
-  padding: 60px 20px;
-  background: var(--ctd-border-light);
-  border-radius: var(--ctd-radius);
-  border: 2px dashed var(--ctd-border);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+}
+
+.ctd-empty-content svg {
+  opacity: 0.3;
+  color: var(--ctd-text-muted);
+}
+
+.ctd-empty-content h3 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--ctd-text-light);
+}
+
+.ctd-empty-content p {
+  margin: 0;
+  font-size: 14px;
+  color: var(--ctd-text-muted);
 }
 
 .ctd-actions {
@@ -427,6 +452,13 @@
   color: var(--ctd-text-light);
   border-left: 3px solid var(--ctd-primary);
   font-weight: 500;
+  margin-top: 8px;
+}
+
+.ctd-summary-info strong {
+  color: var(--ctd-primary);
+  font-weight: 600;
+  margin-right: 6px;
 }
 
 .ctd-pdf-info {

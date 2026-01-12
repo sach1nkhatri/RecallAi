@@ -3,7 +3,7 @@
 import logging
 import time
 from pathlib import Path
-from typing import Optional, Callable
+from typing import Optional, Callable, List
 
 from src.application.interfaces.llm_client import LLMClient
 from src.application.interfaces.pdf_generator import PDFGenerator
@@ -304,6 +304,192 @@ class RepoOrchestratorService:
                 "repo_name": ingestion_result.repo_name,
                 "total_files": ingestion_result.total_files,
                 "total_chars": ingestion_result.total_chars
+            },
+            "duration_seconds": round(duration, 2)
+        }
+    
+    def generate_documentation_from_files(
+        self,
+        repo_id: str,
+        repo_files: List[dict],
+        repo_name: str,
+        owner: str,
+        title: Optional[str] = None
+    ) -> dict:
+        """
+        Generate documentation from already-extracted files (e.g., from zip upload).
+        Skips ingestion step.
+        
+        Args:
+            repo_id: Repository identifier
+            repo_files: List of dicts with 'path' and 'content' keys
+            repo_name: Repository/project name
+            owner: Owner name
+            title: Optional document title
+            
+        Returns:
+            Dict with markdown, pdf_path, pdf_url, chapters
+        """
+        logger.info(f"Starting documentation generation from files for {repo_id}")
+        start_time = time.time()
+        
+        # Report initial status
+        self._report_status(
+            status="pending",
+            progress=0,
+            current_step="Starting generation...",
+            repo_id=repo_id
+        )
+        
+        if not repo_files:
+            raise ValidationError("No files provided")
+        
+        # Step 1: Scan repository and generate outline
+        self._report_status(
+            status="scanning",
+            progress=10,
+            current_step="Scanning project and generating outline...",
+            repo_id=repo_id
+        )
+        logger.info("Starting project scan and outline generation (this may take 2-5 minutes)...")
+        chapters = self.repo_scan_service.scan_repository(
+            repo_files=repo_files,
+            repo_name=repo_name,
+            owner=owner
+        )
+        logger.info(f"Project scan completed. Generated {len(chapters)} chapters")
+        
+        self._report_status(
+            status="scanning",
+            progress=20,
+            current_step=f"Generated {len(chapters)} chapters outline",
+            repo_id=repo_id,
+            total_steps=len(chapters) + 3,
+            completed_steps=1
+        )
+        
+        # Step 2: Build RAG index
+        self._report_status(
+            status="indexing",
+            progress=25,
+            current_step=f"Building RAG index for {len(repo_files)} files...",
+            repo_id=repo_id,
+            total_steps=len(chapters) + 3,
+            completed_steps=2
+        )
+        logger.info(f"Building RAG index for {len(repo_files)} files (this may take several minutes)...")
+        logger.info(f"Files to index: {[f.get('path', 'unknown') for f in repo_files[:10]]}")
+        if len(repo_files) > 10:
+            logger.info(f"... and {len(repo_files) - 10} more files")
+        
+        index_path, metadata = self.rag_index_service.build_repo_index(
+            repo_id=repo_id,
+            repo_files=repo_files
+        )
+        logger.info(f"RAG index built successfully with {len(metadata)} chunks")
+        if metadata:
+            logger.info(f"Sample chunk files: {[m.get('file_path', 'unknown')[:50] for m in metadata[:5]]}")
+        else:
+            logger.error("WARNING: Index built but metadata is empty!")
+        
+        self._report_status(
+            status="indexing",
+            progress=35,
+            current_step=f"RAG index built with {len(metadata)} chunks",
+            repo_id=repo_id,
+            total_steps=len(chapters) + 3,
+            completed_steps=3
+        )
+        
+        # Step 3: Generate documentation chapter by chapter
+        self._report_status(
+            status="generating",
+            progress=40,
+            current_step=f"Generating documentation for {len(chapters)} chapters...",
+            repo_id=repo_id,
+            total_steps=len(chapters) + 3,
+            completed_steps=3
+        )
+        logger.info(f"Generating documentation for {len(chapters)} chapters (this may take 5-10 minutes)...")
+        doc_title = title or f"{repo_name} Documentation"
+        
+        # Generate with progress updates
+        markdown = self.repo_doc_service.generate_documentation(
+            chapters=chapters,
+            index_path=index_path,
+            repo_name=repo_name,
+            owner=owner,
+            progress_callback=lambda chapter_num, total: self._report_status(
+                status="generating",
+                progress=40 + int((chapter_num / total) * 50),  # 40-90%
+                current_step=f"Generating chapter {chapter_num}/{total}...",
+                repo_id=repo_id,
+                total_steps=total + 3,
+                completed_steps=3 + chapter_num
+            )
+        )
+        logger.info(f"Documentation generation completed. Generated {len(markdown)} characters")
+        
+        # Step 4: Generate PDF
+        self._report_status(
+            status="merging",
+            progress=90,
+            current_step="Generating PDF...",
+            repo_id=repo_id,
+            total_steps=len(chapters) + 3,
+            completed_steps=len(chapters) + 3
+        )
+        timestamp = int(time.time())
+        pdf_filename = f"repo-doc-{repo_id}-{timestamp}.pdf"
+        pdf_path = settings.UPLOAD_PATH / pdf_filename
+        
+        try:
+            self.pdf_generator.generate_from_markdown(
+                markdown=markdown,
+                output_path=pdf_path
+            )
+            pdf_url = f"/uploads/{pdf_filename}"
+            logger.info(f"Generated PDF: {pdf_path}")
+        except Exception as e:
+            logger.exception("PDF generation failed")
+            pdf_url = None
+        
+        duration = time.time() - start_time
+        logger.info(f"Documentation generation completed in {duration:.2f}s")
+        
+        # Report completion
+        if self.status_callback:
+            try:
+                self.status_callback(
+                    status="completed",
+                    progress=100,
+                    current_step="Completed",
+                    type="zip_upload",
+                    repo_id=repo_id,
+                    markdown=markdown,
+                    pdf_url=pdf_url,
+                    pdf_info={"filename": pdf_filename} if pdf_url else None
+                )
+            except Exception as e:
+                logger.debug(f"Completion status callback failed (non-critical): {e}")
+        
+        return {
+            "markdown": markdown,
+            "pdf_path": str(pdf_path) if pdf_path.exists() else None,
+            "pdf_url": pdf_url,
+            "chapters": [
+                {
+                    "title": ch.title,
+                    "description": ch.description,
+                    "queries": ch.retrieval_queries
+                }
+                for ch in chapters
+            ],
+            "repo_info": {
+                "owner": owner,
+                "repo_name": repo_name,
+                "total_files": len(repo_files),
+                "total_chars": sum(len(f.get("content", "")) for f in repo_files)
             },
             "duration_seconds": round(duration, 2)
         }
