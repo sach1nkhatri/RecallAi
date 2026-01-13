@@ -170,7 +170,8 @@ const CodeToDocPage = () => {
               output={generationStatus.markdown} 
               pdfLink={generationStatus.pdfUrl} 
               pdfInfo={generationStatus.pdfInfo?.filename || ''} 
-              summary={`Completed at ${new Date(generationStatus.completedAt).toLocaleString()}`} 
+              summary={`Completed at ${new Date(generationStatus.completedAt).toLocaleString()}`}
+              generationStatus={generationStatus}
             />
           </div>
         )}
@@ -192,10 +193,11 @@ const CodeToDocPage = () => {
               </button>
             </div>
             <OutputPanel 
-              output={selectedHistoryDoc.markdown} 
+              output={selectedHistoryDoc.markdown || ''} 
               pdfLink={selectedHistoryDoc.pdfUrl} 
               pdfInfo={selectedHistoryDoc.pdfInfo?.filename || ''} 
-              summary={`Generated on ${new Date(selectedHistoryDoc.createdAt).toLocaleString()}`} 
+              summary={`Generated on ${new Date(selectedHistoryDoc.createdAt || selectedHistoryDoc.completedAt || Date.now()).toLocaleString()}`}
+              generationStatus={selectedHistoryDoc.status === 'completed' ? { status: 'completed' } : null}
             />
           </div>
         )}
@@ -263,30 +265,37 @@ const CodeToDocPage = () => {
             )}
           </div>
 
-          {/* Only show right sidebar if no full-width result is displayed */}
-          {!selectedHistoryDoc && !(generationStatus && generationStatus.status === 'completed' && generationStatus.markdown) && (
-            <div className="ctd-right">
-              <section className="ctd-panel ctd-output-panel">
-                <div className="ctd-section-header">
-                  <div className="ctd-section-title">
-                    {generationStatus && ['pending', 'ingesting', 'scanning', 'indexing', 'generating', 'merging'].includes(generationStatus.status) 
-                      ? 'Generation Status' 
-                      : 'Output Preview'}
+          {/* Show right sidebar if: 
+              - No history doc selected AND
+              - (Generation is in progress OR no completed result with markdown) */}
+          {!selectedHistoryDoc && (
+            (!(generationStatus && generationStatus.status === 'completed' && generationStatus.markdown) || 
+             isGenerating ||
+             (generationStatus && ['pending', 'ingesting', 'scanning', 'indexing', 'generating', 'merging', 'failed'].includes(generationStatus.status))) && (
+              <div className="ctd-right">
+                <section className="ctd-panel ctd-output-panel">
+                  <div className="ctd-section-header">
+                    <div className="ctd-section-title">
+                      {(isGenerating || (generationStatus && ['pending', 'ingesting', 'scanning', 'indexing', 'generating', 'merging', 'failed'].includes(generationStatus.status)))
+                        ? 'Generation Status' 
+                        : 'Output Preview'}
+                    </div>
+                    {output && output !== 'Generated documentation will appear here.' && !generationStatus && !isGenerating && (
+                      <span className="ctd-badge ctd-badge-success">Ready</span>
+                    )}
                   </div>
-                  {output && output !== 'Generated documentation will appear here.' && !generationStatus && (
-                    <span className="ctd-badge ctd-badge-success">Ready</span>
-                  )}
-                </div>
-                <OutputPanel 
-                  output={output} 
-                  pdfLink={pdfLink} 
-                  pdfInfo={pdfInfo} 
-                  summary={summary}
-                  generationStatus={generationStatus}
-                  onCancelGeneration={generationStatus && generationStatus.status !== 'completed' && generationStatus.status !== 'failed' ? cancelGeneration : undefined}
-                />
-              </section>
-            </div>
+                  <OutputPanel 
+                    output={output} 
+                    pdfLink={pdfLink} 
+                    pdfInfo={pdfInfo} 
+                    summary={summary}
+                    generationStatus={generationStatus}
+                    isGenerating={isGenerating}
+                    onCancelGeneration={generationStatus && generationStatus.status !== 'completed' && generationStatus.status !== 'failed' ? cancelGeneration : undefined}
+                  />
+                </section>
+              </div>
+            )
           )}
         </div>
       </div>

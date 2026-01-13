@@ -32,13 +32,20 @@ const BotPreviewCard = ({ bot, onError }) => {
     // Check chat limit
     try {
       const token = getAuthToken();
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+      
       const usageResponse = await fetch(`${getApiBase()}/api/users/usage`, {
         headers: {
           'Authorization': token ? `Bearer ${token}` : '',
         },
+        signal: controller.signal,
       });
+      
+      clearTimeout(timeoutId);
+      
       if (usageResponse.ok) {
-        const usageData = await usageResponse.json();
+        const usageData = await usageResponse.json().catch(() => ({ success: false }));
         if (usageData.success && usageData.usage) {
           const usage = usageData.usage;
           if (usage.chats.today >= usage.chats.limit) {
@@ -48,7 +55,10 @@ const BotPreviewCard = ({ bot, onError }) => {
         }
       }
     } catch (err) {
-      console.error('Failed to check usage:', err);
+      // Don't block chat if usage check fails - might be temporary network issue
+      if (err.name !== 'AbortError') {
+        console.error('Failed to check usage:', err);
+      }
     }
 
     const userMessage = input.trim();
@@ -58,6 +68,9 @@ const BotPreviewCard = ({ bot, onError }) => {
 
     try {
       const token = getAuthToken();
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 120000); // 2 minute timeout for chat
+      
       const response = await fetch(`${getApiBase()}/api/bots/${bot.id}/chat`, {
         method: 'POST',
         headers: {
@@ -70,52 +83,82 @@ const BotPreviewCard = ({ bot, onError }) => {
           temperature: bot.temperature || 0.7,
           top_k: bot.topK || 5,
         }),
+        signal: controller.signal,
       });
+
+      clearTimeout(timeoutId);
 
       if (!response.ok) {
         const error = await response.json().catch(() => ({ error: 'Chat failed' }));
-        throw new Error(error.error || 'Failed to get response');
+        throw new Error(error.error || `Chat failed with status ${response.status}`);
       }
 
       // Handle streaming response
       const reader = response.body.getReader();
       const decoder = new TextDecoder();
       let assistantMessage = '';
+      let streamError = null;
 
       setMessages((prev) => [...prev, { role: 'assistant', content: '' }]);
 
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
+      try {
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
 
-        const chunk = decoder.decode(value);
-        const lines = chunk.split('\n');
+          const chunk = decoder.decode(value, { stream: true });
+          const lines = chunk.split('\n');
 
-        for (const line of lines) {
-          if (line.startsWith('data: ')) {
-            try {
-              const data = JSON.parse(line.slice(6));
-              if (data.content) {
-                assistantMessage += data.content;
-                setMessages((prev) => {
-                  const newMessages = [...prev];
-                  newMessages[newMessages.length - 1] = {
-                    role: 'assistant',
-                    content: assistantMessage,
-                  };
-                  return newMessages;
-                });
+          for (const line of lines) {
+            if (line.startsWith('data: ')) {
+              try {
+                const jsonStr = line.slice(6).trim();
+                if (jsonStr === '[DONE]') {
+                  break;
+                }
+                const data = JSON.parse(jsonStr);
+                if (data.content) {
+                  assistantMessage += data.content;
+                  setMessages((prev) => {
+                    const newMessages = [...prev];
+                    newMessages[newMessages.length - 1] = {
+                      role: 'assistant',
+                      content: assistantMessage,
+                    };
+                    return newMessages;
+                  });
+                }
+                if (data.error) {
+                  streamError = data.error;
+                  break;
+                }
+              } catch (e) {
+                // Skip invalid JSON - might be partial chunk
+                console.debug('Skipping invalid JSON in stream:', e);
               }
-            } catch (e) {
-              // Skip invalid JSON
             }
           }
         }
+      } catch (streamErr) {
+        console.error('Stream reading error:', streamErr);
+        if (assistantMessage.length === 0) {
+          throw new Error('Failed to read response stream');
+        }
+        // If we have partial content, keep it
+      } finally {
+        reader.releaseLock();
       }
 
-      // Increment chat usage after successful response
+      if (streamError) {
+        throw new Error(streamError);
+      }
+
+      // Increment chat usage after successful response (non-blocking)
       try {
         const token = getAuthToken();
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 second timeout
+        
         await fetch(`${getApiBase()}/api/users/usage/increment`, {
           method: 'POST',
           headers: {
@@ -123,9 +166,12 @@ const BotPreviewCard = ({ bot, onError }) => {
             'Authorization': token ? `Bearer ${token}` : '',
           },
           body: JSON.stringify({ type: 'chats', amount: 1 }),
+          signal: controller.signal,
         });
+        clearTimeout(timeoutId);
       } catch (err) {
-        console.error('Failed to increment usage:', err);
+        // Don't show error to user - usage increment is non-critical
+        console.warn('Failed to increment usage (non-critical):', err.message);
       }
     } catch (error) {
         console.error('Chat error:', error);

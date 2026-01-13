@@ -34,7 +34,10 @@ logger = logging.getLogger(__name__)
 
 def _error_response(message: str, status: int = 500, include_trace: bool = False):
     """Create standardized error response"""
-    payload: dict[str, str] = {"error": message}
+    payload: dict[str, str] = {
+        "success": False,
+        "error": message
+    }
     if include_trace:
         payload["trace"] = traceback.format_exc()
     return jsonify(payload), status
@@ -306,45 +309,77 @@ def create_app() -> Flask:
                 zip_repo_id = f"zip_upload_{int(time.time())}"
                 
                 # Generate documentation using RAG pipeline
-                result = zip_orchestrator.generate_documentation_from_files(
-                    repo_id=zip_repo_id,
-                    repo_files=repo_files,
-                    repo_name=title or "Uploaded Project",
-                    owner="user",
-                    title=title
-                )
-                
-                # Increment usage
-                if token:
-                    user_service.increment_usage(token, "codeToDoc", 1)
-                
-                return jsonify({
-                    "success": True,
-                    "output": result["markdown"],
-                    "docText": result["markdown"],
-                    "pdfFilename": Path(result["pdf_path"]).name if result["pdf_path"] else None,
-                    "pdfPath": result["pdf_url"],
-                    "pdfUrl": result["pdf_url"],
-                    "chapters": result.get("chapters", []),
-                    "content_type": "code",
-                    "file_count": len(repo_files),
-                }), 200
+                try:
+                    result = zip_orchestrator.generate_documentation_from_files(
+                        repo_id=zip_repo_id,
+                        repo_files=repo_files,
+                        repo_name=title or "Uploaded Project",
+                        owner="user",
+                        title=title
+                    )
+                    
+                    logger.info(f"Zip documentation generated successfully | repo_id={zip_repo_id} | output_length={len(result.get('markdown', ''))}")
+                    
+                    # Ensure completion status is reported
+                    try:
+                        if result.get("markdown"):
+                            status_reporter.report_completion(
+                                markdown=result["markdown"],
+                                pdf_url=result.get("pdf_url"),
+                                pdf_info={"filename": Path(result["pdf_path"]).name} if result.get("pdf_path") else None,
+                                token=token
+                            )
+                            logger.info("Completion status confirmed for zip generation")
+                    except Exception as status_err:
+                        logger.warning(f"Failed to confirm completion status (non-critical): {status_err}")
+                    
+                    # Increment usage
+                    if token:
+                        user_service.increment_usage(token, "codeToDoc", 1)
+                    
+                    return jsonify({
+                        "success": True,
+                        "output": result["markdown"],
+                        "docText": result["markdown"],
+                        "pdfFilename": Path(result["pdf_path"]).name if result["pdf_path"] else None,
+                        "pdfPath": result["pdf_url"],
+                        "pdfUrl": result["pdf_url"],
+                        "chapters": result.get("chapters", []),
+                        "content_type": "code",
+                        "file_count": len(repo_files),
+                    }), 200
+                except Exception as zip_error:
+                    logger.error(f"Zip generation failed: {zip_error}", exc_info=True)
+                    error_msg = f"Zip generation failed: {str(zip_error)}"
+                    # Report error with better message
+                    try:
+                        status_reporter.report_error(
+                            error_message=error_msg,
+                            error_code="ZIP_GENERATION_ERROR",
+                            token=token
+                        )
+                        logger.info("Zip generation error status reported to Node backend")
+                    except Exception as status_err:
+                        logger.warning(f"Failed to report zip error status (non-critical): {status_err}")
+                    raise RuntimeError(error_msg)
             
             # Validate input - only allow file uploads, no direct text
             if not raw_content:
-                return jsonify({
-                    "error": "No content provided. Please upload files or use GitHub repo mode."
-                }), 400
+                error_msg = "No content provided. Please upload files or use GitHub repo mode."
+                logger.warning(error_msg)
+                return jsonify({"success": False, "error": error_msg}), 400
             
             # Require file_count to ensure this came from file upload
             if not file_count or file_count < 1:
-                return jsonify({
-                    "error": "Direct text mode is not supported. Please upload files or use GitHub repo mode."
-                }), 400
+                error_msg = "Direct text mode is not supported. Please upload files or use GitHub repo mode."
+                logger.warning(error_msg)
+                return jsonify({"success": False, "error": error_msg}), 400
             
             # Validate content type
             if content_type_str not in {"code", "text"}:
-                return jsonify({"error": "contentType must be 'code' or 'text'"}), 400
+                error_msg = "contentType must be 'code' or 'text'"
+                logger.warning(error_msg)
+                return jsonify({"success": False, "error": error_msg}), 400
             
             content_type: ContentType = content_type_str  # type: ignore
             
@@ -399,28 +434,74 @@ def create_app() -> Flask:
             
             # Generate document
             logger.info(f"Starting document generation | content_length={len(raw_content)} | type={content_type} | files={file_count}")
-            result = document_service.generate_document(generation)
+            try:
+                result = document_service.generate_document(generation)
+            except Exception as gen_error:
+                logger.error(f"Document generation failed: {gen_error}", exc_info=True)
+                error_msg = f"Document generation failed: {str(gen_error)}"
+                # Report error before re-raising
+                try:
+                    status_reporter.report_error(
+                        error_message=error_msg,
+                        error_code="GENERATION_ERROR",
+                        token=token
+                    )
+                    logger.info("Generation error status reported to Node backend")
+                except Exception as status_err:
+                    logger.warning(f"Failed to report generation error status (non-critical): {status_err}")
+                raise RuntimeError(error_msg)
             
             # Validate result
             if not result.markdown_content or len(result.markdown_content.strip()) < 50:
-                logger.error(f"Generated documentation is too short: {len(result.markdown_content) if result.markdown_content else 0} chars")
-                raise RuntimeError("Generated documentation is incomplete or empty. Please try again.")
+                error_msg = f"Generated documentation is too short: {len(result.markdown_content) if result.markdown_content else 0} chars"
+                logger.error(error_msg)
+                user_error_msg = "Generated documentation is incomplete or empty. Please try again."
+                # Report error
+                try:
+                    status_reporter.report_error(
+                        error_message=user_error_msg,
+                        error_code="INCOMPLETE_OUTPUT",
+                        token=token
+                    )
+                    logger.info("Incomplete output error status reported to Node backend")
+                except Exception as status_err:
+                    logger.warning(f"Failed to report incomplete output error status (non-critical): {status_err}")
+                raise RuntimeError(user_error_msg)
             
             logger.info(f"Document generation successful | output_length={len(result.markdown_content)} | pdf={bool(result.pdf_path)}")
             
-            # Report completion
-            status_reporter.report_completion(
-                markdown=result.markdown_content,
-                pdf_url=result.pdf_url,
-                pdf_info={"filename": result.pdf_path.name} if result.pdf_path else None,
-                token=token
-            )
+            # Report completion (CRITICAL - must complete)
+            # Retry if it fails since completion status is important
+            completion_reported = False
+            for attempt in range(3):
+                try:
+                    if status_reporter.report_completion(
+                        markdown=result.markdown_content,
+                        pdf_url=result.pdf_url,
+                        pdf_info={"filename": result.pdf_path.name} if result.pdf_path else None,
+                        token=token
+                    ):
+                        logger.info("Completion status reported successfully")
+                        completion_reported = True
+                        break
+                    else:
+                        logger.warning(f"Completion status report returned False (attempt {attempt + 1}/3)")
+                except Exception as status_err:
+                    logger.warning(f"Failed to report completion status (attempt {attempt + 1}/3): {status_err}")
+                    if attempt < 2:
+                        import time
+                        time.sleep(0.5)  # Brief delay before retry
+            
+            if not completion_reported:
+                logger.error("Failed to report completion status after all retries - this may cause frontend polling issues")
+                # Don't fail the request if status reporting fails, but log the error
             
             # Increment usage after successful generation
             if token:
                 user_service.increment_usage(token, "codeToDoc", 1)
             
             return jsonify({
+                "success": True,
                 "output": result.markdown_content,
                 "docText": result.markdown_content,  # Backward compatibility
                 "pdfFilename": result.pdf_path.name if result.pdf_path else None,
@@ -428,18 +509,52 @@ def create_app() -> Flask:
                 "pdfUrl": result.pdf_url,
                 "content_type": result.content_type,
                 "file_count": result.file_count,
-                "success": True,
-            })
+            }), 200
         except ValidationError as e:
-            logger.warning(f"Validation error: {e}")
-            return jsonify({"error": str(e)}), 400
+            logger.warning(f"Validation error: {e}", exc_info=True)
+            error_msg = f"Validation error: {str(e)}"
+            # Report error status with better error message
+            try:
+                status_reporter.report_error(
+                    error_message=error_msg,
+                    error_code="VALIDATION_ERROR",
+                    token=token
+                )
+                logger.info("Validation error status reported to Node backend")
+            except Exception as status_err:
+                logger.warning(f"Failed to report validation error status (non-critical): {status_err}")
+            return jsonify({"success": False, "error": error_msg}), 400
         except RuntimeError as e:
-            logger.error(f"Runtime error during generation: {e}")
-            return jsonify({"error": str(e)}), 500
+            logger.error(f"Runtime error during generation: {e}", exc_info=True)
+            error_msg = f"Generation error: {str(e)}"
+            # Report error status
+            try:
+                status_reporter.report_error(
+                    error_message=error_msg,
+                    error_code="RUNTIME_ERROR",
+                    token=token
+                )
+                logger.info("Runtime error status reported to Node backend")
+            except Exception as status_err:
+                logger.warning(f"Failed to report runtime error status (non-critical): {status_err}")
+            return jsonify({"success": False, "error": error_msg}), 500
         except Exception as e:
             logger.exception("Document generation failed")
             include_trace = bool(os.environ.get("DEBUG_TRACE", "").lower() in {"1", "true", "yes"})
-            return _error_response(str(e), status=500, include_trace=include_trace)
+            error_msg = f"Internal server error: {str(e)}"
+            if include_trace:
+                error_msg += f"\n{traceback.format_exc()}"
+            # Report error status
+            try:
+                status_reporter.report_error(
+                    error_message=error_msg,
+                    error_code="INTERNAL_ERROR",
+                    token=token
+                )
+                logger.info("Internal error status reported to Node backend")
+            except Exception as status_err:
+                logger.warning(f"Failed to report internal error status (non-critical): {status_err}")
+            return _error_response(error_msg, 500, include_trace)
     
     # Register API routes BEFORE static routes to ensure proper matching
     logger.info("Registering bot, user, and repo API routes...")

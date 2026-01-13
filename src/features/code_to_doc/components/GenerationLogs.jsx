@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
+import { translateMessage, getStatusDescription } from '../utils/messageTranslator';
 import '../css/GenerationLogs.css';
 
 const GenerationLogs = ({ status, onCancel }) => {
@@ -24,7 +25,7 @@ const GenerationLogs = ({ status, onCancel }) => {
       const logEntry = {
         timestamp,
         status: status.status,
-        message: status.currentStep,
+        message: translateMessage(status.currentStep), // Translate to user-friendly message
         progress: status.progress || 0,
       };
 
@@ -58,14 +59,39 @@ const GenerationLogs = ({ status, onCancel }) => {
       logsRef.current = [{
         timestamp,
         status: 'pending',
-        message: 'Initializing generation...',
+        message: translateMessage('Initializing generation...'),
         progress: 0,
       }];
       setLogs([...logsRef.current]);
     }
   }, [status?.status]);
 
-  if (!status) return null;
+  // Show loading state if status is not yet available but generation might have started
+  if (!status) {
+    return (
+      <div className="generation-logs">
+        <div className="generation-logs-header">
+          <div className="generation-logs-status">
+            <span className="generation-logs-icon">⏳</span>
+            <div className="generation-logs-status-info">
+              <span className="generation-logs-label">Initializing...</span>
+            </div>
+          </div>
+        </div>
+        <div className="generation-logs-progress-container">
+          <div className="generation-logs-progress-bar">
+            <div className="generation-logs-progress-fill" style={{ width: '0%', backgroundColor: '#6b7280' }} />
+          </div>
+        </div>
+        <div className="generation-logs-content">
+          <div className="generation-logs-empty">
+            <div className="generation-logs-spinner"></div>
+            <span>{translateMessage('Starting generation process...')}</span>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   const isActive = ['pending', 'ingesting', 'scanning', 'indexing', 'generating', 'merging'].includes(status.status);
   const isCompleted = status.status === 'completed';
@@ -108,19 +134,30 @@ const GenerationLogs = ({ status, onCancel }) => {
   };
 
   const getStatusLabel = () => {
+    // Use current step message if available for more context
+    if (status.currentStep && isActive) {
+      const translated = translateMessage(status.currentStep);
+      // Extract a short label from the translated message (first 40 chars)
+      if (translated.length > 40) {
+        return translated.substring(0, 37) + '...';
+      }
+      return translated;
+    }
+    
+    // Fallback to status-based labels
     switch (status.status) {
       case 'pending':
-        return 'Queued';
+        return 'Preparing...';
       case 'ingesting':
-        return 'Ingesting';
+        return 'Downloading Files...';
       case 'scanning':
-        return 'Scanning';
+        return 'Analyzing Code...';
       case 'indexing':
-        return 'Indexing';
+        return 'Creating Index...';
       case 'generating':
-        return 'Generating';
+        return 'Writing Documentation...';
       case 'merging':
-        return 'Merging';
+        return 'Finalizing...';
       case 'completed':
         return 'Completed';
       case 'failed':
@@ -175,7 +212,7 @@ const GenerationLogs = ({ status, onCancel }) => {
         {logs.length === 0 && isActive && (
           <div className="generation-logs-empty">
             <div className="generation-logs-spinner"></div>
-            <span>Initializing generation...</span>
+            <span>{translateMessage('Initializing generation...')}</span>
           </div>
         )}
 

@@ -74,29 +74,41 @@ class StatusReporter:
             
             url = f"{self.node_backend_url}/api/generation-status"
             
+            # Log markdown length for debugging (but don't log full content)
+            if 'markdown' in status_data:
+                logger.debug(f"Sending status update with markdown ({len(status_data['markdown'])} chars)")
+            
             response = self.session.post(
                 url,
                 json=status_data,
                 headers=headers,
-                timeout=5  # Short timeout, don't block generation
+                timeout=30  # Increased timeout to 30 seconds for large markdown content
             )
             
             if response.status_code == 200:
-                logger.debug(f"Status update sent successfully: {status_data.get('status')}")
+                logger.info(f"Status update sent successfully: {status_data.get('status')} (markdown: {len(status_data.get('markdown', ''))} chars)")
                 return True
             elif response.status_code == 401:
                 logger.warning("Status update failed: Authentication required")
                 return False
             else:
-                logger.warning(f"Status update failed: HTTP {response.status_code}")
+                # Try to get error details from response
+                try:
+                    error_data = response.json()
+                    logger.warning(f"Status update failed: HTTP {response.status_code} - {error_data.get('error', 'Unknown error')}")
+                except:
+                    logger.warning(f"Status update failed: HTTP {response.status_code}")
                 return False
                 
+        except requests.exceptions.Timeout as e:
+            logger.warning(f"Status update timeout (non-critical): {e}")
+            return False
         except requests.exceptions.RequestException as e:
-            # Don't log errors - status reporting is optional
-            logger.debug(f"Status update failed (non-critical): {e}")
+            # Log warnings for network errors but don't fail generation
+            logger.warning(f"Status update failed (non-critical): {e}")
             return False
         except Exception as e:
-            logger.debug(f"Status update error (non-critical): {e}")
+            logger.warning(f"Status update error (non-critical): {e}")
             return False
     
     def report_progress(
@@ -182,7 +194,20 @@ class StatusReporter:
             "pdfInfo": pdf_info
         }
         
-        return self.update_status(token=token, status_data=status_data)
+        # Retry completion reporting up to 3 times since it's critical
+        max_retries = 3
+        for attempt in range(max_retries):
+            result = self.update_status(token=token, status_data=status_data)
+            if result:
+                logger.info("Completion status reported successfully")
+                return True
+            if attempt < max_retries - 1:
+                logger.warning(f"Completion status report failed, retrying ({attempt + 1}/{max_retries})...")
+                import time
+                time.sleep(0.5)  # Brief delay before retry
+        
+        logger.error("Failed to report completion status after all retries")
+        return False
     
     def report_error(
         self,

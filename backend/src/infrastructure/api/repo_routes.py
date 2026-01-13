@@ -87,7 +87,7 @@ def register_repo_routes(app: Flask):
             repo_url = data.get("repo_url", "").strip()
             
             if not repo_url:
-                return jsonify({"error": "repo_url is required"}), 400
+                return jsonify({"success": False, "error": "repo_url is required"}), 400
             
             # Ingest repository
             result = github_service.ingest_repository(repo_url)
@@ -135,7 +135,7 @@ def register_repo_routes(app: Flask):
             
             if not repo_url:
                 logger.warning("Missing repo_url in generate request")
-                return jsonify({"error": "repo_url is required"}), 400
+                return jsonify({"success": False, "error": "repo_url is required"}), 400
             
             # If repo_id not provided, ingest first
             if not repo_id:
@@ -147,7 +147,7 @@ def register_repo_routes(app: Flask):
                 # Validate repo_id format
                 if not repo_id or len(repo_id) < 3:
                     logger.warning(f"Invalid repo_id format: {repo_id}")
-                    return jsonify({"error": "Invalid repo_id format"}), 400
+                    return jsonify({"success": False, "error": "Invalid repo_id format"}), 400
             
             # Get auth token from request headers for status reporting
             token = None
@@ -211,20 +211,52 @@ def register_repo_routes(app: Flask):
                     title=title
                 )
                 
+                logger.info(f"Repository documentation generated successfully | repo_id={repo_id} | output_length={len(result.get('markdown', ''))}")
+                
                 # Increment usage after successful generation
                 if token:
                     user_service.increment_usage(token, "codeToDoc", 1)
                     
             except Exception as e:
+                logger.error(f"Repository documentation generation failed: {e}", exc_info=True)
+                error_msg = f"Repository generation failed: {str(e)}"
                 # Report error to Node backend
                 try:
                     status_reporter.report_error(
-                        error_message=str(e),
+                        error_message=error_msg,
+                        error_code="REPO_GENERATION_ERROR",
                         token=token
                     )
-                except Exception:
-                    pass  # Don't fail if status reporting fails
-                raise  # Re-raise the original exception
+                    logger.info("Error status reported to Node backend")
+                except Exception as status_err:
+                    logger.warning(f"Failed to report error status (non-critical): {status_err}")
+                raise RuntimeError(error_msg)  # Re-raise with better error message
+            
+            # Ensure completion status is reported (orchestrator should handle this, but ensure it)
+            # Retry if it fails since completion status is important
+            completion_reported = False
+            if result.get("markdown"):
+                for attempt in range(3):
+                    try:
+                        if status_reporter.report_completion(
+                            markdown=result["markdown"],
+                            pdf_url=result.get("pdf_url"),
+                            pdf_info={"filename": Path(result["pdf_path"]).name} if result.get("pdf_path") else None,
+                            token=token
+                        ):
+                            logger.info("Completion status confirmed for repository generation")
+                            completion_reported = True
+                            break
+                        else:
+                            logger.warning(f"Completion status report returned False (attempt {attempt + 1}/3)")
+                    except Exception as status_err:
+                        logger.warning(f"Failed to confirm completion status (attempt {attempt + 1}/3): {status_err}")
+                        if attempt < 2:
+                            import time
+                            time.sleep(0.5)  # Brief delay before retry
+                
+                if not completion_reported:
+                    logger.error("Failed to report completion status after all retries - this may cause frontend polling issues")
             
             return jsonify({
                 "success": True,
@@ -233,23 +265,55 @@ def register_repo_routes(app: Flask):
                 "pdfFilename": Path(result["pdf_path"]).name if result["pdf_path"] else None,
                 "pdfPath": result["pdf_url"],
                 "pdfUrl": result["pdf_url"],
-                "chapters": result["chapters"],
-                "repo_info": result["repo_info"],
-                "duration_seconds": result["duration_seconds"]
+                "chapters": result.get("chapters", []),
+                "repo_info": result.get("repo_info", {}),
+                "duration_seconds": result.get("duration_seconds", 0)
             }), 200
             
         except ValidationError as e:
             logger.warning(f"Validation error in repo/generate: {e}", exc_info=True)
-            return jsonify({"error": str(e)}), 400
+            error_msg = f"Validation error: {str(e)}"
+            # Report error status
+            try:
+                status_reporter.report_error(
+                    error_message=error_msg,
+                    error_code="VALIDATION_ERROR",
+                    token=token
+                )
+                logger.info("Validation error status reported to Node backend")
+            except Exception as status_err:
+                logger.warning(f"Failed to report validation error status (non-critical): {status_err}")
+            return jsonify({"success": False, "error": error_msg}), 400
         except RuntimeError as e:
-            logger.error(f"Runtime error: {e}")
-            return jsonify({"error": str(e)}), 500
+            logger.error(f"Runtime error: {e}", exc_info=True)
+            error_msg = f"Generation error: {str(e)}"
+            # Report error status
+            try:
+                status_reporter.report_error(
+                    error_message=error_msg,
+                    error_code="RUNTIME_ERROR",
+                    token=token
+                )
+                logger.info("Runtime error status reported to Node backend")
+            except Exception as status_err:
+                logger.warning(f"Failed to report runtime error status (non-critical): {status_err}")
+            return jsonify({"success": False, "error": error_msg}), 500
         except Exception as e:
             logger.exception("Repository documentation generation failed")
             include_trace = bool(os.environ.get("DEBUG_TRACE", "").lower() in {"1", "true", "yes"})
-            error_msg = str(e)
+            error_msg = f"Internal server error: {str(e)}"
             if include_trace:
                 import traceback
                 error_msg += f"\n{traceback.format_exc()}"
-            return jsonify({"error": error_msg}), 500
+            # Report error status
+            try:
+                status_reporter.report_error(
+                    error_message=error_msg,
+                    error_code="INTERNAL_ERROR",
+                    token=token
+                )
+                logger.info("Internal error status reported to Node backend")
+            except Exception as status_err:
+                logger.warning(f"Failed to report internal error status (non-critical): {status_err}")
+            return jsonify({"success": False, "error": error_msg}), 500
 

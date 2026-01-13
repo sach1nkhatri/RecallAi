@@ -52,15 +52,39 @@ const useCode2Doc = () => {
   useEffect(() => {
     const checkHealth = async () => {
       try {
-        const res = await fetch(`${apiBase}/api/health`, { method: 'GET' });
-        const data = await res.json();
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 second timeout
+        
+        const res = await fetch(`${apiBase}/api/health`, { 
+          method: 'GET',
+          signal: controller.signal,
+        });
+        
+        clearTimeout(timeoutId);
+        
+        let data;
+        try {
+          data = await res.json();
+        } catch (parseErr) {
+          console.warn('Failed to parse health check response:', parseErr);
+          setApiHealth((prev) => {
+            if (prev.status === 'unknown') return prev;
+            return { status: 'unknown', lastCheck: new Date(), data: null };
+          });
+          return;
+        }
+        
         const newStatus = data.status === 'ok' ? 'healthy' : 'unhealthy';
         // Only update if status actually changed to prevent unnecessary re-renders
         setApiHealth((prev) => {
           if (prev.status === newStatus) return prev;
           return { status: newStatus, lastCheck: new Date(), data };
         });
-      } catch {
+      } catch (err) {
+        // Don't log timeout errors - they're expected if server is down
+        if (err.name !== 'AbortError') {
+          console.warn('Health check failed:', err.message);
+        }
         setApiHealth((prev) => {
           if (prev.status === 'offline') return prev;
           return { status: 'offline', lastCheck: new Date() };
@@ -99,13 +123,24 @@ const useCode2Doc = () => {
       }
 
       try {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 60000); // 60 second timeout for upload
+
         const res = await fetch(`${apiBase}/api/upload`, {
           method: 'POST',
           headers: headers,
           body: formData,
+          signal: controller.signal,
         });
 
-        const data = await res.json();
+        clearTimeout(timeoutId);
+
+        let data;
+        try {
+          data = await res.json();
+        } catch (parseErr) {
+          throw new Error(`Failed to parse upload response: ${parseErr.message}`);
+        }
         if (!res.ok) {
           throw new Error(data.error || 'Upload failed');
         }
@@ -166,9 +201,24 @@ const useCode2Doc = () => {
 
     // Check code-to-doc usage limit
     try {
-      const usageResponse = await fetch(`${apiBase}/api/user/usage`);
+      const usageController = new AbortController();
+      const usageTimeoutId = setTimeout(() => usageController.abort(), 10000); // 10 second timeout
+      
+      const usageResponse = await fetch(`${apiBase}/api/user/usage`, {
+        signal: usageController.signal,
+      });
+      
+      clearTimeout(usageTimeoutId);
+      
       if (usageResponse.ok) {
-        const usage = await usageResponse.json();
+        let usage;
+        try {
+          usage = await usageResponse.json();
+        } catch (parseErr) {
+          console.warn('Failed to parse usage response:', parseErr);
+          // Continue without usage check if parsing fails
+          usage = { codeToDoc: { used: 0, limit: Infinity } };
+        }
         if (usage.codeToDoc.used >= usage.codeToDoc.limit) {
           showToast(`Code to Doc limit reached. Free plan allows ${usage.codeToDoc.limit} uses. Upgrade for more.`, 'error');
           return;
@@ -204,54 +254,19 @@ const useCode2Doc = () => {
     setPdfInfo('');
     setSummary('');
 
-    // Initialize generation status (optional - won't break if auth fails)
-    // IMPORTANT: This starts polling so frontend can receive updates from Python backend
-    try {
-      console.log('🚀 Starting generation, initializing status tracking...');
-      const statusResult = await updateStatus({
-        type: 'file_upload',
-        status: 'pending',
-        progress: 0,
-        currentStep: 'Starting generation...',
-        fileCount: uploads.length,
-      });
-      if (!statusResult) {
-        console.log('⚠️ Generation status tracking skipped (authentication required)');
-        // Still try to start polling with localStorage fallback
-        const fallbackStatus = {
-          type: 'file_upload',
-          status: 'pending',
-          progress: 0,
-          currentStep: 'Starting generation...',
-          fileCount: uploads.length,
-          _id: `local-${Date.now()}`,
-          startedAt: new Date().toISOString(),
-        };
-        localStorage.setItem('generationStatus', JSON.stringify(fallbackStatus));
-        startPolling(); // Start polling even if backend update failed
-      } else {
-        console.log('✅ Status tracking initialized, polling started');
-      }
-    } catch (err) {
+    // Initialize generation status IMMEDIATELY (synchronous update, async backend sync)
+    // This ensures the progress window shows right away
+    console.log('🚀 Starting generation, initializing status tracking...');
+    updateStatus({
+      type: 'file_upload',
+      status: 'pending',
+      progress: 0,
+      currentStep: 'Starting generation...',
+      fileCount: uploads.length,
+    }).catch(err => {
       // Don't block generation if status tracking fails
-      console.warn('⚠️ Generation status tracking unavailable:', err.message);
-      // Still try to start polling with localStorage fallback
-      try {
-        const fallbackStatus = {
-          type: 'file_upload',
-          status: 'pending',
-          progress: 0,
-          currentStep: 'Starting generation...',
-          fileCount: uploads.length,
-          _id: `local-${Date.now()}`,
-          startedAt: new Date().toISOString(),
-        };
-        localStorage.setItem('generationStatus', JSON.stringify(fallbackStatus));
-        startPolling(); // Force start polling even if backend update failed
-      } catch (e) {
-        console.warn('Failed to start polling fallback:', e);
-      }
-    }
+      console.warn('⚠️ Generation status tracking error (non-blocking):', err.message);
+    });
 
     let finalOutput = '';
     let finalPdfPath = '';
@@ -289,9 +304,16 @@ const useCode2Doc = () => {
         headers['Authorization'] = `Bearer ${token}`;
       }
 
-      // Add timeout to prevent hanging (120 seconds = 2 minutes)
+      // Add longer timeout for generation (20 minutes = 1200 seconds)
+      // Generation can take a while, especially for large files or slow LLM responses
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 120000); // 120 seconds
+      const timeoutId = setTimeout(() => controller.abort(), 1200000); // 20 minutes
+
+      console.log('📤 Sending generation request to backend...', {
+        contentLength: lastUploadMeta.rawContent?.length || 0,
+        fileCount: lastUploadMeta.fileCount,
+        contentType: lastUploadMeta.contentType
+      });
 
       const res = await fetch(`${apiBase}/api/generate`, {
         method: 'POST',
@@ -304,27 +326,96 @@ const useCode2Doc = () => {
       
       if (!res.ok) {
         const errorData = await res.json().catch(() => ({ error: `HTTP ${res.status}` }));
-        throw new Error(errorData.error || `Generation failed with status ${res.status}`);
+        const errorMsg = errorData.error || errorData.message || `Generation failed with status ${res.status}`;
+        console.error('❌ Generation request failed:', errorMsg);
+        
+        // Report error status
+        try {
+          await updateStatus({
+            status: 'failed',
+            error: { message: errorMsg },
+          });
+        } catch (e) {
+          console.warn('Failed to report error status:', e);
+        }
+        
+        throw new Error(errorMsg);
       }
       
-      const data = await res.json();
+      let data;
+      try {
+        data = await res.json();
+      } catch (parseErr) {
+        const errorMsg = `Failed to parse generation response: ${parseErr.message}`;
+        console.error('❌ JSON parse error:', errorMsg);
+        throw new Error(errorMsg);
+      }
+      
+      console.log('✅ Generation response received:', {
+        hasOutput: !!(data.output || data.docText),
+        outputLength: (data.output || data.docText || '').length,
+        hasPdf: !!(data.pdfPath || data.pdfUrl),
+        success: data.success
+      });
+      
       finalOutput = data.output || data.docText || '';
       
       if (!finalOutput || finalOutput.trim().length < 50) {
-        throw new Error('Generated documentation is too short or empty. Please try again.');
+        const errorMsg = 'Generated documentation is too short or empty. Please try again.';
+        console.error('❌ Generated content too short:', finalOutput.length);
+        
+        // Report error status
+        try {
+          await updateStatus({
+            status: 'failed',
+            error: { message: errorMsg },
+          });
+        } catch (e) {
+          console.warn('Failed to report error status:', e);
+        }
+        
+        throw new Error(errorMsg);
       }
       
       finalPdfPath = data.pdfPath || data.pdfUrl || '';
       fileSummary = data.file_count || lastUploadMeta.fileCount;
       typeSummary = data.content_type || lastUploadMeta.contentType || 'code';
+      
+      console.log('✅ Generation successful:', {
+        outputLength: finalOutput.length,
+        pdfPath: finalPdfPath,
+        fileCount: fileSummary
+      });
     } catch (err) {
       console.error('Documentation generation error:', err);
       
-      // Handle timeout/abort errors
+      // Handle timeout/abort errors with better messages
       if (err.name === 'AbortError' || err.message?.includes('timeout')) {
-        toastMessage = 'Generation timed out. The request took too long. Please try with smaller files or check LM Studio connection.';
+        toastMessage = 'Generation timed out. The request took too long. This can happen with large files or slow LLM responses. Please try with smaller files, check LM Studio connection, or try again later.';
+      } else if (err.message?.includes('fetch') || err.message?.includes('network')) {
+        toastMessage = 'Network error. Please check your connection and ensure the backend server is running.';
+      } else if (err.message?.includes('401') || err.message?.includes('Unauthorized')) {
+        toastMessage = 'Authentication error. Please log in again.';
+      } else if (err.message?.includes('403') || err.message?.includes('Forbidden')) {
+        toastMessage = 'Access denied. You may have reached your usage limit.';
       } else {
         toastMessage = err?.message || 'Failed to generate documentation. Please check your connection and try again.';
+      }
+      
+      console.error('❌ Generation error:', {
+        name: err.name,
+        message: err.message,
+        stack: err.stack
+      });
+      
+      // Report error status
+      try {
+        await updateStatus({
+          status: 'failed',
+          error: { message: toastMessage },
+        });
+      } catch (statusErr) {
+        console.warn('Failed to report error status:', statusErr);
       }
       
       finalOutput = `# Error Generating Documentation\n\n**Error:** ${toastMessage}\n\nPlease ensure:\n- Your files were uploaded successfully\n- The backend server is running\n- LM Studio is connected and running\n- Your content is valid and readable\n- The model is loaded in LM Studio`;
@@ -333,9 +424,10 @@ const useCode2Doc = () => {
       clearTimers();
       setIsGenerating(false);
       
-      // Update final status (optional)
+      // Update final status (CRITICAL - must complete)
       try {
-        if (finalOutput && !finalOutput.includes('# Error')) {
+        if (finalOutput && !finalOutput.includes('# Error') && !finalOutput.includes('Error Generating')) {
+          console.log('✅ Reporting file upload completion status...');
           await updateStatus({
             status: 'completed',
             progress: 100,
@@ -344,15 +436,18 @@ const useCode2Doc = () => {
             pdfUrl: finalPdfPath,
             pdfInfo: finalPdfPath ? { filename: finalPdfPath.split('/').pop() } : undefined,
           });
+          console.log('✅ File upload completion status reported');
         } else {
+          console.log('❌ Reporting file upload failure status...');
           await updateStatus({
             status: 'failed',
             error: { message: toastMessage || 'Generation failed' },
           });
+          console.log('✅ File upload failure status reported');
         }
       } catch (err) {
-        // Don't block if status update fails
-        console.warn('Final status update skipped:', err.message);
+        // Log but don't block - status update is important
+        console.error('⚠️ Final status update failed:', err.message);
       }
     }
 
@@ -361,6 +456,22 @@ const useCode2Doc = () => {
     }`;
     setSummary(summaryText);
     setOutput(finalOutput);
+    
+    // Ensure status is updated after setting output (double-check)
+    if (finalOutput && !finalOutput.includes('# Error') && !finalOutput.includes('Error Generating')) {
+      try {
+        await updateStatus({
+          status: 'completed',
+          progress: 100,
+          currentStep: 'Completed',
+          markdown: finalOutput,
+          pdfUrl: finalPdfPath,
+          pdfInfo: finalPdfPath ? { filename: finalPdfPath.split('/').pop() } : undefined,
+        });
+      } catch (e) {
+        console.warn('Secondary status update failed:', e);
+      }
+    }
 
     if (finalPdfPath) {
       setPdfLink(finalPdfPath);
@@ -379,15 +490,27 @@ const useCode2Doc = () => {
     setRepoInfo(null);
 
     try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 60000); // 60 second timeout for ingestion
+      
       const res = await fetch(`${apiBase}/api/repo/ingest`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ repo_url: repoUrl }),
+        signal: controller.signal,
       });
 
-      const data = await res.json();
+      clearTimeout(timeoutId);
+
+      let data;
+      try {
+        data = await res.json();
+      } catch (parseErr) {
+        throw new Error(`Failed to parse ingestion response: ${parseErr.message}`);
+      }
+      
       if (!res.ok) {
-        throw new Error(data.error || 'Repository ingestion failed');
+        throw new Error(data.error || `Repository ingestion failed with status ${res.status}`);
       }
 
       setRepoInfo({
@@ -429,26 +552,27 @@ const useCode2Doc = () => {
     setPdfInfo('');
     setSummary('');
 
-    // Initialize generation status
-    try {
-      await updateStatus({
-        type: repoFiles ? 'zip_upload' : 'github_repo',
-        status: 'pending',
-        progress: 0,
-        currentStep: repoFiles ? 'Starting zip archive documentation generation...' : 'Starting repository documentation generation...',
-        repoUrl: repoUrl,
-        repoId: repoId,
-        repoInfo: repoFiles ? {
-          totalFiles: repoFiles.length,
-          includedFiles: repoFiles.length,
-        } : (repoInfo ? {
-          totalFiles: repoInfo.total_files,
-          includedFiles: repoInfo.total_files,
-        } : undefined),
-      });
-    } catch (err) {
-      console.error('Failed to initialize status:', err);
-    }
+    // Initialize generation status IMMEDIATELY (synchronous update, async backend sync)
+    // This ensures the progress window shows right away
+    console.log('🚀 Starting repository generation, initializing status tracking...');
+    updateStatus({
+      type: repoFiles ? 'zip_upload' : 'github_repo',
+      status: 'pending',
+      progress: 0,
+      currentStep: repoFiles ? 'Starting zip archive documentation generation...' : 'Starting repository documentation generation...',
+      repoUrl: repoUrl,
+      repoId: repoId,
+      repoInfo: repoFiles ? {
+        totalFiles: repoFiles.length,
+        includedFiles: repoFiles.length,
+      } : (repoInfo ? {
+        totalFiles: repoInfo.total_files,
+        includedFiles: repoInfo.total_files,
+      } : undefined),
+    }).catch(err => {
+      // Don't block generation if status tracking fails
+      console.warn('⚠️ Generation status tracking error (non-blocking):', err.message);
+    });
 
     // Declare variables outside try block so they're accessible in finally
     let finalOutput = '';
@@ -479,22 +603,78 @@ const useCode2Doc = () => {
         repo_id: repoId,
       };
       
+      console.log('📤 Sending repository generation request...', {
+        endpoint,
+        hasRepoFiles: !!repoFiles,
+        repoUrl,
+        repoId
+      });
+
+      // Add timeout for repo generation (30 minutes for large repos)
+      // Repository generation can take longer due to RAG pipeline processing
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 1800000); // 30 minutes
+
       const res = await fetch(endpoint, {
         method: 'POST',
         headers: headers,
         body: JSON.stringify(payload),
+        signal: controller.signal,
       });
+
+      clearTimeout(timeoutId);
 
       if (!res.ok) {
         const errorData = await res.json().catch(() => ({ error: `HTTP ${res.status}` }));
-        throw new Error(errorData.error || `Generation failed with status ${res.status}`);
+        const errorMsg = errorData.error || errorData.message || `Generation failed with status ${res.status}`;
+        console.error('❌ Repository generation failed:', errorMsg);
+        
+        // Report error status
+        try {
+          await updateStatus({
+            status: 'failed',
+            error: { message: errorMsg },
+          });
+        } catch (e) {
+          console.warn('Failed to report error status:', e);
+        }
+        
+        throw new Error(errorMsg);
       }
 
-      const data = await res.json();
+      let data;
+      try {
+        data = await res.json();
+      } catch (parseErr) {
+        const errorMsg = `Failed to parse repository generation response: ${parseErr.message}`;
+        console.error('❌ JSON parse error:', errorMsg);
+        throw new Error(errorMsg);
+      }
+      
+      console.log('✅ Repository generation response:', {
+        hasOutput: !!(data.output || data.docText),
+        outputLength: (data.output || data.docText || '').length,
+        hasPdf: !!(data.pdfPath || data.pdfUrl),
+        success: data.success
+      });
+
       finalOutput = data.output || data.docText || '';
 
       if (!finalOutput || finalOutput.trim().length < 50) {
-        throw new Error('Generated documentation is too short or empty. Please try again.');
+        const errorMsg = 'Generated documentation is too short or empty. Please try again.';
+        console.error('❌ Generated content too short:', finalOutput.length);
+        
+        // Report error status
+        try {
+          await updateStatus({
+            status: 'failed',
+            error: { message: errorMsg },
+          });
+        } catch (e) {
+          console.warn('Failed to report error status:', e);
+        }
+        
+        throw new Error(errorMsg);
       }
 
       finalPdfPath = data.pdfPath || data.pdfUrl || '';
@@ -515,20 +695,50 @@ const useCode2Doc = () => {
 
       // Usage is now incremented by the Python backend after successful generation
     } catch (err) {
-      console.error('Repository documentation generation error:', err);
+      console.error('❌ Repository documentation generation error:', {
+        name: err.name,
+        message: err.message,
+        stack: err.stack
+      });
       generationError = err;
+      
+      // Provide better error messages based on error type
+      let errorMsg = err?.message || 'Failed to generate documentation.';
+      if (err.name === 'AbortError' || err.message?.includes('timeout')) {
+        errorMsg = 'Generation timed out. The request took too long. This can happen with large repositories or slow LLM responses. Please try with a smaller repository, check LM Studio connection, or try again later.';
+      } else if (err.message?.includes('fetch') || err.message?.includes('network')) {
+        errorMsg = 'Network error. Please check your connection and ensure the backend server is running.';
+      } else if (err.message?.includes('401') || err.message?.includes('Unauthorized')) {
+        errorMsg = 'Authentication error. Please log in again.';
+      } else if (err.message?.includes('403') || err.message?.includes('Forbidden')) {
+        errorMsg = 'Access denied. You may have reached your usage limit.';
+      }
+      
       setOutput(
-        `# Error Generating Documentation\n\n**Error:** ${err?.message || 'Failed to generate documentation.'}\n\n` +
+        `# Error Generating Documentation\n\n**Error:** ${errorMsg}\n\n` +
         `Please ensure:\n- The repository is public\n- The backend server is running\n- LM Studio is connected\n- The repository contains valid code files`
       );
-      showToast(err?.message || 'Failed to generate documentation.', 'error');
+      showToast(errorMsg, 'error');
+      
+      // Report error status - ensure this happens even if there are errors
+      try {
+        await updateStatus({
+          status: 'failed',
+          error: { message: errorMsg },
+        });
+        console.log('✅ Error status reported to backend');
+      } catch (statusErr) {
+        console.warn('⚠️ Failed to report error status (non-critical):', statusErr.message);
+        // Don't throw - we want to continue even if status reporting fails
+      }
     } finally {
       clearTimers();
       setIsGenerating(false);
       
-      // Update status to completed or failed (optional)
+      // Update status to completed or failed (CRITICAL)
       try {
-        if (finalOutput && !finalOutput.includes('# Error')) {
+        if (finalOutput && !finalOutput.includes('# Error') && !finalOutput.includes('Error Generating')) {
+          console.log('✅ Reporting repository completion status...');
           await updateStatus({
             status: 'completed',
             progress: 100,
@@ -537,15 +747,18 @@ const useCode2Doc = () => {
             pdfUrl: finalPdfPath,
             pdfInfo: finalPdfPath ? { filename: finalPdfPath.split('/').pop() } : undefined,
           });
+          console.log('✅ Repository completion status reported');
         } else {
+          console.log('❌ Reporting repository failure status...');
           await updateStatus({
             status: 'failed',
             error: { message: generationError?.message || 'Generation failed' },
           });
+          console.log('✅ Repository failure status reported');
         }
       } catch (statusErr) {
-        // Don't block if status update fails
-        console.warn('Final status update skipped:', statusErr.message);
+        // Log but don't block
+        console.error('⚠️ Final status update failed:', statusErr.message);
       }
     }
   }, [apiBase, clearTimers, showToast, updateStatus, repoInfo]);

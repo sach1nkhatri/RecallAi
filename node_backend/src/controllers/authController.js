@@ -134,9 +134,11 @@ const getMe = async (req, res) => {
   try {
     const user = await User.findById(req.user._id);
 
-    // Reset daily usage if needed
-    user.resetDailyUsage();
-    await user.save();
+    // Reset daily usage if needed (only save if reset was actually needed)
+    const needsReset = user.resetDailyUsage();
+    if (needsReset) {
+      await user.save();
+    }
 
     res.status(200).json({
       success: true,

@@ -18,7 +18,25 @@ const protect = async (req, res, next) => {
       token = req.headers.authorization.split(' ')[1];
 
       // Verify token
-      const decoded = jwt.verify(token, process.env.JWT_SECRET);
+      let decoded;
+      try {
+        decoded = jwt.verify(token, process.env.JWT_SECRET);
+      } catch (jwtError) {
+        // Handle specific JWT errors
+        if (jwtError.name === 'TokenExpiredError') {
+          return res.status(401).json({
+            success: false,
+            error: 'Token expired',
+          });
+        }
+        if (jwtError.name === 'JsonWebTokenError') {
+          return res.status(401).json({
+            success: false,
+            error: 'Invalid token',
+          });
+        }
+        throw jwtError;
+      }
 
       // Get user from token
       req.user = await User.findById(decoded.userId).select('-password');
@@ -30,12 +48,24 @@ const protect = async (req, res, next) => {
         });
       }
 
-      // Reset daily usage if needed
-      req.user.resetDailyUsage();
-      await req.user.save();
+      // Check if user is active
+      if (!req.user.isActive) {
+        return res.status(401).json({
+          success: false,
+          error: 'Account deactivated',
+        });
+      }
+
+      // Reset daily usage if needed (but don't save on every request to reduce DB load)
+      // Only save if it actually needs reset
+      const needsReset = req.user.resetDailyUsage();
+      if (needsReset) {
+        await req.user.save();
+      }
 
       next();
     } catch (error) {
+      console.error('Auth middleware error:', error);
       return res.status(401).json({
         success: false,
         error: 'Not authorized, token failed',

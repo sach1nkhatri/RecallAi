@@ -13,22 +13,39 @@ const GenerationHistory = ({ onSelectDocument }) => {
   }, [fetchHistory]);
 
   const handleViewDocument = async (item) => {
-    if (item.status === 'completed' && item.markdown) {
-      // If markdown is already in the item, use it
-      if (onSelectDocument) {
-        onSelectDocument(item);
-      }
-    } else {
-      // Fetch full document if not loaded
-      try {
-        const data = await nodeApiRequest(`/api/generation-status/${item._id}`);
-        if (data.success && data.status) {
+    // Always fetch full document to ensure we have markdown content
+    // History list excludes markdown for performance, so we need to fetch it
+    try {
+      const data = await nodeApiRequest(`/api/generation-status/${item._id}`, {
+        timeout: 10000, // 10 second timeout
+      });
+      if (data.success && data.status) {
+        // Check if we have markdown content
+        if (data.status.markdown) {
+          console.log('✅ Fetched document with markdown, length:', data.status.markdown.length);
           if (onSelectDocument) {
             onSelectDocument(data.status);
           }
+        } else {
+          console.warn('⚠️ Document fetched but missing markdown:', {
+            status: data.status.status,
+            hasMarkdown: !!data.status.markdown,
+            id: data.status._id
+          });
+          // Still try to show it if status is completed (might have markdown in different field)
+          if (data.status.status === 'completed' && onSelectDocument) {
+            onSelectDocument(data.status);
+          }
         }
-      } catch (error) {
-        console.error('Failed to fetch document:', error);
+      } else {
+        console.error('❌ Failed to fetch document: Invalid response', data);
+      }
+    } catch (error) {
+      console.error('❌ Failed to fetch document:', error);
+      // If fetch fails but item has markdown, try using it
+      if (item.markdown && item.status === 'completed' && onSelectDocument) {
+        console.warn('⚠️ Using cached markdown from item');
+        onSelectDocument(item);
       }
     }
   };

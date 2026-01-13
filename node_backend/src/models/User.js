@@ -81,6 +81,7 @@ userSchema.methods.matchPassword = async function (enteredPassword) {
 };
 
 // Method to reset daily usage
+// Returns true if reset was needed, false otherwise
 userSchema.methods.resetDailyUsage = function () {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
@@ -90,7 +91,9 @@ userSchema.methods.resetDailyUsage = function () {
   if (lastReset.getTime() !== today.getTime()) {
     this.usage.chats.today = 0;
     this.usage.chats.lastReset = today;
+    return true; // Reset was needed
   }
+  return false; // No reset needed
 };
 
 // Update plan limits based on plan type

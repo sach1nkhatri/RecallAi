@@ -154,24 +154,42 @@ const CheckoutPage = () => {
             formData.append('amount', amount.toString());
             formData.append('paymentMethod', selectedMethod);
 
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
+
             const response = await fetch(`${getNodeApiBase()}/api/payments/submit`, {
                 method: 'POST',
                 headers: {
                     'Authorization': `Bearer ${token}`,
                 },
                 body: formData,
+                signal: controller.signal,
             });
 
-            const data = await response.json();
+            clearTimeout(timeoutId);
+
+            let data;
+            try {
+                data = await response.json();
+            } catch (parseErr) {
+                throw new Error(`Failed to parse response: ${parseErr.message}`);
+            }
 
             if (!response.ok || !data.success) {
-                throw new Error(data.error || 'Payment submission failed');
+                throw new Error(data.error || `Payment submission failed with status ${response.status}`);
             }
 
             setSubmitted(true);
             setPaymentStatus(data.payment);
         } catch (err) {
-            setError(err.message || 'Payment submission failed. Please try again.');
+            let errorMessage = 'Payment submission failed. Please try again.';
+            if (err.name === 'AbortError') {
+                errorMessage = 'Request timed out. Please check your connection and try again.';
+            } else if (err.message) {
+                errorMessage = err.message;
+            }
+            setError(errorMessage);
+            console.error('Payment submission error:', err);
         } finally {
             setLoading(false);
         }

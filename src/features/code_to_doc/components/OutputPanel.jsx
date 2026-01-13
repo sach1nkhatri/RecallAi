@@ -217,18 +217,31 @@ const extractDocumentMetadata = (text) => {
   return { title };
 };
 
-const OutputPanel = ({ output, pdfLink, pdfInfo, summary, generationStatus, onCancelGeneration }) => {
+const OutputPanel = ({ output, pdfLink, pdfInfo, summary, generationStatus, isGenerating: isGeneratingProp, onCancelGeneration }) => {
   const renderedHtml = useMemo(() => enhancedMarkdownToHtml(output), [output]);
   const metadata = useMemo(() => extractDocumentMetadata(output), [output]);
   const hasContent = output && output !== 'Generated documentation will appear here.';
   
-  // Check if we're currently generating
-  const isGenerating = generationStatus && ['pending', 'ingesting', 'scanning', 'indexing', 'generating', 'merging'].includes(generationStatus.status);
-  const showLogs = isGenerating || (generationStatus && generationStatus.status === 'failed');
+  // Check if we're currently generating (from status or prop)
+  const isGeneratingFromStatus = generationStatus && ['pending', 'ingesting', 'scanning', 'indexing', 'generating', 'merging'].includes(generationStatus.status);
+  const isGenerating = isGeneratingProp || isGeneratingFromStatus;
+  const isFailed = generationStatus && generationStatus.status === 'failed';
+  const isCompleted = generationStatus && generationStatus.status === 'completed';
+  
+  // Show content if we have content AND we're not actively generating
+  // This covers:
+  // - Completed generations (with or without status)
+  // - History documents (with or without status)
+  // - Legacy output from useCode2Doc hook
+  const shouldShowContent = hasContent && !isGenerating;
+  
+  // Show logs if: generating (from prop or status), failed, or if we have status but not completed yet
+  // This ensures the status panel stays visible throughout the entire process
+  const showLogs = isGenerating || isFailed || (generationStatus && !isCompleted);
 
   return (
     <div className="ctd-output-panel">
-      {/* Show generation logs when generating */}
+      {/* Show generation logs when generating, failed, or status exists */}
       {showLogs && (
         <GenerationLogs 
           status={generationStatus} 
@@ -236,8 +249,8 @@ const OutputPanel = ({ output, pdfLink, pdfInfo, summary, generationStatus, onCa
         />
       )}
 
-      {/* Show content when available and not generating */}
-      {!showLogs && hasContent && (
+      {/* Show content when available and generation is completed, or when viewing history without status */}
+      {shouldShowContent && (
         <>
           <div className="ctd-doc-header">
             <div className="ctd-doc-meta">

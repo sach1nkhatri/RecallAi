@@ -10,6 +10,7 @@ const {
   getHistory,
   getStatusById,
   cancelGeneration,
+  streamStatus,
 } = require('../controllers/generationStatusController');
 const { protect } = require('../middleware/auth');
 
@@ -18,6 +19,7 @@ router.use(protect);
 
 router.post('/', createOrUpdateStatus);
 router.get('/current', getCurrentStatus);
+router.get('/stream', streamStatus); // SSE endpoint for real-time updates
 router.get('/history', getHistory);
 router.get('/:id', getStatusById);
 router.delete('/:id', cancelGeneration);

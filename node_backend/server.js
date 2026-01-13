@@ -39,21 +39,35 @@ app.use(
   })
 );
 
-// Body parser middleware
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+// Body parser middleware - increase limit for large markdown content
+// Default is 100kb, increase to 10MB to handle large documentation
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
 // Serve static files (payment uploads)
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
-// Rate limiting
-const limiter = rateLimit({
+// Rate limiting - more lenient for auth endpoints
+const generalLimiter = rateLimit({
   windowMs: parseInt(process.env.RATE_LIMIT_WINDOW_MS) || 15 * 60 * 1000, // 15 minutes
   max: parseInt(process.env.RATE_LIMIT_MAX_REQUESTS) || 100, // limit each IP to 100 requests per windowMs
   message: 'Too many requests from this IP, please try again later.',
+  standardHeaders: true,
+  legacyHeaders: false,
 });
 
-app.use('/api/', limiter);
+// More lenient rate limit for auth endpoints (to handle page reloads)
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 200, // Allow more requests for auth (page reloads, etc.)
+  message: 'Too many authentication requests, please try again later.',
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+// Apply rate limiting
+app.use('/api/auth/', authLimiter); // More lenient for auth
+app.use('/api/', generalLimiter); // General rate limit for other endpoints
 
 // Health check
 app.get('/api/health', (req, res) => {

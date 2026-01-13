@@ -41,10 +41,14 @@ const getAuthToken = () => {
 
 /**
  * Make authenticated API request to Node backend
+ * @param {string} endpoint - API endpoint
+ * @param {object} options - Fetch options
+ * @param {number} options.timeout - Request timeout in milliseconds (default: 30000)
  */
 const nodeApiRequest = async (endpoint, options = {}) => {
   const token = getAuthToken();
   const apiBase = getNodeApiBase();
+  const timeout = options.timeout || 30000; // Default 30 seconds
 
   const headers = {
     'Content-Type': 'application/json',
@@ -55,37 +59,56 @@ const nodeApiRequest = async (endpoint, options = {}) => {
     headers.Authorization = `Bearer ${token}`;
   }
 
-  const response = await fetch(`${apiBase}${endpoint}`, {
-    ...options,
-    headers,
-  });
+  // Create AbortController for timeout handling
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), timeout);
 
-  if (!response.ok) {
-    // Handle 401 Unauthorized - token might be invalid
-    if (response.status === 401) {
-      // Clear invalid token
-      localStorage.removeItem('token');
-      const auth = localStorage.getItem('auth');
-      if (auth) {
-        try {
-          const authData = JSON.parse(auth);
-          if (authData.token) {
-            delete authData.token;
-            localStorage.setItem('auth', JSON.stringify(authData));
+  try {
+    const response = await fetch(`${apiBase}${endpoint}`, {
+      ...options,
+      headers,
+      signal: controller.signal,
+    });
+
+    clearTimeout(timeoutId);
+
+    if (!response.ok) {
+      // Handle 401 Unauthorized - token might be invalid
+      if (response.status === 401) {
+        // Clear invalid token
+        localStorage.removeItem('token');
+        const auth = localStorage.getItem('auth');
+        if (auth) {
+          try {
+            const authData = JSON.parse(auth);
+            if (authData.token) {
+              delete authData.token;
+              localStorage.setItem('auth', JSON.stringify(authData));
+            }
+          } catch (e) {
+            // Ignore parse errors
           }
-        } catch (e) {
-          // Ignore parse errors
         }
       }
+      
+      const errorData = await response.json().catch(() => ({
+        error: `HTTP ${response.status}`,
+      }));
+      throw new Error(errorData.error || errorData.message || `Request failed: ${response.status}`);
+    }
+
+    return response.json();
+  } catch (error) {
+    clearTimeout(timeoutId);
+    
+    // Handle timeout/abort errors
+    if (error.name === 'AbortError') {
+      throw new Error(`Request timeout after ${timeout}ms. Please try again.`);
     }
     
-    const errorData = await response.json().catch(() => ({
-      error: `HTTP ${response.status}`,
-    }));
-    throw new Error(errorData.error || errorData.message || `Request failed: ${response.status}`);
+    // Re-throw other errors
+    throw error;
   }
-
-  return response.json();
 };
 
 export { getNodeApiBase, getAuthToken, nodeApiRequest };

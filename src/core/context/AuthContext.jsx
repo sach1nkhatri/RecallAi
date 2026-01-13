@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useReducer, useEffect } from 'react';
+import React, { createContext, useContext, useReducer, useEffect, useRef } from 'react';
 import useLocalStorage from '../hooks/useLocalStorage';
 import { getNodeApiBase } from '../utils/nodeApi';
 
@@ -48,47 +48,71 @@ const initialState = {
 export const AuthProvider = ({ children }) => {
   const [storedAuth, setStoredAuth] = useLocalStorage('auth', initialState);
   const [state, dispatch] = useReducer(authReducer, storedAuth);
+  const authCheckInProgress = useRef(false);
+  const authCheckTimeout = useRef(null);
 
-  // Check if user is authenticated on mount
+  // Check if user is authenticated on mount (only once)
   useEffect(() => {
+    // Prevent multiple simultaneous auth checks
+    if (authCheckInProgress.current) {
+      return;
+    }
+
     const checkAuth = async () => {
-      // Check for token in localStorage (primary source)
-      const token = localStorage.getItem('token');
-      
-      // If no token, check if auth state has token
-      if (!token) {
-        const authData = localStorage.getItem('auth');
-        if (authData) {
-          try {
-            const parsed = JSON.parse(authData);
-            if (parsed.token) {
-              // Token exists in auth object, verify it
-              await verifyToken(parsed.token);
-              return;
-            }
-          } catch (e) {
-            console.error('Error parsing auth data:', e);
-          }
-        }
-        // No token found anywhere, ensure logged out state
-        if (storedAuth.isAuthenticated) {
-          dispatch({ type: 'LOGOUT' });
-        }
+      // Prevent concurrent checks
+      if (authCheckInProgress.current) {
         return;
       }
+      authCheckInProgress.current = true;
 
-      // Token exists, verify it
-      await verifyToken(token);
+      try {
+        // Check for token in localStorage (primary source)
+        const token = localStorage.getItem('token');
+        
+        // If no token, check if auth state has token
+        if (!token) {
+          const authData = localStorage.getItem('auth');
+          if (authData) {
+            try {
+              const parsed = JSON.parse(authData);
+              if (parsed.token) {
+                // Token exists in auth object, verify it
+                await verifyToken(parsed.token);
+                return;
+              }
+            } catch (e) {
+              console.error('Error parsing auth data:', e);
+            }
+          }
+          // No token found anywhere, ensure logged out state
+          if (storedAuth.isAuthenticated) {
+            dispatch({ type: 'LOGOUT' });
+          }
+          return;
+        }
+
+        // Token exists, verify it
+        await verifyToken(token);
+      } finally {
+        authCheckInProgress.current = false;
+      }
     };
 
     const verifyToken = async (tokenToVerify) => {
       try {
+        // Add timeout to prevent hanging requests
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 second timeout
+
         // Verify token is still valid
         const response = await fetch(`${getNodeApiBase()}/api/auth/me`, {
           headers: {
             Authorization: `Bearer ${tokenToVerify}`,
           },
+          signal: controller.signal,
         });
+
+        clearTimeout(timeoutId);
 
         if (response.ok) {
           const data = await response.json();
@@ -108,19 +132,28 @@ export const AuthProvider = ({ children }) => {
               localStorage.setItem('token', tokenToVerify);
             }
           } else {
-            // Invalid response, logout
-            clearAuth();
+            // Invalid response, but don't logout immediately - might be temporary
+            console.warn('Auth response invalid, keeping stored state');
           }
-        } else {
-          // Token invalid, logout
+        } else if (response.status === 401) {
+          // Only logout on explicit 401 (unauthorized)
+          console.warn('Token invalid (401), logging out');
           clearAuth();
+        } else {
+          // Other errors (500, network, etc.) - don't logout, might be temporary
+          console.warn(`Auth check failed with status ${response.status}, keeping stored state`);
         }
       } catch (error) {
-        console.error('Auth check failed:', error);
-        // On error, don't clear auth if we have a valid stored state
-        // Only clear if token verification explicitly failed
-        if (error.message && error.message.includes('401')) {
+        // Network errors or timeouts - don't logout, might be temporary server issue
+        if (error.name === 'AbortError') {
+          console.warn('Auth check timed out, keeping stored state');
+        } else if (error.message && error.message.includes('401')) {
+          // Only logout on explicit 401 errors
+          console.warn('Token invalid, logging out');
           clearAuth();
+        } else {
+          // Other errors - keep stored state, might be temporary
+          console.warn('Auth check failed (non-critical):', error.message);
         }
       }
     };
@@ -132,8 +165,20 @@ export const AuthProvider = ({ children }) => {
       localStorage.removeItem('user');
     };
 
-    checkAuth();
-  }, []);
+    // Debounce auth check to prevent multiple rapid calls
+    if (authCheckTimeout.current) {
+      clearTimeout(authCheckTimeout.current);
+    }
+    authCheckTimeout.current = setTimeout(() => {
+      checkAuth();
+    }, 100); // Small delay to batch multiple calls
+
+    return () => {
+      if (authCheckTimeout.current) {
+        clearTimeout(authCheckTimeout.current);
+      }
+    };
+  }, []); // Only run once on mount
 
   // Update localStorage when state changes
   useEffect(() => {

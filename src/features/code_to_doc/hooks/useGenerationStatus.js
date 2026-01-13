@@ -1,142 +1,198 @@
 /**
  * Hook for tracking code-to-doc generation status
- * Polls Node backend for status updates and manages background processing
+ * Uses Server-Sent Events (SSE) for real-time status updates
  */
 
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { nodeApiRequest } from '../../../core/utils/nodeApi';
-
-const POLL_INTERVAL = 3000; // Poll every 3 seconds
-const MAX_POLL_TIME = 45 * 60 * 1000; // Stop polling after 45 minutes
+import { nodeApiRequest, getNodeApiBase, getAuthToken } from '../../../core/utils/nodeApi';
 
 const useGenerationStatus = () => {
   const [status, setStatus] = useState(null);
-  const [isPolling, setIsPolling] = useState(false);
-  const pollIntervalRef = useRef(null);
-  const pollStartTimeRef = useRef(null);
+  const [isConnected, setIsConnected] = useState(false);
+  const streamControllerRef = useRef(null);
+  const reconnectTimeoutRef = useRef(null);
+  const reconnectAttemptsRef = useRef(0);
+  const maxReconnectAttempts = 5;
+  const reconnectDelay = 3000; // 3 seconds
 
-  // Define stopPolling first (no dependencies)
-  const stopPolling = useCallback(() => {
-    if (pollIntervalRef.current) {
-      clearInterval(pollIntervalRef.current);
-      pollIntervalRef.current = null;
+  // Stop SSE connection
+  const stopConnection = useCallback(() => {
+    if (streamControllerRef.current) {
+      console.log('🔌 Closing SSE connection');
+      streamControllerRef.current.abort();
+      streamControllerRef.current = null;
     }
-    setIsPolling(false);
-    pollStartTimeRef.current = null;
+    if (reconnectTimeoutRef.current) {
+      clearTimeout(reconnectTimeoutRef.current);
+      reconnectTimeoutRef.current = null;
+    }
+    setIsConnected(false);
+    reconnectAttemptsRef.current = 0;
   }, []);
 
-  // Then define fetchStatus (depends on stopPolling only)
-  const fetchStatus = useCallback(async () => {
-    try {
-      const data = await nodeApiRequest('/api/generation-status/current');
-      if (data.success) {
-        if (data.status) {
-          console.log('📥 Received status update:', data.status.status, `(${data.status.progress}%)`, data.status.currentStep);
-          setStatus(data.status);
-          // Stop polling if completed or failed
-          if (['completed', 'failed'].includes(data.status.status)) {
-            console.log('✅ Generation finished, stopping polling');
-            stopPolling();
+  // Start SSE connection for real-time updates
+  const startConnectionRef = useRef(null);
+  
+  const startConnection = useCallback(() => {
+    // Don't start if already connected
+    if (streamControllerRef.current && !streamControllerRef.current.signal.aborted) {
+      console.log('ℹ️ SSE connection already active');
+      return;
+    }
+
+    const token = getAuthToken();
+    if (!token) {
+      console.warn('⚠️ No auth token, cannot establish SSE connection');
+      // Fallback to localStorage
+      const savedStatus = localStorage.getItem('generationStatus');
+      if (savedStatus) {
+        try {
+          const parsed = JSON.parse(savedStatus);
+          if (parsed && ['pending', 'ingesting', 'scanning', 'indexing', 'generating', 'merging'].includes(parsed.status)) {
+            setStatus(parsed);
           }
-          return data.status;
-        } else {
-          // No active generation in backend, but check localStorage
-          const savedStatus = localStorage.getItem('generationStatus');
-          if (savedStatus) {
-            try {
-              const parsed = JSON.parse(savedStatus);
-              // If localStorage has active status, keep it (might be syncing)
-              if (parsed && ['pending', 'ingesting', 'scanning', 'indexing', 'generating', 'merging'].includes(parsed.status)) {
-                console.log('💾 Using localStorage status:', parsed.status);
-                setStatus(parsed);
-                return parsed;
+        } catch (e) {
+          // Ignore parse errors
+        }
+      }
+      return;
+    }
+
+    const apiBase = getNodeApiBase();
+    const url = `${apiBase}/api/generation-status/stream`;
+    
+    console.log('🔌 Opening SSE connection to:', url);
+    
+    const controller = new AbortController();
+    streamControllerRef.current = controller;
+    
+    // Helper function to schedule reconnection
+    const scheduleReconnect = () => {
+      const savedStatus = localStorage.getItem('generationStatus');
+      if (savedStatus) {
+        try {
+          const parsed = JSON.parse(savedStatus);
+          if (parsed && ['pending', 'ingesting', 'scanning', 'indexing', 'generating', 'merging'].includes(parsed.status)) {
+            if (reconnectAttemptsRef.current < maxReconnectAttempts) {
+              reconnectAttemptsRef.current += 1;
+              const delay = reconnectDelay * Math.pow(2, reconnectAttemptsRef.current - 1);
+              console.log(`🔄 Scheduling SSE reconnection attempt ${reconnectAttemptsRef.current}/${maxReconnectAttempts} in ${delay}ms`);
+              reconnectTimeoutRef.current = setTimeout(() => {
+                if (startConnectionRef.current) {
+                  startConnectionRef.current();
+                }
+              }, delay);
+            } else {
+              console.error('❌ Max reconnection attempts reached');
+            }
+          }
+        } catch (e) {
+          // Ignore parse errors
+        }
+      }
+    };
+    
+    fetch(url, {
+      headers: {
+        'Authorization': `Bearer ${token}`,
+      },
+      signal: controller.signal,
+    }).then(response => {
+      if (!response.ok) {
+        throw new Error(`SSE connection failed: ${response.status}`);
+      }
+      
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = '';
+      
+      setIsConnected(true);
+      reconnectAttemptsRef.current = 0;
+      
+      const readStream = () => {
+        reader.read().then(({ done, value }) => {
+          if (done) {
+            console.log('📡 SSE stream ended');
+            setIsConnected(false);
+            scheduleReconnect();
+            return;
+          }
+          
+          buffer += decoder.decode(value, { stream: true });
+          const lines = buffer.split('\n');
+          buffer = lines.pop() || ''; // Keep incomplete line in buffer
+          
+          for (const line of lines) {
+            if (line.trim() === '') continue;
+            
+            if (line.startsWith('data: ')) {
+              try {
+                const data = JSON.parse(line.slice(6));
+                if (data.success && data.status) {
+                  console.log('📥 Real-time status update:', data.status.status, `(${data.status.progress}%)`, data.status.currentStep);
+                  setStatus(data.status);
+                  
+                  // Stop connection if completed or failed
+                  if (['completed', 'failed'].includes(data.status.status)) {
+                    console.log('✅ Generation finished, closing SSE connection');
+                    controller.abort();
+                    setIsConnected(false);
+                    return;
+                  }
+                } else if (data.success && data.status === null) {
+                  // No active generation
+                  setStatus(null);
+                }
+              } catch (e) {
+                console.warn('Failed to parse SSE data:', e, line);
               }
-            } catch (e) {
-              // Ignore parse errors
+            } else if (line.startsWith(': heartbeat')) {
+              // Heartbeat received, connection is alive
+              // console.debug('💓 Heartbeat received');
             }
           }
-          // Only clear status if we're sure there's no active generation
-          // Don't clear if we're in the middle of polling (might be temporary backend issue)
-          if (!pollIntervalRef.current) {
-            setStatus(null);
-            stopPolling();
+          
+          readStream();
+        }).catch(error => {
+          if (error.name === 'AbortError') {
+            console.log('🔌 SSE connection aborted');
+          } else {
+            console.error('❌ SSE read error:', error);
+            setIsConnected(false);
+            scheduleReconnect();
           }
-          return null;
-        }
-      }
-    } catch (error) {
-      // If authentication error, try localStorage fallback
-      if (error.message && (error.message.includes('401') || error.message.includes('Not authorized') || error.message.includes('token'))) {
-        console.warn('⚠️ Authentication required for generation status tracking, using localStorage');
-        const savedStatus = localStorage.getItem('generationStatus');
-        if (savedStatus) {
-          try {
-            const parsed = JSON.parse(savedStatus);
-            if (parsed && ['pending', 'ingesting', 'scanning', 'indexing', 'generating', 'merging'].includes(parsed.status)) {
-              console.log('💾 Using localStorage status (auth fallback):', parsed.status);
-              setStatus(parsed);
-              return parsed;
-            }
-          } catch (e) {
-            // Ignore parse errors
-          }
-        }
-        // Don't clear status on auth error if we're actively polling
-        if (!pollIntervalRef.current) {
-          setStatus(null);
-          stopPolling();
-        }
-        return null;
-      }
-      console.error('❌ Failed to fetch generation status:', error.message || error);
-      // Don't stop polling on other errors, might be temporary
-    }
-    return null;
-  }, [stopPolling]);
-
-  // Then define startPolling (depends on fetchStatus and stopPolling)
-  const startPolling = useCallback(() => {
-    if (pollIntervalRef.current) {
-      console.log('ℹ️ Already polling, skipping start');
-      return; // Already polling
-    }
-
-    console.log('▶️ Starting status polling (interval:', POLL_INTERVAL, 'ms)');
-    setIsPolling(true);
-    pollStartTimeRef.current = Date.now();
-
-    // Fetch immediately
-    fetchStatus();
-
-    // Then poll at intervals
-    pollIntervalRef.current = setInterval(() => {
-      const elapsed = Date.now() - pollStartTimeRef.current;
-      if (elapsed > MAX_POLL_TIME) {
-        console.log('⏱️ Max poll time reached, stopping');
-        stopPolling();
+        });
+      };
+      
+      readStream();
+    }).catch(error => {
+      if (error.name === 'AbortError') {
+        console.log('🔌 SSE connection aborted');
         return;
       }
-      fetchStatus();
-    }, POLL_INTERVAL);
-  }, [fetchStatus, stopPolling]);
+      console.error('❌ Failed to establish SSE connection:', error);
+      setIsConnected(false);
+      scheduleReconnect();
+    });
+  }, []);
+  
+  // Store function in ref to avoid circular dependency
+  startConnectionRef.current = startConnection;
 
-  // Load status from backend and localStorage on mount (after functions are defined)
+  // Load status from backend and localStorage on mount, then start SSE
   useEffect(() => {
     const loadStatus = async () => {
       console.log('🔄 Loading generation status on mount...');
       
       // First try to load from backend (most up-to-date)
       try {
-        console.log('📡 Fetching status from backend...');
-        const backendStatus = await fetchStatus();
-        if (backendStatus && ['pending', 'ingesting', 'scanning', 'indexing', 'generating', 'merging'].includes(backendStatus.status)) {
-          console.log('✅ Backend has active status:', backendStatus.status);
-          // Backend has active status, start polling if not already
-          if (!pollIntervalRef.current) {
-            console.log('▶️ Starting polling for backend status');
-            startPolling();
-          }
-          return;
+        console.log('📡 Fetching initial status from backend...');
+        const data = await nodeApiRequest('/api/generation-status/current', {
+          timeout: 10000,
+        });
+        if (data.success && data.status) {
+          console.log('✅ Backend has active status:', data.status.status);
+          setStatus(data.status);
         } else {
           console.log('ℹ️ Backend has no active status');
         }
@@ -146,92 +202,89 @@ const useGenerationStatus = () => {
 
       // Fallback to localStorage if backend doesn't have status
       const savedStatus = localStorage.getItem('generationStatus');
-      console.log('💾 Checking localStorage:', savedStatus ? 'Found saved status' : 'No saved status');
-      
       if (savedStatus) {
         try {
           const parsed = JSON.parse(savedStatus);
-          console.log('📦 Parsed localStorage status:', parsed?.status);
-          
-          // Only restore if it's still active
           if (parsed && ['pending', 'ingesting', 'scanning', 'indexing', 'generating', 'merging'].includes(parsed.status)) {
             console.log('✅ Restoring active status from localStorage:', parsed.status);
             setStatus(parsed);
-            if (!pollIntervalRef.current) {
-              console.log('▶️ Starting polling for localStorage status');
-              startPolling();
-            }
-          } else {
-            console.log('ℹ️ Saved status is not active:', parsed?.status);
           }
         } catch (error) {
           console.error('❌ Failed to parse saved status:', error);
         }
       }
+      
+      // Start SSE connection for real-time updates
+      startConnection();
     };
 
     loadStatus();
-  }, [fetchStatus, startPolling]);
+  }, [startConnection]);
 
   // Save status to localStorage whenever it changes
   useEffect(() => {
     if (status) {
       try {
         localStorage.setItem('generationStatus', JSON.stringify(status));
-        console.log('💾 Saved status to localStorage:', status.status, status.progress + '%');
       } catch (error) {
         console.error('Failed to save status to localStorage:', error);
       }
     } else {
       localStorage.removeItem('generationStatus');
-      console.log('🗑️ Removed status from localStorage');
     }
   }, [status]);
 
   const updateStatus = useCallback(async (statusData) => {
+    // Set status IMMEDIATELY (synchronously) so UI updates right away
+    const immediateStatus = {
+      ...statusData,
+      _id: statusData._id || `temp-${Date.now()}`,
+      startedAt: statusData.startedAt || new Date().toISOString(),
+    };
+    console.log('⚡ Setting status immediately (synchronous):', immediateStatus.status, `(${immediateStatus.progress || 0}%)`);
+    setStatus(immediateStatus);
+    
+    // Start SSE connection if status is active and not already connected
+    if (!isConnected && ['pending', 'ingesting', 'scanning', 'indexing', 'generating', 'merging'].includes(immediateStatus.status)) {
+      console.log('▶️ Starting SSE connection for active status');
+      startConnection();
+    }
+    
+    // Save to localStorage immediately
     try {
-      console.log('📤 Updating generation status:', statusData.status || statusData.type, `(${statusData.progress || 0}%)`);
+      localStorage.setItem('generationStatus', JSON.stringify(immediateStatus));
+    } catch (e) {
+      console.warn('Failed to save to localStorage:', e);
+    }
+    
+    // Then try to sync with backend (async, but don't wait)
+    try {
+      console.log('📤 Syncing status with backend:', statusData.status || statusData.type, `(${statusData.progress || 0}%)`);
       const data = await nodeApiRequest('/api/generation-status', {
         method: 'POST',
         body: JSON.stringify(statusData),
+        timeout: 10000, // 10 second timeout for status updates
       });
       if (data.success && data.status) {
-        console.log('✅ Status updated successfully:', data.status.status, 'Progress:', data.status.progress, data.status.currentStep);
+        console.log('✅ Status synced with backend:', data.status.status, 'Progress:', data.status.progress, data.status.currentStep);
+        // Update with backend response (has real _id, etc.)
         setStatus(data.status);
-        // Start polling if not already - IMPORTANT: Always start polling when status is active
-        if (!pollIntervalRef.current && ['pending', 'ingesting', 'scanning', 'indexing', 'generating', 'merging'].includes(data.status.status)) {
-          console.log('▶️ Starting polling after status update');
-          startPolling();
-        }
         return data.status;
       } else {
         console.warn('⚠️ Status update response missing status data:', data);
+        return immediateStatus;
       }
     } catch (error) {
-      console.error('❌ Failed to update generation status:', error.message || error);
-      // If authentication error, save to localStorage as fallback
+      console.error('❌ Failed to sync generation status with backend:', error.message || error);
+      // If authentication error, we already have localStorage fallback
       if (error.message && (error.message.includes('401') || error.message.includes('Not authorized') || error.message.includes('token'))) {
-        console.warn('⚠️ Authentication required, saving to localStorage as fallback');
-        // Save to localStorage even if backend fails
-        const fallbackStatus = {
-          ...statusData,
-          _id: `local-${Date.now()}`,
-          startedAt: new Date().toISOString(),
-        };
-        setStatus(fallbackStatus);
-        localStorage.setItem('generationStatus', JSON.stringify(fallbackStatus));
-        // Start polling for localStorage status
-        if (!pollIntervalRef.current && ['pending', 'ingesting', 'scanning', 'indexing', 'generating', 'merging'].includes(statusData.status)) {
-          console.log('▶️ Starting polling for localStorage status');
-          startPolling();
-        }
-        return fallbackStatus;
+        console.warn('⚠️ Authentication required, using localStorage fallback (already set)');
+        return immediateStatus;
       }
-      // Don't throw error - allow generation to continue even if status tracking fails
-      console.warn('⚠️ Status tracking failed, but generation will continue');
-      return null;
+      // Status is already set, so return it even if backend sync fails
+      return immediateStatus;
     }
-  }, [startPolling]);
+  }, [isConnected, startConnection]);
 
   const cancelGeneration = useCallback(async (statusId) => {
     try {
@@ -240,32 +293,43 @@ const useGenerationStatus = () => {
       });
       if (data.success) {
         setStatus(null);
-        stopPolling();
+        stopConnection();
         return true;
       }
     } catch (error) {
       console.error('Failed to cancel generation:', error);
       throw error;
     }
-  }, [stopPolling]);
+  }, [stopConnection]);
 
   // Cleanup on unmount
   useEffect(() => {
     return () => {
-      stopPolling();
+      stopConnection();
     };
-  }, [stopPolling]);
+  }, [stopConnection]);
 
   return {
     status,
-    isPolling,
-    fetchStatus,
+    isPolling: isConnected, // Keep same API for backward compatibility
+    fetchStatus: async () => {
+      // Fallback fetch for compatibility
+      try {
+        const data = await nodeApiRequest('/api/generation-status/current', { timeout: 10000 });
+        if (data.success && data.status) {
+          setStatus(data.status);
+          return data.status;
+        }
+      } catch (error) {
+        console.error('Failed to fetch status:', error);
+      }
+      return null;
+    },
     updateStatus,
-    startPolling,
-    stopPolling,
+    startPolling: startConnection, // Keep same API for backward compatibility
+    stopPolling: stopConnection, // Keep same API for backward compatibility
     cancelGeneration,
   };
 };
 
 export default useGenerationStatus;
-
