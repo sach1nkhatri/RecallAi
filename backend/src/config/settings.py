@@ -12,7 +12,7 @@ class Settings:
     LM_STUDIO_BASE_URL: str = os.getenv("LM_STUDIO_BASE_URL", "http://192.168.1.83:1234/v1")
     LM_MODEL_NAME: str = os.getenv("LM_MODEL_NAME", "qwen3-14b")
     LM_STUDIO_EMBED_MODEL: str = os.getenv("LM_STUDIO_EMBED_MODEL", "qwen-2.5-1.5b-embedding-entropy-rl-1")
-    LM_STUDIO_TIMEOUT: int = int(os.getenv("LM_STUDIO_TIMEOUT", "120"))  # Increased to 120 seconds for large generations
+    LM_STUDIO_TIMEOUT: int = int(os.getenv("LM_STUDIO_TIMEOUT", "3600"))  # 60 minutes default for slow 14B models and large generations
     
     # File Upload Configuration
     UPLOAD_DIR: str = os.getenv("UPLOAD_DIR", "uploads")

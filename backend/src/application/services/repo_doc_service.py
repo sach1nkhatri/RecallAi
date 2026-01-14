@@ -103,12 +103,13 @@ class RepoDocService:
         
         try:
             # Chapter generation can also take time with 14B models
-            # Use extended timeout: 45 minutes (2700 seconds) to allow for slow 14B model generation
+            # Use extended timeout: 90 minutes (5400 seconds) to allow for slow 14B model generation
+            # Large chapters with complex code can take a very long time
             markdown = self.llm_client.generate_documentation(
                 content=prompt,
                 content_type="code",
                 title=chapter.title,
-                timeout=2700  # 45 minutes for chapter generation (14B models can be slow)
+                timeout=5400  # 90 minutes for chapter generation (14B models can be very slow)
             )
             
             # Ensure chapter has proper heading
@@ -213,6 +214,11 @@ REQUIREMENTS:
 - Be thorough but concise
 - Maintain professional technical writing style
 - Do not invent information not present in the context
+- CRITICAL: Output ONLY the final documentation chapter
+- Do NOT include your thinking process, reasoning, or analysis steps
+- Do NOT include text like "Okay, I need to...", "Let me...", "First, looking at...", etc.
+- Start directly with the chapter heading (## {chapter.title})
+- Output clean, publication-ready documentation
 
-OUTPUT: Complete markdown chapter content starting with ## {chapter.title}"""
+OUTPUT: Complete markdown chapter content starting with ## {chapter.title}{chapter.title}"""
 

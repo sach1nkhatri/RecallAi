@@ -12,6 +12,7 @@ const CodeToDocPage = () => {
   const {
     status: generationStatus,
     cancelGeneration,
+    clearStatus,
   } = useGenerationStatus();
 
   const {
@@ -170,8 +171,9 @@ const CodeToDocPage = () => {
               output={generationStatus.markdown} 
               pdfLink={generationStatus.pdfUrl} 
               pdfInfo={generationStatus.pdfInfo?.filename || ''} 
-              summary={`Completed at ${new Date(generationStatus.completedAt).toLocaleString()}`}
+              summary={`Completed at ${new Date(generationStatus.completedAt || generationStatus.updatedAt || Date.now()).toLocaleString()}`}
               generationStatus={generationStatus}
+              onClearStatus={clearStatus}
             />
           </div>
         )}
@@ -292,6 +294,7 @@ const CodeToDocPage = () => {
                     generationStatus={generationStatus}
                     isGenerating={isGenerating}
                     onCancelGeneration={generationStatus && generationStatus.status !== 'completed' && generationStatus.status !== 'failed' ? cancelGeneration : undefined}
+                    onClearStatus={clearStatus}
                   />
                 </section>
               </div>

@@ -312,16 +312,19 @@ const streamStatus = async (req, res) => {
   
   console.log(`✅ SSE connection opened for user ${userId} (total: ${activeConnections.get(userId).size})`);
   
-  // Send initial status
+  // Send initial status - ONLY active statuses (not completed/failed)
+  // This prevents showing old completed/failed statuses when SSE connects
   try {
     const currentStatus = await GenerationStatus.findOne({
       user: req.user._id,
-      status: { $in: ['pending', 'ingesting', 'scanning', 'indexing', 'generating', 'merging', 'completed', 'failed'] },
+      status: { $in: ['pending', 'ingesting', 'scanning', 'indexing', 'generating', 'merging'] },
     }).sort({ createdAt: -1 });
     
     if (currentStatus) {
+      console.log(`📡 SSE sending initial active status: ${currentStatus.status} (${currentStatus.progress}%)`);
       res.write(`data: ${JSON.stringify({ success: true, status: currentStatus })}\n\n`);
     } else {
+      console.log('📡 SSE: No active status found, sending null');
       res.write(`data: ${JSON.stringify({ success: true, status: null })}\n\n`);
     }
   } catch (error) {

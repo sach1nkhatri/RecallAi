@@ -1,6 +1,21 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import GenerationLogs from './GenerationLogs';
 import '../css/OutputPanel.css';
+
+// Helper to get backend API base URL
+const getBackendApiBase = () => {
+  if (typeof window === 'undefined') return 'http://localhost:5001';
+  const envApi = process.env.REACT_APP_API_BASE_URL;
+  if (envApi) return envApi;
+  // Auto-detect based on current origin
+  if (window.location.origin.startsWith('http')) {
+    // If running on same origin, use it; otherwise default to backend port
+    return window.location.port === '3000' || !window.location.port
+      ? 'http://localhost:5001'
+      : window.location.origin.replace(window.location.port, '5001');
+  }
+  return 'http://localhost:5001';
+};
 
 const enhancedMarkdownToHtml = (text) => {
   if (!text) return '<div class="ctd-empty-output"><p>(No content generated yet)</p></div>';
@@ -217,10 +232,11 @@ const extractDocumentMetadata = (text) => {
   return { title };
 };
 
-const OutputPanel = ({ output, pdfLink, pdfInfo, summary, generationStatus, isGenerating: isGeneratingProp, onCancelGeneration }) => {
+const OutputPanel = ({ output, pdfLink, pdfInfo, summary, generationStatus, isGenerating: isGeneratingProp, onCancelGeneration, onClearStatus }) => {
   const renderedHtml = useMemo(() => enhancedMarkdownToHtml(output), [output]);
   const metadata = useMemo(() => extractDocumentMetadata(output), [output]);
   const hasContent = output && output !== 'Generated documentation will appear here.';
+  const [isErrorDismissed, setIsErrorDismissed] = useState(false);
   
   // Check if we're currently generating (from status or prop)
   const isGeneratingFromStatus = generationStatus && ['pending', 'ingesting', 'scanning', 'indexing', 'generating', 'merging'].includes(generationStatus.status);
@@ -228,16 +244,31 @@ const OutputPanel = ({ output, pdfLink, pdfInfo, summary, generationStatus, isGe
   const isFailed = generationStatus && generationStatus.status === 'failed';
   const isCompleted = generationStatus && generationStatus.status === 'completed';
   
+  // Reset dismissed state when status changes from failed to something else
+  useEffect(() => {
+    if (!isFailed) {
+      setIsErrorDismissed(false);
+    }
+  }, [isFailed]);
+  
+  // Handle error dismissal - clear status and allow fresh start
+  const handleDismissError = () => {
+    setIsErrorDismissed(true);
+    if (onClearStatus) {
+      onClearStatus();
+    }
+  };
+  
   // Show content if we have content AND we're not actively generating
   // This covers:
   // - Completed generations (with or without status)
   // - History documents (with or without status)
   // - Legacy output from useCode2Doc hook
-  const shouldShowContent = hasContent && !isGenerating;
+  const shouldShowContent = hasContent && !isGenerating && !isFailed;
   
-  // Show logs if: generating (from prop or status), failed, or if we have status but not completed yet
+  // Show logs if: generating (from prop or status), failed (and not dismissed), or if we have status but not completed yet
   // This ensures the status panel stays visible throughout the entire process
-  const showLogs = isGenerating || isFailed || (generationStatus && !isCompleted);
+  const showLogs = isGenerating || (isFailed && !isErrorDismissed) || (generationStatus && !isCompleted && !isFailed && !isErrorDismissed);
 
   return (
     <div className="ctd-output-panel">
@@ -246,6 +277,7 @@ const OutputPanel = ({ output, pdfLink, pdfInfo, summary, generationStatus, isGe
         <GenerationLogs 
           status={generationStatus} 
           onCancel={onCancelGeneration}
+          onDismiss={isFailed ? handleDismissError : undefined}
         />
       )}
 
@@ -283,12 +315,25 @@ const OutputPanel = ({ output, pdfLink, pdfInfo, summary, generationStatus, isGe
           </div>
           
           <div className="ctd-actions">
-            {pdfLink && (
-              <a className="ctd-download-btn" href={pdfLink} download target="_blank" rel="noopener noreferrer">
-                <span className="ctd-download-icon">📄</span>
-                Download PDF
-              </a>
-            )}
+            {pdfLink && (() => {
+              const backendBase = getBackendApiBase();
+              const fullUrl = pdfLink.startsWith('http') ? pdfLink : `${backendBase}${pdfLink}`;
+              console.log('PDF Link:', pdfLink, 'Full URL:', fullUrl);
+              return (
+                <a 
+                  className="ctd-download-btn" 
+                  href={fullUrl} 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  onClick={() => {
+                    console.log('Opening PDF:', fullUrl);
+                  }}
+                >
+                  <span className="ctd-download-icon">📄</span>
+                  View PDF
+                </a>
+              );
+            })()}
             {summary && (
               <div className="ctd-summary-info">
                 <strong>Summary:</strong> {summary}

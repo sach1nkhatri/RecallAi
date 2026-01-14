@@ -1,6 +1,7 @@
 """LM Studio client implementation"""
 
 import logging
+import re
 from typing import Optional
 import requests
 
@@ -30,6 +31,11 @@ class LMStudioClient(LLMClient):
             "- No conversational tone - be professional and direct\n"
             "- No emojis or decorative elements\n"
             "- No meta commentary about the documentation process\n"
+            "- CRITICAL: Output ONLY the final documentation content\n"
+            "- Do NOT include your thinking process, reasoning steps, or internal analysis\n"
+            "- Do NOT include phrases like 'Okay, I need to...', 'Let me...', 'First, looking at...', 'Wait, the user...', etc.\n"
+            "- Start directly with the documentation title/heading - no preamble\n"
+            "- Output should be clean, publication-ready documentation\n"
         )
         
         if content_type == "code":
@@ -117,7 +123,9 @@ class LMStudioClient(LLMClient):
                 f"{title_line}"
                 f"{file_info}"
                 f"CONTENT_TYPE: Code\n\n"
-                "Analyze the following code and generate comprehensive technical documentation.\n\n"
+                "Analyze the following code and generate comprehensive technical documentation.\n"
+                "IMPORTANT: Output ONLY the final documentation. Do NOT include your thinking process, reasoning steps, or any meta-commentary.\n"
+                "Start directly with the documentation title/heading. Do NOT include text like 'Okay, I need to...', 'Let me...', 'First, looking at...', etc.\n\n"
                 "REQUIRED DOCUMENTATION STRUCTURE:\n\n"
                 "1. **Title** (use provided title or generate appropriate one)\n"
                 "2. **Table of Contents** (auto-generated, numbered)\n"
@@ -167,7 +175,9 @@ class LMStudioClient(LLMClient):
                 f"{file_info}"
                 f"{structure_section}"
                 f"CONTENT_TYPE: Data/JSON Documentation\n\n"
-                "Analyze the following data structure and generate comprehensive documentation.\n\n"
+                "Analyze the following data structure and generate comprehensive documentation.\n"
+                "CRITICAL: Output ONLY the final documentation. Do NOT include your thinking process, reasoning steps, or any meta-commentary.\n"
+                "Start directly with the documentation title/heading. Do NOT include phrases like 'Okay, I need to...', 'Let me...', 'First, looking at...', 'Wait, the user...', etc.\n\n"
                 "REQUIRED DOCUMENTATION STRUCTURE:\n\n"
                 "1. **Title** (use provided title or generate descriptive title like 'User Data Schema Documentation')\n"
                 "2. **Table of Contents** (auto-generated)\n"
@@ -217,7 +227,9 @@ class LMStudioClient(LLMClient):
             f"{file_info}"
             f"{structure_section}"
             f"CONTENT_TYPE: Text\n\n"
-            "Transform the following text content into well-structured documentation.\n\n"
+            "Transform the following text content into well-structured documentation.\n"
+            "CRITICAL: Output ONLY the final documentation. Do NOT include your thinking process, reasoning, or any meta-commentary.\n"
+            "Start directly with the documentation title/heading. Do NOT include phrases like 'Okay, I need to...', 'Let me...', 'First, looking at...', etc.\n\n"
             "REQUIRED DOCUMENTATION STRUCTURE:\n\n"
             "1. **Title** (use provided title or generate from content)\n"
             "2. **Table of Contents** (auto-generated)\n"
@@ -411,7 +423,8 @@ class LMStudioClient(LLMClient):
                 logger.warning("Empty response from LM Studio")
                 raise RuntimeError("Received empty response from LM Studio")
             
-            result = content_result.strip()
+            # Remove thinking/reasoning patterns from the output
+            result = self._clean_thinking_content(content_result.strip())
             
             # Ensure minimum quality - if response is too short, it might be an error
             if len(result) < 100:
@@ -424,4 +437,262 @@ class LMStudioClient(LLMClient):
         except (KeyError, IndexError, TypeError) as exc:
             logger.exception(f"Unexpected LM Studio response: {response.text}")
             raise RuntimeError("Invalid response structure from LM Studio") from exc
+    
+    @staticmethod
+    def _clean_thinking_content(content: str) -> str:
+        """Remove thinking/reasoning patterns from model output - very aggressive cleaning"""
+        if not content:
+            return content
+        
+        # First, remove explicit thinking tags and their content
+        content = re.sub(r'<think>.*?</think>', '', content, flags=re.DOTALL | re.IGNORECASE)
+        content = re.sub(r'<think>.*?</think>', '', content, flags=re.DOTALL | re.IGNORECASE)
+        
+        # Find the first real content (heading, code block, table, etc.)
+        lines = content.split('\n')
+        first_content_idx = -1
+        
+        for i, line in enumerate(lines):
+            stripped = line.strip()
+            if not stripped:
+                continue
+            # Real content markers
+            if (stripped.startswith('#') or 
+                stripped.startswith('```') or 
+                stripped.startswith('|') or
+                (stripped.startswith('##') and len(stripped) > 3)):
+                first_content_idx = i
+                break
+        
+        # If we found content, check if there's thinking before it
+        if first_content_idx > 0:
+            pre_content = '\n'.join(lines[:first_content_idx]).lower()
+            thinking_indicators = [
+                'okay', 'i need to', 'let me', 'first,', 'looking at', 'wait,',
+                'i see', 'the user', 'based on', 'i should', 'i will', 'i can',
+                'i think', 'i understand', 'now i', 'so i', 'well,', 'actually',
+            ]
+            # If pre-content contains thinking indicators, remove it all
+            if any(indicator in pre_content for indicator in thinking_indicators):
+                content = '\n'.join(lines[first_content_idx:])
+                lines = content.split('\n')
+        
+        cleaned_lines = []
+        skip_until_content = True
+        found_first_heading = False
+        
+        # Comprehensive patterns that indicate thinking/reasoning
+        thinking_patterns = [
+            r'^okay,?\s+i\s+need\s+to',
+            r'^let\s+me\s+',
+            r'^first,?\s+',
+            r'^looking\s+at\s+',
+            r'^wait,?\s+',
+            r'^i\s+see\s+that',
+            r'^the\s+user\s+',
+            r'^based\s+on\s+the\s+',
+            r'^i\s+should\s+',
+            r'^i\s+will\s+',
+            r'^i\s+can\s+',
+            r'^i\s+think\s+',
+            r'^i\s+believe\s+',
+            r'^i\s+understand\s+',
+            r'^let\s+me\s+start\s+by',
+            r'^let\s+me\s+analyze',
+            r'^let\s+me\s+check',
+            r'^let\s+me\s+review',
+            r'^now\s+i\s+',
+            r'^so\s+i\s+',
+            r'^well,?\s+',
+            r'^hmm,?\s+',
+            r'^actually,?\s+',
+            r'^basically,?\s+',
+            r'^essentially,?\s+',
+        ]
+        
+        # Phrases that indicate thinking (anywhere in line)
+        thinking_phrases_in_line = [
+            'okay, i need to',
+            'let me',
+            'first, looking at',
+            'wait, the user',
+            'based on the context',
+            'i should',
+            'i will',
+            'i can',
+            'i think',
+            'i believe',
+            'i understand',
+            'let me start',
+            'let me analyze',
+            'now i need',
+            'so i',
+        ]
+        
+        for i, line in enumerate(lines):
+            line_stripped = line.strip()
+            line_lower = line_stripped.lower()
+            
+            # Skip empty lines if we haven't found content yet
+            if not line_stripped:
+                if not skip_until_content:
+                    cleaned_lines.append(line)
+                continue
+            
+            # Check for explicit thinking markers
+            if '<think>' in line_lower or '</think>' in line_lower or '<think>' in line_lower:
+                continue
+            
+            # Check if line starts with thinking pattern
+            is_thinking_start = any(re.match(pattern, line_lower) for pattern in thinking_patterns)
+            
+            # Check if line contains thinking phrases (for longer thinking blocks)
+            contains_thinking = any(phrase in line_lower[:100] for phrase in thinking_phrases_in_line)
+            
+            # Check if this looks like a thinking block (long paragraph starting with thinking)
+            is_thinking_block = (
+                skip_until_content and 
+                (is_thinking_start or contains_thinking) and
+                not line_stripped.startswith('#') and
+                not line_stripped.startswith('```') and
+                not line_stripped.startswith('|') and
+                len(line_stripped) > 30  # Long thinking paragraphs
+            )
+            
+            # If we're still skipping and this is thinking, skip it
+            if skip_until_content and (is_thinking_start or is_thinking_block):
+                # Check next several lines for multi-line thinking blocks
+                lookahead_count = 0
+                max_lookahead = 10  # Check up to 10 lines ahead
+                for j in range(i + 1, min(i + max_lookahead + 1, len(lines))):
+                    next_line = lines[j].strip()
+                    if not next_line:
+                        continue
+                    next_lower = next_line.lower()
+                    # If next line is real content, stop looking
+                    if (next_line.startswith('#') or next_line.startswith('```') or 
+                        next_line.startswith('|')):
+                        break
+                    # If next line also looks like thinking, count it
+                    next_is_thinking = any(
+                        re.match(pattern, next_lower) or 
+                        any(phrase in next_lower[:50] for phrase in thinking_phrases_in_line)
+                        for pattern in thinking_patterns
+                    )
+                    if next_is_thinking:
+                        lookahead_count += 1
+                    else:
+                        break
+                
+                # If we have a thinking block (this line + lookahead), skip all of them
+                if lookahead_count > 0 or is_thinking_block:
+                    # Skip this line and the thinking block
+                    continue
+            
+            # Detect actual documentation content
+            is_real_content = (
+                line_stripped.startswith('#') or  # Heading
+                line_stripped.startswith('```') or  # Code block
+                line_stripped.startswith('|') or  # Table
+                (line_stripped.startswith('-') and len(line_stripped) > 3 and not line_lower.startswith('- let me')) or  # List item
+                (line_stripped[0].isdigit() and '.' in line_stripped[:5] and len(line_stripped) > 5) or  # Numbered list
+                (line_stripped.startswith('**') and line_stripped.endswith('**')) or  # Bold heading
+                found_first_heading  # After first heading, everything is content
+            )
+            
+            # If we find real content, stop skipping
+            if is_real_content:
+                skip_until_content = False
+                if line_stripped.startswith('#'):
+                    found_first_heading = True
+            
+            # Add the line if we're not skipping
+            if not skip_until_content:
+                cleaned_lines.append(line)
+            elif not (is_thinking_start or contains_thinking):
+                # Even if skipping, add lines that don't look like thinking
+                cleaned_lines.append(line)
+        
+        result = '\n'.join(cleaned_lines).strip()
+        
+        # Additional cleanup: Remove thinking patterns that might have slipped through
+        # Remove paragraphs that start with thinking phrases
+        paragraphs = result.split('\n\n')
+        cleaned_paragraphs = []
+        for para in paragraphs:
+            para_stripped = para.strip()
+            if not para_stripped:
+                cleaned_paragraphs.append(para)
+                continue
+            
+            para_lower = para_stripped.lower()
+            # Skip paragraphs that are clearly thinking
+            is_thinking_para = any(
+                para_lower.startswith(phrase) or phrase in para_lower[:50]
+                for phrase in thinking_phrases_in_line
+            ) and not para_stripped.startswith('#') and not para_stripped.startswith('```')
+            
+            if not is_thinking_para:
+                cleaned_paragraphs.append(para)
+        
+        result = '\n\n'.join(cleaned_paragraphs).strip()
+        
+        # Final pass: Find first heading and remove everything before it if thinking detected
+        result_lines = result.split('\n')
+        first_heading_idx = -1
+        
+        # Find first real heading
+        for i, line in enumerate(result_lines):
+            stripped = line.strip()
+            if stripped.startswith('#') and len(stripped) > 2:
+                first_heading_idx = i
+                break
+        
+        # If we found a heading and there's content before it, check for thinking
+        if first_heading_idx > 0:
+            pre_heading = '\n'.join(result_lines[:first_heading_idx]).lower()
+            # Check if pre-heading content contains thinking
+            has_thinking_before = any(
+                phrase in pre_heading for phrase in thinking_phrases_in_line
+            ) or any(
+                re.search(pattern, pre_heading) for pattern in thinking_patterns
+            )
+            
+            # If thinking detected before first heading, remove it all
+            if has_thinking_before:
+                result_lines = result_lines[first_heading_idx:]
+        
+        # Final cleanup: Remove any remaining thinking lines at the start
+        final_lines = []
+        found_content_start = False
+        
+        for line in result_lines:
+            line_stripped = line.strip()
+            if not line_stripped:
+                if found_content_start:
+                    final_lines.append(line)
+                continue
+            
+            line_lower = line_stripped.lower()
+            is_thinking = any(
+                line_lower.startswith(phrase) or phrase in line_lower[:50]
+                for phrase in thinking_phrases_in_line
+            ) or any(
+                re.match(pattern, line_lower) for pattern in thinking_patterns
+            )
+            
+            # If it's a heading or code block, it's definitely content
+            if line_stripped.startswith('#') or line_stripped.startswith('```'):
+                found_content_start = True
+                final_lines.append(line)
+            elif found_content_start:
+                # After finding content, include everything
+                final_lines.append(line)
+            elif not is_thinking:
+                # Include non-thinking lines even before content
+                final_lines.append(line)
+                if len(line_stripped) > 30:  # Substantial content
+                    found_content_start = True
+        
+        return '\n'.join(final_lines).strip()
 

@@ -222,6 +222,7 @@
   background: rgba(239, 68, 68, 0.1);
   border-left: 4px solid #ef4444;
   color: #fca5a5;
+  position: relative;
 }
 
 .generation-logs-error svg {
@@ -237,10 +238,49 @@
   font-size: 14px;
 }
 
+.generation-logs-error-content {
+  flex: 1;
+}
+
 .generation-logs-error p {
   margin: 0;
   color: #fca5a5;
   font-size: 13px;
+}
+
+.generation-logs-error-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.generation-logs-error-dismiss {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  background: rgba(239, 68, 68, 0.2);
+  border: 1px solid rgba(239, 68, 68, 0.4);
+  border-radius: 6px;
+  color: #fca5a5;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.generation-logs-error-dismiss:hover {
+  background: rgba(239, 68, 68, 0.3);
+  border-color: rgba(239, 68, 68, 0.6);
+  color: #f87171;
+}
+
+.generation-logs-error-code {
+  margin-top: 8px;
+  font-size: 11px;
+  color: #94a3b8;
+  font-family: 'JetBrains Mono', 'SF Mono', 'Monaco', 'Consolas', monospace;
 }
 
 .generation-logs-footer {

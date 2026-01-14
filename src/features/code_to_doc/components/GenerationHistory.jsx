@@ -3,6 +3,21 @@ import useGenerationHistory from '../../dashboard/hooks/useGenerationHistory';
 import { nodeApiRequest } from '../../../core/utils/nodeApi';
 import '../css/GenerationHistory.css';
 
+// Helper to get backend API base URL
+const getBackendApiBase = () => {
+  if (typeof window === 'undefined') return 'http://localhost:5001';
+  const envApi = process.env.REACT_APP_API_BASE_URL;
+  if (envApi) return envApi;
+  // Auto-detect based on current origin
+  if (window.location.origin.startsWith('http')) {
+    // If running on same origin, use it; otherwise default to backend port
+    return window.location.port === '3000' || !window.location.port
+      ? 'http://localhost:5001'
+      : window.location.origin.replace(window.location.port, '5001');
+  }
+  return 'http://localhost:5001';
+};
+
 const GenerationHistory = ({ onSelectDocument }) => {
   const { history, isLoading, formatDate, getStatusColor, getStatusLabel, fetchHistory } = useGenerationHistory();
   const [expandedId, setExpandedId] = useState(null);
@@ -22,12 +37,12 @@ const GenerationHistory = ({ onSelectDocument }) => {
       if (data.success && data.status) {
         // Check if we have markdown content
         if (data.status.markdown) {
-          console.log('✅ Fetched document with markdown, length:', data.status.markdown.length);
+          console.log('Fetched document with markdown, length:', data.status.markdown.length);
           if (onSelectDocument) {
             onSelectDocument(data.status);
           }
         } else {
-          console.warn('⚠️ Document fetched but missing markdown:', {
+          console.warn('Document fetched but missing markdown:', {
             status: data.status.status,
             hasMarkdown: !!data.status.markdown,
             id: data.status._id
@@ -38,13 +53,13 @@ const GenerationHistory = ({ onSelectDocument }) => {
           }
         }
       } else {
-        console.error('❌ Failed to fetch document: Invalid response', data);
+        console.error('Failed to fetch document: Invalid response', data);
       }
     } catch (error) {
-      console.error('❌ Failed to fetch document:', error);
+      console.error('Failed to fetch document:', error);
       // If fetch fails but item has markdown, try using it
       if (item.markdown && item.status === 'completed' && onSelectDocument) {
-        console.warn('⚠️ Using cached markdown from item');
+        console.warn('Using cached markdown from item');
         onSelectDocument(item);
       }
     }
@@ -159,23 +174,29 @@ const GenerationHistory = ({ onSelectDocument }) => {
                     </svg>
                     View Documentation
                   </button>
-                  {item.pdfUrl && (
-                    <a
-                      href={item.pdfUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="generation-history-pdf-btn"
-                      onClick={(e) => e.stopPropagation()}
-                    >
-                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
-                        <polyline points="14 2 14 8 20 8"></polyline>
-                        <line x1="16" y1="13" x2="8" y2="13"></line>
-                        <line x1="16" y1="17" x2="8" y2="17"></line>
-                      </svg>
-                      PDF
-                    </a>
-                  )}
+                  {item.pdfUrl && (() => {
+                    const backendBase = getBackendApiBase();
+                    const fullUrl = item.pdfUrl.startsWith('http') ? item.pdfUrl : `${backendBase}${item.pdfUrl}`;
+                    return (
+                      <a
+                        href={fullUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="generation-history-pdf-btn"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                        }}
+                      >
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                          <polyline points="14 2 14 8 20 8"></polyline>
+                          <line x1="16" y1="13" x2="8" y2="13"></line>
+                          <line x1="16" y1="17" x2="8" y2="17"></line>
+                        </svg>
+                        View PDF
+                      </a>
+                    );
+                  })()}
                 </div>
               )}
             </div>

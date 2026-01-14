@@ -132,18 +132,22 @@ const GenerationStatusBadge = ({ status, onCancel }) => {
         </div>
       )}
 
-      {status.status === 'completed' && status.pdfUrl && (
-        <div className="generation-status-completed">
-          <a
-            href={status.pdfUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="generation-status-download"
-          >
-            Download PDF
-          </a>
-        </div>
-      )}
+      {status.status === 'completed' && status.pdfUrl && (() => {
+        const backendBase = getBackendApiBase();
+        const fullUrl = status.pdfUrl.startsWith('http') ? status.pdfUrl : `${backendBase}${status.pdfUrl}`;
+        return (
+          <div className="generation-status-completed">
+            <a
+              href={fullUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="generation-status-download"
+            >
+              View PDF
+            </a>
+          </div>
+        );
+      })()}
 
       {status.status === 'failed' && status.error && (
         <div className="generation-status-error">

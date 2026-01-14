@@ -8,6 +8,7 @@ from typing import Callable, Dict, List, Optional, Tuple
 import requests
 import numpy as np
 
+from src.config.settings import settings
 from .chunker import chunk_text
 from .embedder import LMStudioEmbedder
 from .extractor import extract_text
@@ -193,7 +194,8 @@ class RAGEngine:
         base = self.base_url.rstrip('/').rstrip('/v1')
         url = f"{base}/v1/chat/completions"
         try:
-            resp = requests.post(url, json=payload, stream=True, timeout=120)
+            # Use settings timeout (default 10 minutes) for slow 14B models
+            resp = requests.post(url, json=payload, stream=True, timeout=settings.LM_STUDIO_TIMEOUT)
             resp.raise_for_status()
             for line in resp.iter_lines():
                 if not line:
@@ -233,7 +235,8 @@ class RAGEngine:
         payload_no_stream["stream"] = False
         
         try:
-            resp = requests.post(url, json=payload_no_stream, timeout=120)
+            # Use settings timeout (default 10 minutes) for slow 14B models
+            resp = requests.post(url, json=payload_no_stream, timeout=settings.LM_STUDIO_TIMEOUT)
             resp.raise_for_status()
             data = resp.json()
             return data.get("choices", [{}])[0].get("message", {}).get("content", "")

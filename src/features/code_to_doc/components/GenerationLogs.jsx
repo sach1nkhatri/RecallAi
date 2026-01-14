@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { translateMessage, getStatusDescription } from '../utils/messageTranslator';
 import '../css/GenerationLogs.css';
 
-const GenerationLogs = ({ status, onCancel }) => {
+const GenerationLogs = ({ status, onCancel, onDismiss }) => {
   const logsEndRef = useRef(null);
   const [logs, setLogs] = useState([]);
   const logsRef = useRef([]);
@@ -14,6 +14,13 @@ const GenerationLogs = ({ status, onCancel }) => {
 
   // Accumulate logs from status updates
   useEffect(() => {
+    // If status is null/cleared, clear logs immediately
+    if (!status) {
+      logsRef.current = [];
+      setLogs([]);
+      return;
+    }
+    
     if (status && status.currentStep) {
       const timestamp = new Date().toLocaleTimeString('en-US', { 
         hour12: false,
@@ -45,11 +52,34 @@ const GenerationLogs = ({ status, onCancel }) => {
         setLogs([...logsRef.current]);
       }
     }
-  }, [status?.currentStep, status?.status, status?.progress]);
+  }, [status?.currentStep, status?.status, status?.progress, status]);
 
+  // Track previous status to detect when a new generation starts
+  const prevStatusRef = useRef(null);
+  
   // Clear logs when generation starts and add initial log
   useEffect(() => {
-    if (status && status.status === 'pending' && logsRef.current.length === 0) {
+    // If status is null/cleared, clear logs immediately
+    if (!status) {
+      logsRef.current = [];
+      setLogs([]);
+      prevStatusRef.current = null;
+      return;
+    }
+    
+    // Detect new generation: status changed to pending from a different state (failed/completed/null)
+    const isNewGeneration = status.status === 'pending' && 
+      prevStatusRef.current && 
+      prevStatusRef.current.status !== 'pending';
+    
+    // If it's a new generation, clear old logs
+    if (isNewGeneration) {
+      console.log('New generation detected, clearing old logs');
+      logsRef.current = [];
+    }
+    
+    // Add initial log when status is pending and logs are empty
+    if (status.status === 'pending' && logsRef.current.length === 0) {
       const timestamp = new Date().toLocaleTimeString('en-US', { 
         hour12: false,
         hour: '2-digit',
@@ -64,7 +94,10 @@ const GenerationLogs = ({ status, onCancel }) => {
       }];
       setLogs([...logsRef.current]);
     }
-  }, [status?.status]);
+    
+    // Update previous status reference
+    prevStatusRef.current = status;
+  }, [status?.status, status]);
 
   // Show loading state if status is not yet available but generation might have started
   if (!status) {
@@ -251,9 +284,28 @@ const GenerationLogs = ({ status, onCancel }) => {
               <line x1="12" y1="8" x2="12" y2="12"/>
               <line x1="12" y1="16" x2="12.01" y2="16"/>
             </svg>
-            <div>
+            <div className="generation-logs-error-content">
               <strong>Generation Failed</strong>
               <p>{status.error?.message || 'An error occurred during generation'}</p>
+              {status.error?.code && (
+                <p className="generation-logs-error-code">Error Code: {status.error.code}</p>
+              )}
+            </div>
+            <div className="generation-logs-error-actions">
+              {onDismiss && (
+                <button
+                  className="generation-logs-error-dismiss"
+                  onClick={onDismiss}
+                  title="Dismiss and start fresh"
+                  aria-label="Dismiss error and start fresh"
+                >
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <line x1="18" y1="6" x2="6" y2="18"></line>
+                    <line x1="6" y1="6" x2="18" y2="18"></line>
+                  </svg>
+                  Start Fresh
+                </button>
+              )}
             </div>
           </div>
         )}

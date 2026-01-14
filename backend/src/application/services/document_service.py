@@ -75,6 +75,8 @@ class DocumentService:
             logger.info(f"Truncated to {len(processed_content)} characters")
         
         # Generate markdown documentation
+        # Use extended timeout for large files (60 minutes default, can be overridden)
+        # Large files with slow 14B models can take a very long time
         start_time = time.time()
         try:
             markdown_content = self.llm_client.generate_documentation(
@@ -82,6 +84,7 @@ class DocumentService:
                 content_type=generation.content_type,
                 title=generation.title,
                 file_count=generation.file_count,
+                timeout=3600  # 60 minutes for regular file generation (uses default if not specified, but explicit is clearer)
             )
             
             # Validate the generated content

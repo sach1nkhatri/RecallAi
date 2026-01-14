@@ -57,12 +57,13 @@ class RepoScanService:
         
         try:
             # Repository scanning can take longer with large repos and 14B models
-            # Use extended timeout: 45 minutes (2700 seconds) to allow for slow 14B model generation
+            # Use extended timeout: 90 minutes (5400 seconds) to allow for slow 14B model generation
+            # Large repositories can take a very long time to scan and generate outlines
             outline_text = self.llm_client.generate_documentation(
                 content=outline_prompt,
                 content_type="text",
                 title=f"{repo_name} Documentation Outline",
-                timeout=2700  # 45 minutes for repository scanning (14B models can be slow)
+                timeout=5400  # 90 minutes for repository scanning (14B models can be very slow)
             )
             
             # Parse outline into chapters
@@ -137,7 +138,9 @@ REQUIREMENTS:
 
 3. Base chapters on the actual file structure and content.
 
-OUTPUT ONLY the JSON structure, no markdown formatting or explanations."""
+OUTPUT ONLY the JSON structure, no markdown formatting or explanations.
+CRITICAL: Do NOT include your thinking process, reasoning steps, or any meta-commentary.
+Start directly with the JSON structure - no preamble like 'Okay, I need to...', 'Let me...', etc."""
 
     def _parse_outline(self, outline_text: str) -> List[Chapter]:
         """Parse LLM-generated outline into Chapter objects"""
