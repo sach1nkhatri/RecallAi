@@ -23,6 +23,7 @@ from src.infrastructure.external.user_service import UserService
 from src.infrastructure.api.bot_routes import register_bot_routes
 from src.infrastructure.api.user_routes import register_user_routes
 from src.infrastructure.api.repo_routes import register_repo_routes
+from src.infrastructure.api.status_routes import register_status_routes
 from src.infrastructure.storage.database import get_client
 
 logging.basicConfig(
@@ -561,6 +562,7 @@ def create_app() -> Flask:
     register_bot_routes(app)
     register_user_routes(app)
     register_repo_routes(app)
+    register_status_routes(app)
     logger.info("API routes registered successfully")
     
     @app.route("/uploads/<path:filename>", methods=["GET"])
@@ -576,9 +578,9 @@ def create_app() -> Flask:
     @app.route("/<path:path>")
     def static_proxy(path: str):
         """Serve frontend static files"""
-        # Don't match API routes
-        if path.startswith("api/"):
-            return jsonify({"error": "API route not found"}), 404
+        # Don't match API routes or status page
+        if path.startswith("api/") or path == "status.recallai":
+            return jsonify({"error": "Route not found"}), 404
         
         target = Path(app.static_folder) / path
         if target.exists():

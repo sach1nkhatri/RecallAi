@@ -144,14 +144,6 @@ const CodeToDocPage = () => {
               <span className="ctd-api-health-dot"></span>
               <span>{getHealthLabel()}</span>
             </div>
-            {getSystemInfo() && (
-              <div className="ctd-system-info">
-                <span className="ctd-system-platform">
-                  {getSystemInfo().platform?.os || 'Unknown'} | 
-                  {getSystemInfo().faiss?.backend === 'GPU' ? ' 🚀 GPU' : ' 💻 CPU'}
-                </span>
-              </div>
-            )}
           </div>
         </div>
       </header>

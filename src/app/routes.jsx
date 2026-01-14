@@ -21,6 +21,7 @@ import SettingsPage from '../features/settings/page/SettingsPage';
 import AdminLoginPage from '../features/admin_dashboard/pages/AdminLoginPage';
 import AdminDashboard from '../features/admin_dashboard/pages/AdminDashboard';
 import AdminProtectedRoute from '../core/middleware/AdminProtectedRoute';
+import StatusPage from '../features/status/pages/StatusPage';
 
 // Protected Route Component
 const ProtectedRoute = ({ children }) => {
@@ -90,6 +91,16 @@ const AppRoutes = () => {
                         <MainLayout user={user} onLogout={logout}>
                             <PricingPage />
                         </MainLayout>
+                    </PublicRoute>
+                }
+            />
+
+            {/* Status Page - Public */}
+            <Route
+                path="/status.recallai"
+                element={
+                    <PublicRoute>
+                        <StatusPage />
                     </PublicRoute>
                 }
             />
