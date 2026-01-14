@@ -178,33 +178,9 @@ const CodeToDocPage = () => {
           </div>
         )}
 
-        {/* Show selected history document */}
-        {selectedHistoryDoc && (
-          <div className="ctd-result-section">
-            <div className="ctd-result-header">
-              <h3 className="ctd-result-title">Viewing Previous Documentation</h3>
-              <button
-                className="ctd-result-close-btn"
-                onClick={() => handleHistorySelect(null)}
-              >
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <line x1="18" y1="6" x2="6" y2="18"></line>
-                  <line x1="6" y1="6" x2="18" y2="18"></line>
-                </svg>
-                Close
-              </button>
-            </div>
-            <OutputPanel 
-              output={selectedHistoryDoc.markdown || ''} 
-              pdfLink={selectedHistoryDoc.pdfUrl} 
-              pdfInfo={selectedHistoryDoc.pdfInfo?.filename || ''} 
-              summary={`Generated on ${new Date(selectedHistoryDoc.createdAt || selectedHistoryDoc.completedAt || Date.now()).toLocaleString()}`}
-              generationStatus={selectedHistoryDoc.status === 'completed' ? { status: 'completed' } : null}
-            />
-          </div>
-        )}
+        {/* History documents now open in new window - no need to show here */}
 
-        <div className={`ctd-workspace ${(selectedHistoryDoc || (generationStatus && generationStatus.status === 'completed' && generationStatus.markdown)) ? 'full-width' : ''}`}>
+        <div className={`ctd-workspace ${(generationStatus && generationStatus.status === 'completed' && generationStatus.markdown) ? 'full-width' : ''}`}>
           <div className="ctd-left">
             <div className="ctd-mode-selector">
               <div className="ctd-mode-tabs">

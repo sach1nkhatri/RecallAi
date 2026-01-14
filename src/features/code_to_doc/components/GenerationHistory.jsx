@@ -27,42 +27,297 @@ const GenerationHistory = ({ onSelectDocument }) => {
     fetchHistory(1, 20);
   }, [fetchHistory]);
 
-  const handleViewDocument = async (item) => {
-    // Always fetch full document to ensure we have markdown content
-    // History list excludes markdown for performance, so we need to fetch it
+  const handleViewDocument = async (item, e) => {
+    e?.stopPropagation();
+    // Open documentation in a new window with proper markdown rendering
     try {
       const data = await nodeApiRequest(`/api/generation-status/${item._id}`, {
         timeout: 10000, // 10 second timeout
       });
-      if (data.success && data.status) {
-        // Check if we have markdown content
-        if (data.status.markdown) {
-          console.log('Fetched document with markdown, length:', data.status.markdown.length);
-          if (onSelectDocument) {
-            onSelectDocument(data.status);
-          }
-        } else {
-          console.warn('Document fetched but missing markdown:', {
-            status: data.status.status,
-            hasMarkdown: !!data.status.markdown,
-            id: data.status._id
-          });
-          // Still try to show it if status is completed (might have markdown in different field)
-          if (data.status.status === 'completed' && onSelectDocument) {
-            onSelectDocument(data.status);
-          }
+      if (data.success && data.status && data.status.markdown) {
+        // Use the same markdown to HTML conversion as OutputPanel
+        const markdownHtml = enhancedMarkdownToHtml(data.status.markdown);
+        
+        // Create a new tab with the documentation
+        const docTitle = data.status.repoUrl 
+          ? data.status.repoUrl.replace('https://github.com/', '').replace(/\/$/, '')
+          : 'Documentation';
+        
+        // Create a blob URL with the HTML content
+        const htmlContent = `<!DOCTYPE html>
+<html>
+<head>
+  <title>${docTitle}</title>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 60px 80px;
+      line-height: 1.6;
+      color: #1f2937;
+      background: #ffffff;
+    }
+    h1 { font-size: 36px; font-weight: 800; margin: 0 0 12px; line-height: 1.1; color: #111827; letter-spacing: -0.5px; border-bottom: 4px solid #6366f1; padding-bottom: 20px; margin-bottom: 32px; }
+    h2 { font-size: 28px; font-weight: 700; margin: 48px 0 20px; line-height: 1.2; color: #1f2937; padding-top: 12px; border-top: 2px solid #e5e7eb; letter-spacing: -0.3px; }
+    h2:first-of-type { border-top: none; padding-top: 0; margin-top: 32px; }
+    h3 { font-size: 22px; font-weight: 600; margin: 32px 0 16px; line-height: 1.3; color: #374151; letter-spacing: -0.2px; }
+    h4 { font-size: 18px; font-weight: 600; margin: 24px 0 12px; color: #4b5563; line-height: 1.4; }
+    p { margin: 0 0 20px; color: #374151; line-height: 1.75; font-size: 16px; text-align: justify; text-justify: inter-word; }
+    code { background: #f3f4f6; padding: 3px 8px; border-radius: 4px; font-family: 'JetBrains Mono', 'SF Mono', 'Monaco', 'Consolas', monospace; font-size: 0.9em; color: #dc2626; border: 1px solid #e5e7eb; font-weight: 500; }
+    pre { background: #1e293b; color: #e2e8f0; padding: 24px; border-radius: 8px; overflow-x: auto; margin: 24px 0; border: 1px solid #334155; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); }
+    pre code { background: transparent; padding: 0; color: inherit; border: none; font-size: 14px; line-height: 1.6; display: block; white-space: pre; }
+    ul, ol { margin: 0 0 24px 32px; padding: 0; color: #374151; }
+    ul { list-style-type: disc; }
+    ol { list-style-type: decimal; }
+    li { margin-bottom: 12px; line-height: 1.8; font-size: 16px; }
+    li::marker { color: #6366f1; font-weight: 600; }
+    table { width: 100%; border-collapse: collapse; margin: 32px 0; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1); border-radius: 8px; overflow: hidden; }
+    th, td { padding: 14px 16px; border: 1px solid #e5e7eb; text-align: left; font-size: 15px; }
+    th { background: linear-gradient(135deg, #f9fafb 0%, #f3f4f6 100%); font-weight: 700; color: #111827; text-transform: uppercase; font-size: 13px; letter-spacing: 0.5px; }
+    tr:nth-child(even) { background: #f9fafb; }
+    tr:hover { background: #f3f4f6; }
+    blockquote { border-left: 4px solid #6366f1; padding: 16px 24px; margin: 24px 0; background: #f9fafb; color: #4b5563; font-style: italic; border-radius: 0 8px 8px 0; }
+    blockquote p { margin: 0; font-size: 15px; }
+    hr { border: none; border-top: 2px solid #e5e7eb; margin: 40px 0; }
+    a { color: #6366f1; text-decoration: none; border-bottom: 1px solid transparent; transition: border-color 0.2s; }
+    a:hover { border-bottom-color: #6366f1; }
+    strong { font-weight: 700; color: #111827; }
+    em { font-style: italic; color: #4b5563; }
+  </style>
+</head>
+<body>
+  <div class="doc-content">
+    ${markdownHtml}
+  </div>
+</body>
+</html>`;
+        
+        // Create blob and open in new tab
+        const blob = new Blob([htmlContent], { type: 'text/html' });
+        const url = URL.createObjectURL(blob);
+        const newTab = window.open(url, '_blank');
+        
+        // Clean up the blob URL after a short delay
+        if (newTab) {
+          setTimeout(() => {
+            URL.revokeObjectURL(url);
+          }, 100);
         }
-      } else {
-        console.error('Failed to fetch document: Invalid response', data);
       }
     } catch (error) {
       console.error('Failed to fetch document:', error);
-      // If fetch fails but item has markdown, try using it
-      if (item.markdown && item.status === 'completed' && onSelectDocument) {
-        console.warn('Using cached markdown from item');
-        onSelectDocument(item);
-      }
+      alert('Failed to open documentation. Please try again.');
     }
+  };
+  
+  // Markdown to HTML converter (same as OutputPanel)
+  const enhancedMarkdownToHtml = (text) => {
+    if (!text) return '<div><p>(No content)</p></div>';
+    
+    const lines = text.split(/\r?\n/);
+    const html = [];
+    let inList = false;
+    let listType = '';
+    let inCodeBlock = false;
+    let codeBlockLang = '';
+    let codeBlockContent = [];
+    let inTable = false;
+    let tableRows = [];
+    
+    const processInlineMarkdown = (text) => {
+      // Bold **text** or __text__
+      text = text.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+      text = text.replace(/__([^_]+)__/g, '<strong>$1</strong>');
+      // Italic *text* or _text_
+      text = text.replace(/\*([^*]+)\*/g, '<em>$1</em>');
+      text = text.replace(/_([^_]+)_/g, '<em>$1</em>');
+      // Inline code `code`
+      text = text.replace(/`([^`]+)`/g, '<code>$1</code>');
+      // Links [text](url)
+      text = text.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener">$1</a>');
+      return text;
+    };
+    
+    const escapeHtml = (text) => {
+      const div = document.createElement('div');
+      div.textContent = text;
+      return div.innerHTML;
+    };
+    
+    lines.forEach((line, index) => {
+      const trimmed = line.trim();
+      
+      // Code blocks
+      if (/^```/.test(trimmed)) {
+        if (inCodeBlock) {
+          // End code block
+          const codeContent = codeBlockContent.join('\n');
+          html.push(`<pre><code class="language-${codeBlockLang}">${escapeHtml(codeContent)}</code></pre>`);
+          codeBlockContent = [];
+          codeBlockLang = '';
+          inCodeBlock = false;
+        } else {
+          // Start code block
+          if (inList) {
+            html.push(`</${listType}>`);
+            inList = false;
+          }
+          codeBlockLang = trimmed.replace(/^```/, '').trim() || 'text';
+          inCodeBlock = true;
+        }
+        return;
+      }
+      
+      if (inCodeBlock) {
+        codeBlockContent.push(line);
+        return;
+      }
+      
+      // Tables
+      if (/^\|/.test(trimmed) && trimmed.includes('|')) {
+        if (!inTable) {
+          if (inList) {
+            html.push(`</${listType}>`);
+            inList = false;
+          }
+          html.push('<table>');
+          inTable = true;
+        }
+        const cells = trimmed.split('|').map(c => c.trim()).filter(c => c);
+        const isHeader = cells.some(c => /^[-:]+$/.test(c));
+        
+        if (isHeader) {
+          // Skip separator row
+          return;
+        }
+        
+        html.push('<tr>');
+        cells.forEach(cell => {
+          const tag = tableRows.length === 0 ? 'th' : 'td';
+          html.push(`<${tag}>${processInlineMarkdown(cell)}</${tag}>`);
+        });
+        html.push('</tr>');
+        tableRows.push(cells);
+        return;
+      } else if (inTable) {
+        html.push('</table>');
+        inTable = false;
+        tableRows = [];
+      }
+      
+      // Headings
+      if (/^####\s+/.test(trimmed)) {
+        if (inList) {
+          html.push(`</${listType}>`);
+          inList = false;
+        }
+        const text = processInlineMarkdown(trimmed.replace(/^####\s+/, ''));
+        html.push(`<h4>${text}</h4>`);
+        return;
+      } else if (/^###\s+/.test(trimmed)) {
+        if (inList) {
+          html.push(`</${listType}>`);
+          inList = false;
+        }
+        const text = processInlineMarkdown(trimmed.replace(/^###\s+/, ''));
+        html.push(`<h3>${text}</h3>`);
+        return;
+      } else if (/^##\s+/.test(trimmed)) {
+        if (inList) {
+          html.push(`</${listType}>`);
+          inList = false;
+        }
+        const text = processInlineMarkdown(trimmed.replace(/^##\s+/, ''));
+        html.push(`<h2>${text}</h2>`);
+        return;
+      } else if (/^#\s+/.test(trimmed)) {
+        if (inList) {
+          html.push(`</${listType}>`);
+          inList = false;
+        }
+        const text = processInlineMarkdown(trimmed.replace(/^#\s+/, ''));
+        html.push(`<h1>${text}</h1>`);
+        return;
+      }
+      
+      // Blockquotes
+      if (/^>\s+/.test(trimmed)) {
+        if (inList) {
+          html.push(`</${listType}>`);
+          inList = false;
+        }
+        const text = processInlineMarkdown(trimmed.replace(/^>\s+/, ''));
+        html.push(`<blockquote>${text}</blockquote>`);
+        return;
+      }
+      
+      // Horizontal rule
+      if (/^[-*_]{3,}$/.test(trimmed)) {
+        if (inList) {
+          html.push(`</${listType}>`);
+          inList = false;
+        }
+        html.push('<hr>');
+        return;
+      }
+      
+      // Lists
+      if (/^(\d+\.)\s+/.test(trimmed)) {
+        if (!inList || listType !== 'ol') {
+          if (inList) html.push(`</${listType}>`);
+          html.push('<ol>');
+          inList = true;
+          listType = 'ol';
+        }
+        const text = processInlineMarkdown(trimmed.replace(/^\d+\.\s+/, ''));
+        html.push(`<li>${text}</li>`);
+        return;
+      } else if (/^[-*+]\s+/.test(trimmed)) {
+        if (!inList || listType !== 'ul') {
+          if (inList) html.push(`</${listType}>`);
+          html.push('<ul>');
+          inList = true;
+          listType = 'ul';
+        }
+        const text = processInlineMarkdown(trimmed.replace(/^[-*+]\s+/, ''));
+        html.push(`<li>${text}</li>`);
+        return;
+      }
+      
+      // Regular paragraphs
+      if (!trimmed) {
+        if (inList) {
+          html.push(`</${listType}>`);
+          inList = false;
+        }
+        return;
+      }
+      
+      if (inList) {
+        html.push(`</${listType}>`);
+        inList = false;
+      }
+      
+      const processed = processInlineMarkdown(trimmed);
+      html.push(`<p>${processed}</p>`);
+    });
+    
+    if (inList) {
+      html.push(`</${listType}>`);
+    }
+    if (inTable) {
+      html.push('</table>');
+    }
+    if (inCodeBlock) {
+      const codeContent = codeBlockContent.join('\n');
+      html.push(`<pre><code class="language-${codeBlockLang}">${escapeHtml(codeContent)}</code></pre>`);
+    }
+    
+    return html.join('\n');
   };
 
   // Don't render viewer here - let parent handle it via onSelectDocument
@@ -162,15 +417,13 @@ const GenerationHistory = ({ onSelectDocument }) => {
                 <div className="generation-history-item-actions">
                   <button
                     className="generation-history-view-btn"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleViewDocument(item);
-                    }}
-                    title="View full documentation"
+                    onClick={(e) => handleViewDocument(item, e)}
+                    title="View full documentation in new window"
                   >
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
-                      <circle cx="12" cy="12" r="3"></circle>
+                      <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
+                      <polyline points="15 3 21 3 21 9"></polyline>
+                      <line x1="10" y1="14" x2="21" y2="3"></line>
                     </svg>
                     View Documentation
                   </button>
@@ -186,6 +439,7 @@ const GenerationHistory = ({ onSelectDocument }) => {
                         onClick={(e) => {
                           e.stopPropagation();
                         }}
+                        title="View PDF in new window"
                       >
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                           <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>

@@ -318,18 +318,20 @@ const OutputPanel = ({ output, pdfLink, pdfInfo, summary, generationStatus, isGe
             {pdfLink && (() => {
               const backendBase = getBackendApiBase();
               const fullUrl = pdfLink.startsWith('http') ? pdfLink : `${backendBase}${pdfLink}`;
-              console.log('PDF Link:', pdfLink, 'Full URL:', fullUrl);
               return (
                 <a 
                   className="ctd-download-btn" 
                   href={fullUrl} 
                   target="_blank" 
                   rel="noopener noreferrer"
-                  onClick={() => {
-                    console.log('Opening PDF:', fullUrl);
-                  }}
+                  title="View PDF in new window"
                 >
-                  <span className="ctd-download-icon">📄</span>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ marginRight: '8px' }}>
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                    <polyline points="14 2 14 8 20 8"></polyline>
+                    <line x1="16" y1="13" x2="8" y2="13"></line>
+                    <line x1="16" y1="17" x2="8" y2="17"></line>
+                  </svg>
                   View PDF
                 </a>
               );
