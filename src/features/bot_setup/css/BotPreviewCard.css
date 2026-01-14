@@ -67,10 +67,12 @@
 .bot-preview-messages {
   flex: 1;
   overflow-y: auto;
+  overflow-x: hidden;
   padding: 24px;
   display: flex;
   flex-direction: column;
   gap: 16px;
+  word-wrap: break-word;
 }
 
 .bot-preview-message {
@@ -93,6 +95,11 @@
   font-size: 14px;
   line-height: 1.6;
   word-wrap: break-word;
+  overflow-wrap: break-word;
+  word-break: break-word;
+  white-space: pre-wrap;
+  overflow-x: hidden;
+  max-width: 100%;
 }
 
 .bot-preview-message-user .bot-preview-message-content {
@@ -110,17 +117,36 @@
 .bot-preview-typing-dots {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
-  padding: 4px 0;
+  gap: 6px;
+  padding: 8px 0;
+}
+
+.bot-preview-thinking-bubble {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 14px 18px;
+  background: var(--bot-border);
+  border-radius: 12px;
+  border-bottom-left-radius: 4px;
+  min-width: 60px;
+}
+
+.bot-preview-typing-dots {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0;
 }
 
 .bot-preview-dot {
-  width: 8px;
-  height: 8px;
+  width: 10px;
+  height: 10px;
   border-radius: 50%;
   background-color: var(--bot-text);
-  opacity: 0.6;
-  animation: bounce-dot 1.4s infinite ease-in-out;
+  opacity: 0.5;
+  animation: breathing-dot 1.6s infinite ease-in-out;
 }
 
 .bot-preview-dot:nth-child(1) {
@@ -128,7 +154,22 @@
 }
 
 .bot-preview-dot:nth-child(2) {
-  animation-delay: 0.2s;
+  animation-delay: 0.4s;
+}
+
+.bot-preview-dot:nth-child(3) {
+  animation-delay: 0.8s;
+}
+
+@keyframes breathing-dot {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 0.4;
+  }
+  50% {
+    transform: scale(1.4);
+    opacity: 0.9;
+  }
 }
 
 @keyframes bounce-dot {

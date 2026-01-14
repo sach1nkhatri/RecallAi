@@ -51,6 +51,8 @@ class BotService:
             bot_data.setdefault("temperature", 0.7)
             bot_data.setdefault("topK", 5)
             bot_data.setdefault("documentCount", 0)
+            bot_data.setdefault("status", "active")  # 'training', 'active', 'error'
+            bot_data.setdefault("trainingProgress", 0)  # 0-100
             
             # Add user ID if provided
             if user_id:
@@ -91,8 +93,31 @@ class BotService:
     def update_document_count(self, bot_id: str, count: int) -> Optional[dict]:
         """Update document count for a bot"""
         try:
-            return BotModel.set_document_count(bot_id, count)
+            # Update status based on document count
+            status = "active" if count > 0 else "training"
+            update_data = {
+                "documentCount": count,
+                "status": status,
+                "trainingProgress": 100 if count > 0 else 0
+            }
+            return BotModel.update(bot_id, update_data)
         except Exception as e:
             logger.exception(f"Failed to update document count for bot {bot_id}")
+            raise
+    
+    def set_bot_status(self, bot_id: str, status: str, progress: int = 0) -> Optional[dict]:
+        """Set bot status (training, active, error)"""
+        try:
+            allowed_statuses = ["training", "active", "error"]
+            if status not in allowed_statuses:
+                raise ValueError(f"Status must be one of {allowed_statuses}")
+            
+            update_data = {
+                "status": status,
+                "trainingProgress": max(0, min(100, progress))
+            }
+            return BotModel.update(bot_id, update_data)
+        except Exception as e:
+            logger.exception(f"Failed to set bot status for bot {bot_id}")
             raise
 

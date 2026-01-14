@@ -110,12 +110,10 @@ const StatusPage = () => {
           <div className="status-logo">
             <h1>Recall AI</h1>
           </div>
-          <button className="subscribe-btn">Subscribe to updates</button>
         </div>
 
         {/* Overall Status Box */}
         <div className={`overall-status-box ${overallStatus.status}`}>
-          <div className="status-icon">✓</div>
           <div className="status-text">
             <h2>{overallStatus.message}</h2>
             <p>We're not aware of any issues affecting our systems.</p>
@@ -139,7 +137,6 @@ const StatusPage = () => {
             <div className="service-card">
               <div className="service-header">
                 <div className="service-name">
-                  <span className="status-indicator green">✓</span>
                   <span>Web Frontend</span>
                 </div>
                 <div className="service-meta">
@@ -162,9 +159,6 @@ const StatusPage = () => {
             <div className="service-card">
               <div className="service-header">
                 <div className="service-name">
-                  <span className={`status-indicator ${services.python_backend?.status === 'healthy' ? 'green' : 'yellow'}`}>
-                    {services.python_backend?.status === 'healthy' ? '✓' : '⚠'}
-                  </span>
                   <span>Python Backend</span>
                 </div>
                 <div className="service-meta">
@@ -187,9 +181,6 @@ const StatusPage = () => {
             <div className="service-card">
               <div className="service-header">
                 <div className="service-name">
-                  <span className={`status-indicator ${services.node_backend?.status === 'healthy' ? 'green' : 'yellow'}`}>
-                    {services.node_backend?.status === 'healthy' ? '✓' : '⚠'}
-                  </span>
                   <span>Node.js Backend</span>
                 </div>
                 <div className="service-meta">
@@ -212,9 +203,6 @@ const StatusPage = () => {
             <div className="service-card">
               <div className="service-header">
                 <div className="service-name">
-                  <span className={`status-indicator ${services.mongodb?.status === 'healthy' ? 'green' : 'yellow'}`}>
-                    {services.mongodb?.status === 'healthy' ? '✓' : '⚠'}
-                  </span>
                   <span>MongoDB</span>
                 </div>
                 <div className="service-meta">
@@ -233,11 +221,6 @@ const StatusPage = () => {
               </div>
             </div>
           </div>
-
-          <button className="view-history-btn">
-            <span>📅</span>
-            View history
-          </button>
         </div>
 
         {/* Footer */}

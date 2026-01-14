@@ -265,66 +265,129 @@ STATUS_PAGE_HTML = """
         
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
-            padding: 40px 20px;
-            color: #333;
+            background: #ffffff;
+            color: #000000;
+            padding: 0;
         }
         
-        .container {
+        .status-container {
             max-width: 1200px;
             margin: 0 auto;
+            padding: 40px 24px;
         }
         
-        .header {
-            text-align: center;
-            color: white;
+        /* Header */
+        .status-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 40px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid #e5e7eb;
+        }
+        
+        .status-logo h1 {
+            font-size: 24px;
+            font-weight: 600;
+            margin: 0;
+            color: #000000;
+        }
+        
+        /* Overall Status Box */
+        .overall-status-box {
+            background: #10b981;
+            color: #ffffff;
+            border-radius: 8px;
+            padding: 24px 32px;
             margin-bottom: 40px;
         }
         
-        .header h1 {
-            font-size: 48px;
-            font-weight: 700;
-            margin-bottom: 10px;
-            text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+        .overall-status-box.degraded {
+            background: #f59e0b;
         }
         
-        .header p {
-            font-size: 18px;
+        .status-text h2 {
+            font-size: 20px;
+            font-weight: 600;
+            margin: 0 0 4px 0;
+        }
+        
+        .status-text p {
+            font-size: 14px;
+            margin: 0;
             opacity: 0.9;
         }
         
-        .status-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 24px;
-            margin-bottom: 30px;
+        /* System Status Section */
+        .system-status-section {
+            margin-bottom: 40px;
         }
         
-        .status-card {
-            background: white;
-            border-radius: 12px;
-            padding: 30px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
-            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 24px;
         }
         
-        .status-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 15px 40px rgba(0,0,0,0.3);
+        .section-header h3 {
+            font-size: 18px;
+            font-weight: 600;
+            margin: 0;
+            color: #000000;
         }
         
-        .status-header {
+        .date-range {
             display: flex;
             align-items: center;
-            justify-content: space-between;
-            margin-bottom: 20px;
+            gap: 12px;
+            font-size: 14px;
+            color: #6b7280;
         }
         
-        .status-title {
-            font-size: 24px;
-            font-weight: 600;
-            color: #333;
+        .date-nav {
+            background: none;
+            border: 1px solid #d1d5db;
+            border-radius: 4px;
+            padding: 4px 8px;
+            cursor: pointer;
+            color: #6b7280;
+            font-size: 14px;
+        }
+        
+        .date-nav:hover {
+            background: #f9fafb;
+        }
+        
+        /* Service Cards */
+        .service-cards {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+        
+        .service-card {
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            padding: 20px;
+            background: #ffffff;
+        }
+        
+        .service-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+        }
+        
+        .service-name {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 16px;
+            font-weight: 500;
+            color: #000000;
         }
         
         .status-badge {
@@ -351,185 +414,244 @@ STATUS_PAGE_HTML = """
             color: white;
         }
         
-        .status-details {
-            margin-top: 20px;
-        }
-        
-        .status-detail-item {
-            display: flex;
-            justify-content: space-between;
-            padding: 12px 0;
-            border-bottom: 1px solid #e5e7eb;
-        }
-        
-        .status-detail-item:last-child {
-            border-bottom: none;
-        }
-        
-        .status-detail-label {
-            font-weight: 500;
+        .component-count {
+            font-size: 14px;
             color: #6b7280;
         }
         
-        .status-detail-value {
-            color: #111827;
-            font-weight: 600;
+        .service-uptime {
+            display: flex;
+            align-items: center;
+            gap: 16px;
         }
         
-        .status-error {
-            background: #fef2f2;
-            border: 1px solid #fecaca;
-            border-radius: 8px;
-            padding: 12px;
-            margin-top: 15px;
-            color: #991b1b;
+        .uptime-bars {
+            display: flex;
+            gap: 2px;
+            flex: 1;
+            height: 24px;
+            align-items: center;
+        }
+        
+        .uptime-bar {
+            flex: 1;
+            height: 8px;
+            border-radius: 2px;
+            min-width: 3px;
+        }
+        
+        .uptime-bar.green {
+            background: #10b981;
+        }
+        
+        .uptime-bar.yellow {
+            background: #f59e0b;
+        }
+        
+        .uptime-bar.red {
+            background: #ef4444;
+        }
+        
+        .uptime-percentage {
             font-size: 14px;
+            color: #6b7280;
+            font-weight: 500;
+            white-space: nowrap;
+            min-width: 100px;
+            text-align: right;
         }
         
-        .footer {
-            text-align: center;
-            color: white;
-            margin-top: 40px;
-            opacity: 0.8;
-        }
-        
-        .refresh-info {
-            text-align: center;
-            color: white;
-            margin-top: 20px;
+        /* Footer */
+        .status-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-top: 24px;
+            border-top: 1px solid #e5e7eb;
             font-size: 14px;
-            opacity: 0.7;
+            color: #6b7280;
         }
         
-        .overall-status {
-            background: white;
-            border-radius: 12px;
-            padding: 30px;
-            margin-bottom: 30px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
-            text-align: center;
+        .refresh-btn {
+            background: none;
+            border: 1px solid #d1d5db;
+            border-radius: 6px;
+            padding: 8px 16px;
+            font-size: 14px;
+            color: #000000;
+            cursor: pointer;
+            transition: background 0.2s;
         }
         
-        .overall-status h2 {
-            font-size: 32px;
-            margin-bottom: 15px;
-            color: #333;
+        .refresh-btn:hover {
+            background: #f9fafb;
         }
         
-        .overall-status .status-badge {
-            display: inline-block;
-            font-size: 18px;
-            padding: 12px 24px;
+        @media (max-width: 768px) {
+            .status-container {
+                padding: 24px 16px;
+            }
+            
+            .status-header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 16px;
+            }
+            
+            .section-header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 12px;
+            }
+            
+            .service-header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 8px;
+            }
+            
+            .service-uptime {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 8px;
+            }
+            
+            .uptime-percentage {
+                text-align: left;
+            }
+            
+            .status-footer {
+                flex-direction: column;
+                gap: 12px;
+                align-items: flex-start;
+            }
         }
     </style>
 </head>
 <body>
-    <div class="container">
-        <div class="header">
-            <h1>🚀 Recall AI</h1>
-            <p>System Status Dashboard</p>
+    <div class="status-container">
+        <!-- Header -->
+        <div class="status-header">
+            <div class="status-logo">
+                <h1>Recall AI</h1>
+            </div>
         </div>
-        
-        <div class="overall-status">
-            <h2>Overall Status</h2>
-            <span class="status-badge {{ overall_status_class }}">{{ overall_status }}</span>
+
+        <!-- Overall Status Box -->
+        <div class="overall-status-box {{ overall_status_class }}">
+            <div class="status-text">
+                <h2>{{ overall_status }}</h2>
+                <p>We're not aware of any issues affecting our systems.</p>
+            </div>
         </div>
-        
-        <div class="status-grid">
-            <div class="status-card">
-                <div class="status-header">
-                    <h3 class="status-title">🌐 Web Frontend</h3>
-                    <span class="status-badge {{ web_status_class }}">{{ web_status }}</span>
+
+        <!-- System Status Section -->
+        <div class="system-status-section">
+            <div class="section-header">
+                <h3>System status</h3>
+                <div class="date-range">
+                    <button class="date-nav">‹</button>
+                    <span>Oct 2025 - Jan 2026</span>
+                    <button class="date-nav">›</button>
                 </div>
-                <div class="status-details">
-                    <div class="status-detail-item">
-                        <span class="status-detail-label">Status</span>
-                        <span class="status-detail-value">{{ web_status }}</span>
+            </div>
+
+            <!-- Service Cards -->
+            <div class="service-cards">
+                <!-- Web Frontend -->
+                <div class="service-card">
+                    <div class="service-header">
+                        <div class="service-name">
+                            <span>Web Frontend</span>
+                        </div>
+                        <div class="service-meta">
+                            <span class="component-count">{{ web_component_count }} components</span>
+                        </div>
                     </div>
-                    <div class="status-detail-item">
-                        <span class="status-detail-label">Last Checked</span>
-                        <span class="status-detail-value">{{ timestamp }}</span>
+                    <div class="service-uptime">
+                        <div class="uptime-bars">
+                            {% for color in web_uptime_history %}
+                            <div class="uptime-bar {{ color }}"></div>
+                            {% endfor %}
+                        </div>
+                        <span class="uptime-percentage">
+                            {{ "%.2f"|format(web_uptime_percentage) }}% uptime
+                        </span>
+                    </div>
+                </div>
+
+                <!-- Python Backend -->
+                <div class="service-card">
+                    <div class="service-header">
+                        <div class="service-name">
+                            <span>Python Backend</span>
+                        </div>
+                        <div class="service-meta">
+                            <span class="component-count">{{ python_component_count }} components</span>
+                        </div>
+                    </div>
+                    <div class="service-uptime">
+                        <div class="uptime-bars">
+                            {% for color in python_uptime_history %}
+                            <div class="uptime-bar {{ color }}"></div>
+                            {% endfor %}
+                        </div>
+                        <span class="uptime-percentage">
+                            {{ "%.2f"|format(python_uptime_percentage) }}% uptime
+                        </span>
+                    </div>
+                </div>
+
+                <!-- Node.js Backend -->
+                <div class="service-card">
+                    <div class="service-header">
+                        <div class="service-name">
+                            <span>Node.js Backend</span>
+                        </div>
+                        <div class="service-meta">
+                            <span class="component-count">{{ node_component_count }} components</span>
+                        </div>
+                    </div>
+                    <div class="service-uptime">
+                        <div class="uptime-bars">
+                            {% for color in node_uptime_history %}
+                            <div class="uptime-bar {{ color }}"></div>
+                            {% endfor %}
+                        </div>
+                        <span class="uptime-percentage">
+                            {{ "%.2f"|format(node_uptime_percentage) }}% uptime
+                        </span>
+                    </div>
+                </div>
+
+                <!-- MongoDB -->
+                <div class="service-card">
+                    <div class="service-header">
+                        <div class="service-name">
+                            <span>MongoDB</span>
+                        </div>
+                        <div class="service-meta">
+                            <span class="component-count">{{ mongodb_component_count }} components</span>
+                        </div>
+                    </div>
+                    <div class="service-uptime">
+                        <div class="uptime-bars">
+                            {% for color in mongodb_uptime_history %}
+                            <div class="uptime-bar {{ color }}"></div>
+                            {% endfor %}
+                        </div>
+                        <span class="uptime-percentage">
+                            {{ "%.2f"|format(mongodb_uptime_percentage) }}% uptime
+                        </span>
                     </div>
                 </div>
             </div>
-            
-            <div class="status-card">
-                <div class="status-header">
-                    <h3 class="status-title">🐍 Python Backend</h3>
-                    <span class="status-badge {{ python_status_class }}">{{ python_status }}</span>
-                </div>
-                <div class="status-details">
-                    {% if python_uptime %}
-                    <div class="status-detail-item">
-                        <span class="status-detail-label">Uptime</span>
-                        <span class="status-detail-value">{{ python_uptime }}</span>
-                    </div>
-                    {% endif %}
-                    {% if python_port %}
-                    <div class="status-detail-item">
-                        <span class="status-detail-label">Port</span>
-                        <span class="status-detail-value">{{ python_port }}</span>
-                    </div>
-                    {% endif %}
-                    <div class="status-detail-item">
-                        <span class="status-detail-label">Last Checked</span>
-                        <span class="status-detail-value">{{ timestamp }}</span>
-                    </div>
-                    {% if python_error %}
-                    <div class="status-error">{{ python_error }}</div>
-                    {% endif %}
-                </div>
-            </div>
-            
-            <div class="status-card">
-                <div class="status-header">
-                    <h3 class="status-title">🍃 MongoDB</h3>
-                    <span class="status-badge {{ mongodb_status_class }}">{{ mongodb_status }}</span>
-                </div>
-                <div class="status-details">
-                    {% if mongodb_connected %}
-                    {% if mongodb_version %}
-                    <div class="status-detail-item">
-                        <span class="status-detail-label">Version</span>
-                        <span class="status-detail-value">{{ mongodb_version }}</span>
-                    </div>
-                    {% endif %}
-                    {% if mongodb_database %}
-                    <div class="status-detail-item">
-                        <span class="status-detail-label">Database</span>
-                        <span class="status-detail-value">{{ mongodb_database }}</span>
-                    </div>
-                    {% endif %}
-                    {% if mongodb_collections %}
-                    <div class="status-detail-item">
-                        <span class="status-detail-label">Collections</span>
-                        <span class="status-detail-value">{{ mongodb_collections }}</span>
-                    </div>
-                    {% endif %}
-                    {% if mongodb_data_size %}
-                    <div class="status-detail-item">
-                        <span class="status-detail-label">Data Size</span>
-                        <span class="status-detail-value">{{ mongodb_data_size }} MB</span>
-                    </div>
-                    {% endif %}
-                    {% endif %}
-                    <div class="status-detail-item">
-                        <span class="status-detail-label">Last Checked</span>
-                        <span class="status-detail-value">{{ timestamp }}</span>
-                    </div>
-                    {% if mongodb_error %}
-                    <div class="status-error">{{ mongodb_error }}</div>
-                    {% endif %}
-                </div>
-            </div>
         </div>
-        
-        <div class="refresh-info">
-            Page auto-refreshes every 30 seconds | Last updated: {{ timestamp }}
-        </div>
-        
-        <div class="footer">
-            <p>&copy; 2024 Recall AI. All systems monitored.</p>
+
+        <!-- Footer -->
+        <div class="status-footer">
+            <p>Last updated: {{ timestamp }}</p>
+            <button onclick="location.reload()" class="refresh-btn">Refresh</button>
         </div>
     </div>
     
@@ -563,8 +685,30 @@ def register_status_routes(app: Flask):
                 node_status.get("status") == "healthy"
             )
             
-            overall_status = "All Systems Operational" if all_healthy else "Some Systems Down"
-            overall_status_class = "healthy" if all_healthy else "unhealthy"
+            overall_status = "We're fully operational" if all_healthy else "Some systems are experiencing issues"
+            overall_status_class = "operational" if all_healthy else "degraded"
+            
+            # Get real uptime data from historical records
+            python_status["uptime_percentage"] = StatusHistory.calculate_uptime_percentage("python_backend", days=30)
+            python_status["uptime_history"] = StatusHistory.get_uptime_bars("python_backend", days=30)
+            python_status["component_count"] = 5
+            
+            node_status["uptime_percentage"] = StatusHistory.calculate_uptime_percentage("node_backend", days=30)
+            node_status["uptime_history"] = StatusHistory.get_uptime_bars("node_backend", days=30)
+            node_status["component_count"] = 4
+            
+            mongodb_status["uptime_percentage"] = StatusHistory.calculate_uptime_percentage("mongodb", days=30)
+            mongodb_status["uptime_history"] = StatusHistory.get_uptime_bars("mongodb", days=30)
+            mongodb_status["component_count"] = 2
+            
+            # Web frontend - record as healthy if we can serve this page
+            try:
+                StatusHistory.record_status_check("web", "healthy", {"note": "Status page accessible"})
+            except:
+                pass
+            
+            web_uptime_percentage = StatusHistory.calculate_uptime_percentage("web", days=30)
+            web_uptime_history = StatusHistory.get_uptime_bars("web", days=30)
             
             # Prepare template variables
             template_vars = {
@@ -572,26 +716,25 @@ def register_status_routes(app: Flask):
                 "overall_status": overall_status,
                 "overall_status_class": overall_status_class,
                 
-                # Web status (assume healthy if we can render this page)
-                "web_status": "Healthy",
-                "web_status_class": "healthy",
+                # Web status
+                "web_uptime_percentage": web_uptime_percentage,
+                "web_uptime_history": web_uptime_history,
+                "web_component_count": 3,
                 
                 # Python backend
-                "python_status": python_status.get("status", "unknown").title(),
-                "python_status_class": python_status.get("status", "error"),
-                "python_uptime": python_status.get("uptime"),
-                "python_port": python_status.get("port"),
-                "python_error": python_status.get("error"),
+                "python_uptime_percentage": python_status.get("uptime_percentage", 100.0),
+                "python_uptime_history": python_status.get("uptime_history", []),
+                "python_component_count": python_status.get("component_count", 5),
+                
+                # Node backend
+                "node_uptime_percentage": node_status.get("uptime_percentage", 100.0),
+                "node_uptime_history": node_status.get("uptime_history", []),
+                "node_component_count": node_status.get("component_count", 4),
                 
                 # MongoDB
-                "mongodb_status": mongodb_status.get("status", "unknown").title(),
-                "mongodb_status_class": mongodb_status.get("status", "error"),
-                "mongodb_connected": mongodb_status.get("connected", False),
-                "mongodb_version": mongodb_status.get("server_version"),
-                "mongodb_database": mongodb_status.get("database"),
-                "mongodb_collections": mongodb_status.get("collections"),
-                "mongodb_data_size": mongodb_status.get("data_size_mb"),
-                "mongodb_error": mongodb_status.get("error"),
+                "mongodb_uptime_percentage": mongodb_status.get("uptime_percentage", 100.0),
+                "mongodb_uptime_history": mongodb_status.get("uptime_history", []),
+                "mongodb_component_count": mongodb_status.get("component_count", 2),
             }
             
             return render_template_string(STATUS_PAGE_HTML, **template_vars)
@@ -604,6 +747,15 @@ def register_status_routes(app: Flask):
     def status_api():
         """JSON API endpoint for status checks"""
         try:
+            # Cleanup old records periodically (keep last 90 days)
+            # Only do this occasionally to avoid overhead
+            import random as rand_module
+            if rand_module.random() < 0.01:  # 1% chance on each request
+                try:
+                    StatusHistory.cleanup_old_records(days_to_keep=90)
+                except:
+                    pass
+            
             mongodb_status = check_mongodb()
             python_status = check_python_backend()
             node_status = check_node_backend()
@@ -660,4 +812,3 @@ def register_status_routes(app: Flask):
                 "status": "error",
                 "error": str(e)
             }), 500
-

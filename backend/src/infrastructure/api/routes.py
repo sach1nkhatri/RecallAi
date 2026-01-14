@@ -53,6 +53,13 @@ def create_app() -> Flask:
     try:
         get_client()  # This will test the connection
         logger.info("MongoDB connection initialized")
+        
+        # Create indexes for MongoDB models
+        from src.infrastructure.storage.bot_model import BotModel
+        from src.infrastructure.storage.chat_message_model import ChatMessageModel
+        BotModel.create_indexes()
+        ChatMessageModel.create_indexes()
+        logger.info("MongoDB indexes created")
     except Exception as e:
         logger.warning(f"MongoDB connection failed: {e}. Bot storage may not work correctly.")
     

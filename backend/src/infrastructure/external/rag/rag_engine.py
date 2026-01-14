@@ -1,6 +1,7 @@
 """RAG Engine for document vectorization and querying"""
 
 import json
+import logging
 import os
 import time
 from typing import Callable, Dict, List, Optional, Tuple
@@ -9,6 +10,8 @@ import requests
 import numpy as np
 
 from src.config.settings import settings
+
+logger = logging.getLogger(__name__)
 from .chunker import chunk_text
 from .embedder import LMStudioEmbedder
 from .extractor import extract_text
@@ -124,17 +127,36 @@ class RAGEngine:
 
         _emit("faiss_building")
         if index:
-            index.add(np.array(embeddings).astype("float32"))
+            # Adding to existing index
+            if len(embeddings) > 0:
+                index.add(np.array(embeddings).astype("float32"))
             index_path = existing_index_path
             combined_meta = existing_metadata + metadatas
+            logger.info(f"Updated existing index at {index_path} with {len(embeddings)} new embeddings. Total chunks: {len(combined_meta)}")
         else:
+            # Creating new index
+            if len(embeddings) == 0:
+                raise ValueError("No embeddings generated from document. Cannot create index.")
             index = build_faiss_index(embeddings)
             timestamp = int(time.time())
             index_path = os.path.join(self.index_dir, f"{bot_id}_{timestamp}.index")
             combined_meta = metadatas
+            logger.info(f"Created new index at {index_path} with {len(embeddings)} embeddings")
 
+        # Ensure directory exists
+        os.makedirs(os.path.dirname(index_path), exist_ok=True)
+        
+        # Save index and metadata
         save_index(index, index_path)
         save_metadata(index_path, combined_meta)
+        
+        # Verify the save worked
+        if not os.path.exists(index_path):
+            raise RuntimeError(f"Failed to save index to {index_path}")
+        meta_path = f"{index_path}.meta.json"
+        if not os.path.exists(meta_path):
+            raise RuntimeError(f"Failed to save metadata to {meta_path}")
+        
         _emit("bot_ready", {"indexPath": index_path})
         return index_path, combined_meta
 
@@ -177,13 +199,28 @@ class RAGEngine:
         return batches
     
     def _build_prompt(self, system_prompt: str, context: str, user_query: str) -> str:
-        """Build RAG prompt with context"""
-        return (
-            f"{system_prompt.strip()}\n\n"
-            f"Context:\n{context}\n\n"
-            f"User question: {user_query}\n"
-            f"Answer with citations for each fact."
-        )
+        """Build RAG prompt with context and bot instructions"""
+        # Build a comprehensive system prompt that includes bot instructions
+        enhanced_system = system_prompt.strip() if system_prompt.strip() else "You are a helpful AI assistant that answers questions based on the provided context."
+        
+        # Construct the full prompt with clear structure
+        prompt = f"""{enhanced_system}
+
+## Context from Documents:
+{context}
+
+## User Question:
+{user_query}
+
+## Instructions:
+- Answer the user's question based on the context provided above
+- Use the context to provide accurate, relevant information
+- If the context doesn't contain relevant information, say so politely
+- Cite specific parts of the context when making claims
+- Be concise but thorough
+- If the user is just greeting or making small talk, respond naturally while being ready to answer questions about the documents"""
+        
+        return prompt
 
     def _call_chat_stream(
         self,
@@ -326,6 +363,7 @@ class RAGEngine:
                 f"Focus on answering based on the provided context chunk."
             )
             
+            # Use enhanced prompt building
             prompt = self._build_prompt(batch_system_prompt, context, question)
             
             payload = {
@@ -419,8 +457,35 @@ class RAGEngine:
                 "Please check that LM Studio is running and the embedding model is loaded."
             ) from e
         
-        # Search with similarity threshold (0.6 = moderate similarity, adjust as needed)
-        idxs, distances, similarities = search(index, query_vec, top_k=top_k, similarity_threshold=0.6)
+        # Check if we have any metadata/chunks
+        if not metadata or len(metadata) == 0:
+            raise ValueError(
+                "No documents have been vectorized for this bot yet. "
+                "Please upload and vectorize documents first."
+            )
+        
+        # For small indices (few documents), always return all chunks regardless of similarity
+        # This ensures bots with 1-2 documents can still respond
+        is_small_index = len(metadata) <= 3
+        
+        # Adaptive similarity threshold: lower for generic queries, higher for specific ones
+        # Detect if query is generic (short, common words) vs specific (longer, technical)
+        question_lower = question.lower().strip()
+        is_generic_query = (
+            len(question.split()) <= 5 or 
+            any(word in question_lower for word in ['hello', 'hi', 'hey', 'help', 'what', 'how', 'why', 'when', 'where', 'sales', 'tell', 'show'])
+        )
+        
+        # For small indices or generic queries, use 0.0 threshold to get all results
+        # For larger indices with specific queries, use a low threshold
+        if is_small_index or is_generic_query:
+            base_threshold = 0.0  # Get all results
+        else:
+            base_threshold = 0.2  # Low threshold for specific queries
+        
+        # Search with expanded top_k to get more candidates
+        search_k = min(top_k * 3, len(metadata)) if not is_small_index else len(metadata)
+        idxs, distances, similarities = search(index, query_vec, top_k=search_k, similarity_threshold=base_threshold)
 
         # Build selected chunks with relevance scores
         selected = []
@@ -434,9 +499,55 @@ class RAGEngine:
         # Sort by similarity (highest first)
         selected.sort(key=lambda x: x.get('similarity', 0), reverse=True)
         
-        # Filter out very low similarity results
-        selected = [item for item in selected if item.get('similarity', 0) >= 0.5]
+        # For small indices or generic queries, always return all available chunks
+        if is_small_index:
+            # Return all chunks for small indices
+            selected = selected[:top_k] if len(selected) > top_k else selected
+        elif is_generic_query:
+            # For generic queries, take top_k chunks regardless of similarity
+            selected = selected[:top_k] if len(selected) > top_k else selected
+        else:
+            # For specific queries, filter by minimum similarity but be very lenient
+            min_similarity = 0.1  # Very low threshold to allow more results
+            selected = [item for item in selected if item.get('similarity', 0) >= min_similarity][:top_k]
+        
+        # Fallback: if still no chunks, return top chunks anyway (for conversational queries)
+        # This should rarely happen now, but keep as safety net
+        if not selected and len(metadata) > 0:
+            # Get top chunks regardless of similarity for fallback
+            idxs_fallback, distances_fallback, similarities_fallback = search(
+                index, query_vec, top_k=min(top_k, len(metadata)), similarity_threshold=0.0
+            )
+            selected = []
+            for idx, dist, sim in zip(idxs_fallback, distances_fallback, similarities_fallback):
+                if 0 <= idx < len(metadata):
+                    chunk = metadata[idx].copy()
+                    chunk['similarity'] = sim
+                    chunk['distance'] = dist
+                    selected.append(chunk)
+            selected.sort(key=lambda x: x.get('similarity', 0), reverse=True)
+            # Take all available chunks if we have fewer than top_k
+            selected = selected[:top_k] if len(selected) >= top_k else selected
+        
+        # Final check: if still no chunks, force return all available chunks
+        # This should never happen with our logic, but as absolute fallback
+        if not selected and len(metadata) > 0:
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.warning(f"No chunks selected after all fallbacks. Forcing return of all chunks. Query: {question}, Metadata: {len(metadata)}")
+            # Force return all chunks as last resort
+            for idx in range(min(top_k, len(metadata))):
+                if idx < len(metadata):
+                    chunk = metadata[idx].copy()
+                    chunk['similarity'] = 0.5  # Default similarity
+                    chunk['distance'] = 1.0  # Default distance
+                    selected.append(chunk)
+        
+        # Absolute final check: if still no chunks, raise error
         if not selected:
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.error(f"CRITICAL: No chunks available. Query: {question}, Metadata count: {len(metadata)}, Index vectors: {index.ntotal if hasattr(index, 'ntotal') else 'unknown'}")
             raise ValueError(
                 f"I couldn't find any relevant information about '{question}' in the uploaded documents. "
                 "Please try:\n"
@@ -460,16 +571,19 @@ class RAGEngine:
             )
         else:
             # Process normally in single request
-            prompt = self._build_prompt(system_prompt, context, question)
+            # Build enhanced prompt with system instructions and context
+            enhanced_prompt = self._build_prompt(system_prompt, context, question)
+            
+            # Use proper message structure: system prompt with instructions, user message with question
             payload = {
                 "model": os.getenv("LM_STUDIO_CHAT_MODEL", "google/gemma-3-1b"),
                 "stream": True,
                 "messages": [
-                    {"role": "system", "content": prompt},
+                    {"role": "system", "content": enhanced_prompt},
                     {"role": "user", "content": question},
                 ],
                 "temperature": temperature,
                 "top_p": top_p,
             }
-            return prompt, selected, self._call_chat_stream(payload)
+            return enhanced_prompt, selected, self._call_chat_stream(payload)
 
